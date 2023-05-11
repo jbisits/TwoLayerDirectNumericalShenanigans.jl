@@ -9,5 +9,5 @@ To use the package
 ```julia
 julia> using Pkg
 
-julia> Pkg.add(url="https://github.com/CliMA/LESbrary.jl.git")
+julia> Pkg.add(url="https://github.com/jbisits/DirectNumericalShenanigans.jl.git")
 ```

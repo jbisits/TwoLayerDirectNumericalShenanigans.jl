@@ -1,7 +1,7 @@
 module DirectNumericalShenanigans
 
-using Oceananigans, SeawaterPolynomials
+using Oceananigans, SeawaterPolynomials, CairoMakie, Reexport
 
-include("cabbeling_withparameterisations.jl")
+@reexport using Oceananigans, SeawaterPolynomials, CairoMakie
 
 end

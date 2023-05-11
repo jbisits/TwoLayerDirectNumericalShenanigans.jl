@@ -1,0 +1,13 @@
+*.DS_Store
+*.ipynb_checkpoints
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+*.jld2
+*.nc
+*.vscode
+/Manifest.toml
+/deps/deps.jl
+docs/Manifest.toml
+docs/build
+docs/src/literated

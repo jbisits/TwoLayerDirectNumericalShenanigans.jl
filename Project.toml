@@ -1,0 +1,13 @@
+name = "DirectNumericalShenanigans"
+uuid = "40aaee9f-3595-48be-b36c-f1067009652f"
+authors = ["Josef Bisits <jbisits@gmail.com>"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]

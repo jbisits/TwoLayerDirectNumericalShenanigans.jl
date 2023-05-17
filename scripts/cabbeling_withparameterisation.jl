@@ -63,12 +63,12 @@ Colorbar(fig[1, 2], hm)
 fig
 ## simulation
 Δt = 1e-2
+stop_iteration = 1000
 simulation = Simulation(model; Δt, stop_iteration)
 
 ## time step adjustments
 wizard = TimeStepWizard(cfl = 0.75, max_Δt = 0.1, max_change = 1.2)
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
-stop_iteration = 100
 
 ## save info
 outputs = (T = model.tracers.T, S = model.tracers.S)

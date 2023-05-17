@@ -89,6 +89,20 @@ sim_path = joinpath(SIMULATION_PATH, "cabbeling.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
 t = Θ_ts.times
 
-fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 3))
+fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1))
 Colorbar(fig[1, 2], hm)
 fig
+
+## Animations
+
+n = Observable(1)
+@lift interior(Θ_ts[$n], :, 1, :)
+title = @lift @sprintf("t=%1.2f", times[$n])
+
+frames = eachindex(times)
+
+record(fig, "xz_temperature.mp4", frames, framerate=8) do i
+    msg = string("Plotting frame ", i, " of ", frames[end])
+    print(msg * " \r")
+    n[] = i
+end

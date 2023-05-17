@@ -5,6 +5,7 @@
 *.jl.mem
 *.jld2
 *.nc
+*.mp4
 *.vscode
 /Manifest.toml
 /deps/deps.jl

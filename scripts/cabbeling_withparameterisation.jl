@@ -83,10 +83,11 @@ simulation.callbacks[:progress] = Callback(progress, IterationInterval(50))
 ## Run the simulation
 run!(simulation)
 
-## Output
+## Saved uutput
 using Oceananigans.Fields
 sim_path = joinpath(SIMULATION_PATH, "cabbeling.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
+S_ts = FieldTimeSeries(sim_path, "S")
 t = Θ_ts.times
 
 fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1))
@@ -96,12 +97,42 @@ fig
 ## Animations
 
 n = Observable(1)
-@lift interior(Θ_ts[$n], :, 1, :)
-title = @lift @sprintf("t=%1.2f", times[$n])
+Θₙ = @lift interior(Θ_ts[$n], :, 1, :)
+title = @lift @sprintf("t=%1.2f", t[$n])
+fig, ax, hm = heatmap(x, z, Θₙ)
+ax.xlabel = "x"
+ax.ylabel = "z"
+Colorbar(fig[1, 2], hm, label = "Temperature (°C)")
+fig
 
-frames = eachindex(times)
+frames = eachindex(t)
 
 record(fig, "xz_temperature.mp4", frames, framerate=8) do i
+    msg = string("Plotting frame ", i, " of ", frames[end])
+    print(msg * " \r")
+    n[] = i
+end
+
+## Density computation
+σ₀_ts = deepcopy(S_ts)
+for i ∈ eachindex(t)
+    Sᵢ, Θᵢ = S_ts[i], Θ_ts[i]
+    σ₀_ts[i] .= @at (Center, Center, Center) gsw_sigma0.(Sᵢ, Θᵢ)
+end
+σ₀_ts
+
+n = Observable(1)
+σ₀ⁿ = @lift interior(σ₀_ts[$n], :, 1, :)
+title = @lift @sprintf("t=%1.2f", t[$n])
+fig, ax, hm = heatmap(x, z, σ₀ⁿ; colormap = :dense)
+ax.xlabel = "x"
+ax.ylabel = "z"
+Colorbar(fig[1, 2], hm, label = "σ₀ (kgm⁻³)")
+fig
+
+frames = eachindex(t)
+
+record(fig, "xz_sigma0.mp4", frames, framerate=8) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")
     n[] = i

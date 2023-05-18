@@ -36,8 +36,20 @@ end
 Return the kinematic viscosity (`ν`) and the diffusivity (`κ`) from the
 [Prandtl number](https://en.wikipedia.org/wiki/Prandtl_number) and
 the [Raleigh number](https://en.wikipedia.org/wiki/Rayleigh_number).
-The viscosity is calcuted by
+The Prandtl number is
 ```math
-
+    Pr = \\frac{ν}{κ}
+```
+and the Raleigh number is
+```math
+    Ra = \\frac{ΔρgL³}{μκ} = \\frac{bL³}{νκ}.
+```
+Using these expressions we can derive `ν` and `κ` in terms of the non-dimensional numbers,
+the buoyancy and the domain size
+```math
+ν = \\sqrt{\\frac{PrbL³}{Ra}} \quad κ = \\sqrt{\\frac{bL³}{RaPr}}.
 ```
 """
+function viscosity_and_diffusivity(Prandtl_number::Number, Raleigh_number::Number)
+
+end

@@ -11,8 +11,7 @@ using DirectNumericalShenanigans
 #  variable spacing may also be an option
 Lx, Ly, Lz = 0.5, 0.5, 1
 Nx, Ny, Nz = 50, 50, 100
-grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
-                       size     = (Nx, Ny, Nz),
+grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded), size = (Nx, Ny, Nz),
                        x = (-Lx/2, Lx/2),
                        y = (-Ly/2, Ly/2),
                        z = (-Lz, 0))
@@ -23,11 +22,8 @@ buoyancy = SeawaterBuoyancy(equation_of_state = eos)
 tracers = (:S, :T)
 ## By default Bounded domains have zero flux boundary conditions so leave that for now
 
-## Closure, diffusivity to start with parameterise a constant vertical diffusivity. Likely
-#  it is better to build the simulation up from Prandtl and Raleigh numbers to give better
-#  indication of what the controlling dynamics are.
-ν, κ = 1e-6, 1e-5
-Pr = ν / κ
+## Closure, diffusivity to start with parameterise a constant vertical diffusivity.
+ν, κ = 1e-6, 1e-7
 closure = ScalarDiffusivity(; ν, κ)
 
 ## timestepper
@@ -40,30 +36,19 @@ advection = WENO()
 model = NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection)
 
 ## Initial conditions, interface in middle of domain
-S₀ = Array{Float64}(undef, size(model.grid))
-T₀ = Array{Float64}(undef, size(model.grid))
+S₀ = (upper = 34.6, lower = 34.7)
+Θ₀ = (upper = -1.5, lower = 0.5)
 
-for i ∈ axes(S₀, 3)
+set_two_layer_initial_conditions!(model, S₀, Θ₀)
 
-    if i ≤ floor(Nz) / 2
-        S₀[:, :, i] .= 34.7
-        T₀[:, :, i] .= 0.5
-    else
-        S₀[:, :, i] .= 34.568
-        T₀[:, :, i] .= -1.5
-    end
-
-end
-set!(model, T = T₀, S = S₀)
-
-## visualise the initial condition
+## visualise the initial conditions on x-z plane
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
-fig, ax, hm = heatmap(x, z, interior(model.tracers.T, :, 1, :))
+fig, ax, hm = heatmap(x, z, interior(model.tracers.S, :, 1, :))
 Colorbar(fig[1, 2], hm)
 fig
 ## simulation
 Δt = 1e-2
-stop_iteration = 1000
+stop_iteration = 250
 simulation = Simulation(model; Δt, stop_iteration)
 
 ## time step adjustments
@@ -73,7 +58,7 @@ simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 ## save info
 outputs = (T = model.tracers.T, S = model.tracers.S)
 simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
-                                                filename = joinpath("data/simulations", "cabbeling.jld2"),
+                                                filename = joinpath("data/simulations", "unstable.jld2"),
                                                 schedule = IterationInterval(50))
 ## Progress reporting
 progress(sim) = @printf("i: % 6d, sim time: % 1.3f, wall time: % 10s, Δt: % 1.4f, advective CFL: %.2e, diffusive CFL: %.2e\n",
@@ -85,12 +70,21 @@ run!(simulation)
 
 ## Saved uutput
 using Oceananigans.Fields
-sim_path = joinpath(SIMULATION_PATH, "cabbeling.jld2")
+sim_path = joinpath(SIMULATION_PATH, "unstable.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
 S_ts = FieldTimeSeries(sim_path, "S")
 t = Θ_ts.times
 
-fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1))
+## Plots
+x, y, z = nodes(model.grid, (Center(), Center(), Center()))
+fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 6))
+Colorbar(fig[1, 2], hm)
+fig
+
+using GibbsSeaWater
+fig, ax, hm = heatmap(x, z,
+                      gsw_sigma0.(interior(S_ts, :, 1, :, 2), interior(Θ_ts, :, 1, :, 2));
+                      colormap = :dense)
 Colorbar(fig[1, 2], hm)
 fig
 
@@ -107,7 +101,7 @@ fig
 
 frames = eachindex(t)
 
-record(fig, "xz_temperature.mp4", frames, framerate=8) do i
+record(fig, "xz_temperature_unstable.mp4", frames, framerate=8) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")
     n[] = i

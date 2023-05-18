@@ -9,10 +9,6 @@ export SIMULATION_PATH,
 
 const SIMULATION_PATH = joinpath(@__DIR__, "../data/simulations")
 
-if !isdir(SIMULATION_PATH)
-    mkdir(SIMULATION_PATH)
-end
-
 include("twolayermodelsetup.jl")
 
 end

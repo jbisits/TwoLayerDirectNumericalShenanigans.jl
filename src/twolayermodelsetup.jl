@@ -47,9 +47,10 @@ and the Raleigh number is
 Using these expressions we can derive `ν` and `κ` in terms of the non-dimensional numbers,
 the buoyancy and the domain size
 ```math
-ν = \\sqrt{\\frac{PrbL³}{Ra}} \quad κ = \\sqrt{\\frac{bL³}{RaPr}}.
+ν = \\sqrt{\\frac{PrbL³}{Ra}} \\quad κ = \\sqrt{\\frac{bL³}{RaPr}}.
 ```
 """
 function viscosity_and_diffusivity(Prandtl_number::Number, Raleigh_number::Number)
 
+    return nothing
 end

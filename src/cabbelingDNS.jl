@@ -19,13 +19,13 @@ function quasiDNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple)
 
     eos = SeawaterPolynomials.RoquetEquationOfState(:Cabbeling)
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
-    tracers = (:S, :T)
+    tracers = (:T, :S)
 
-    closure = ScalarDiffusivity(; diffusivities.ν, diffusivities.κ)
+    closure = ScalarDiffusivity(; ν = diffusivities.ν, κ = diffusivities.κ)
 
     timestepper = :RungeKutta3
 
-    advection = CenteredSecondOrder()
+    advection = UpwindBiasedFifthOrder()
 
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection)
 

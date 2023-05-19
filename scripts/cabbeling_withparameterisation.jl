@@ -1,9 +1,4 @@
-"""
-Set up a quasi DNS (with diffusivity parameterised) as a proof-of-concept for some of the
-ideas we have been exploring. The 3D domain is rectangular, periodic x-y, and no flux at
-the top faces. Exploring some options which will then be moved into some execution scripts
-as part of this unregistered package.
-"""
+# Testing `quasiDNS_cabbeling`
 
 using DirectNumericalShenanigans
 

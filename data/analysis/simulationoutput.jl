@@ -15,12 +15,11 @@ end
 σ₀_ts
 
 ## Plots (x-z)
-fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1))
+fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1); colormap = :thermal)
 Colorbar(fig[1, 2], hm)
 fig
 
-fig, ax, hm = heatmap(x, z, interior(σ₀, :, 1, :, 1);
-                      colormap = :dense)
+fig, ax, hm = heatmap(x, z, interior(σ₀_ts, :, 1, :, 1); colormap = :dense)
 Colorbar(fig[1, 2], hm)
 fig
 
@@ -30,7 +29,7 @@ fig
 n = Observable(1)
 Θₙ = @lift interior(Θ_ts[$n], :, 1, :)
 title = @lift @sprintf("t=%1.2f", t[$n])
-fig, ax, hm = heatmap(x, z, Θₙ)
+fig, ax, hm = heatmap(x, z, Θₙ; colormap = :thermal)
 ax.xlabel = "x"
 ax.ylabel = "z"
 Colorbar(fig[1, 2], hm, label = "Temperature (°C)")

@@ -1,4 +1,3 @@
-
 """
     function set_two_layer_initial_conditions(model::AbstractModel, S::NamedTuple, Θ::NamedTuple)
 Set initial conditions for temperature and salinity in a two layer model. Initial values for
@@ -54,3 +53,12 @@ function viscosity_and_diffusivity(Prandtl_number::Number, Raleigh_number::Numbe
 
     return nothing
 end
+
+"""
+    function simulation_progress(sim)
+Useful progress messaging for simulation runs
+"""
+simulation_progress(sim) = @printf("i: % 6d, sim time: % 1.3f, wall time: % 10s, Δt: % 1.4f, advective CFL: %.2e, diffusive CFL: %.2e\n",
+                                    iteration(sim), time(sim), prettytime(sim.run_wall_time),
+                                    sim.Δt, AdvectiveCFL(sim.Δt)(sim.model),
+                                    DiffusiveCFL(sim.Δt)(sim.model))

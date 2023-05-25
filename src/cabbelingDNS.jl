@@ -25,7 +25,7 @@ function quasiDNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple)
 
     timestepper = :RungeKutta3
 
-    advection = UpwindBiasedFifthOrder()
+    advection = WENO()
 
     return NonhydrostaticModel(; grid, buoyancy, tracers, closure, timestepper, advection)
 

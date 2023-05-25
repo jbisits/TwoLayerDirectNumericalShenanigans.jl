@@ -7,7 +7,7 @@ as the model where the initial conditions should be set. **Note** the interface 
 layers is in the middle of the domain.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel, S::NamedTuple,
-                                          Θ::NamedTuple)
+                                           Θ::NamedTuple)
 
     S₀ = Array{Float64}(undef, size(model.grid))
     Θ₀ = Array{Float64}(undef, size(model.grid))

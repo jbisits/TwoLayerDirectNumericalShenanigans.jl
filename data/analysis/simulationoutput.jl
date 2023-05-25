@@ -1,7 +1,7 @@
 ## Saved Output
 using Oceananigans.Fields, GibbsSeaWater
 
-sim_path = joinpath(SIMULATION_PATH, "unstable.jld2")
+sim_path = joinpath(SIMULATION_PATH, "stable.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
 S_ts = FieldTimeSeries(sim_path, "S")
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
@@ -37,7 +37,7 @@ fig
 
 frames = eachindex(t)
 
-record(fig, "xz_temperature_unstable.mp4", frames, framerate=8) do i
+record(fig, "xz_temperature.mp4", frames, framerate=8) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")
     n[] = i

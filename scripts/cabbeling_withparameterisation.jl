@@ -3,14 +3,13 @@
 using DirectNumericalShenanigans
 
 resolution = (Nx = 50, Ny = 50 , Nz = 100)
-diffusivities = (ν = 1e-4, κ = 1e-5)
+diffusivities = (ν = 1e-5, κ = 1e-5)
 
 model = quasiDNS_cabbeling(resolution, diffusivities)
 
 ## Initial conditions, interface in middle of domain
-S₀ = (upper = 34.53, lower = 34.7)
+S₀ = (upper = 34.568, lower = 34.7)
 Θ₀ = (upper = -1.5, lower = 0.5)
-
 set_two_layer_initial_conditions!(model, S₀, Θ₀)
 
 ## visualise the temperature initial condition on x-z plane
@@ -21,7 +20,8 @@ set_two_layer_initial_conditions!(model, S₀, Θ₀)
 
 ## Random noise in horizontal velocities
 u, v, w = model.velocities
-uᵢ, vᵢ = randn(size(u)), randn(size(v))
+ϵ = 1e-2
+uᵢ, vᵢ = ϵ * randn(size(u)), ϵ * randn(size(v))
 set!(model, u = uᵢ, v = vᵢ)
 
 ## simulation
@@ -36,7 +36,7 @@ simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 ## save info
 outputs = (T = model.tracers.T, S = model.tracers.S)
 simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
-                                                filename = joinpath("data/simulations", "stable.jld2"),
+                                                filename = joinpath("data/simulations", "cabbeling.jld2"),
                                                 schedule = IterationInterval(50),
                                                 overwrite_existing = true)
 

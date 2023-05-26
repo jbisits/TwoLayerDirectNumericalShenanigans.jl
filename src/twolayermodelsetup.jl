@@ -49,7 +49,12 @@ the buoyancy and the domain size
 ν = \\sqrt{\\frac{PrbL³}{Ra}} \\quad κ = \\sqrt{\\frac{bL³}{RaPr}}.
 ```
 """
-function viscosity_and_diffusivity(Prandtl_number::Number, Raleigh_number::Number)
+function viscosity_and_diffusivity(model::Oceananigans.AbstractModel,
+                                   Prandtl_number::Number, Raleigh_number::Number)
+
+    T, S = model.tracers.T, model.tracers.S
+
+    #b = model.buoyancy
 
     return nothing
 end

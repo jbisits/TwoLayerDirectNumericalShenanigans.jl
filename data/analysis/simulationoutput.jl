@@ -1,7 +1,7 @@
 ## Saved Output
 using Oceananigans.Fields, GibbsSeaWater
 
-sim_path = joinpath(SIMULATION_PATH, "stable.jld2")
+sim_path = joinpath(SIMULATION_PATH, "cabbeling.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
 S_ts = FieldTimeSeries(sim_path, "S")
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
@@ -12,7 +12,6 @@ for i ∈ eachindex(t)
     Sᵢ, Θᵢ = S_ts[i], Θ_ts[i]
     σ₀_ts[i] .= @at (Center, Center, Center) gsw_sigma0.(Sᵢ, Θᵢ)
 end
-σ₀_ts
 
 ## Plots (x-z)
 fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1); colormap = :thermal)
@@ -37,7 +36,7 @@ fig
 
 frames = eachindex(t)
 
-record(fig, "xz_temperature.mp4", frames, framerate=8) do i
+record(fig, joinpath(@__DIR__, "xz_temperature.mp4"), frames, framerate=8) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")
     n[] = i
@@ -55,7 +54,7 @@ fig
 
 frames = eachindex(t)
 
-record(fig, "xz_sigma0.mp4", frames, framerate=8) do i
+record(fig, joinpath(@__DIR__, "xz_sigma0.mp4"), frames, framerate=8) do i
     msg = string("Plotting frame ", i, " of ", frames[end])
     print(msg * " \r")
     n[] = i

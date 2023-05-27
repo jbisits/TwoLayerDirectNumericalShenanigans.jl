@@ -3,13 +3,13 @@
 using DirectNumericalShenanigans
 
 resolution = (Nx = 50, Ny = 50 , Nz = 100)
-diffusivities = (ν = 1e-5, κ = 1e-5)
-
-model = quasiDNS_cabbeling(resolution, diffusivities)
-
+diffusivities = (ν = 1e-6, κ = 1e-7)
 ## Initial conditions, interface in middle of domain
 S₀ = (upper = 34.568, lower = 34.7)
 Θ₀ = (upper = -1.5, lower = 0.5)
+reference_density = gsw_rho(S₀.lower, Θ₀.lower, 0)
+
+model = quasiDNS_cabbeling(resolution, diffusivities; reference_density)
 set_two_layer_initial_conditions!(model, S₀, Θ₀)
 
 ## visualise the temperature initial condition on x-z plane

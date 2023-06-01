@@ -14,17 +14,11 @@ function quasiDNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple;
                             reference_density = nothing)
 
     Lx, Ly, Lz = 0.1, 0.1, 1
-    # Grid stretching, mm resolution from z = [-0.55, -0.45] otherwise cm resolution
-    Δz_mm, Δz_cm = 1e-4, 1e-2
-    z_spacing_vector = vcat(-Lz:Δz_cm:-Lz /2 - 0.06,
-                            -Lz /2 - 0.05:Δz_mm:-Lz /2 + 0.05,
-                            -Lz /2 + 0.06:Δz_cm:0)
-
     grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                            size = (resolution.Nx, resolution.Ny, resolution.Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),
-                           z = z_spacing_vector)
+                           z = (-Lz, 0))
 
     eos = isnothing(reference_density) ? SeawaterPolynomials.TEOS10EquationOfState() :
                             SeawaterPolynomials.TEOS10EquationOfState(; reference_density)

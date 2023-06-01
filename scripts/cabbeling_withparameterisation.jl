@@ -11,22 +11,13 @@ reference_density = gsw_rho(S₀.lower, Θ₀.lower, 0)
 
 model = quasiDNS_cabbeling(resolution, diffusivities; reference_density)
 model.grid
-scatterlines(zspacings(model.grid, Center()), znodes(model.grid, Center()))
 set_two_layer_initial_conditions!(model, S₀, Θ₀)
-
-gaussian_spacing(k) = exp(-((k - 1)/ resolution.Nz + 0.5)^2/2) - 1
-grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
-                        size = (resolution.Nx, resolution.Ny, resolution.Nz),
-                        x = (-0.5/2, 0.5/2),
-                        y = (-0.5/2, 0.5/2),
-                        z = gaussian_spacing)
-scatterlines(zspacings(grid, Center()), znodes(grid, Center()))
 
 ## This will be new way to set initial conditions with tanh
 test_array = size(model.grid)
 Θ₀_test = range(Θ₀.upper, Θ₀.lower; length = resolution.Nz)
 
-scatterlines(-tanh.(resolution.Nz .* Θ₀_test), -1:1/resolution.Nz:0-1/resolution.Nz)
+scatterlines(-tanh.(10 .* (Θ₀_test .+ 0.5)), -1:1/resolution.Nz:0-1/resolution.Nz)
 
 ## visualise the temperature initial condition on x-z plane
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))

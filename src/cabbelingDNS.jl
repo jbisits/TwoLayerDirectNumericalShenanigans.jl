@@ -1,7 +1,7 @@
 """
     function quasiDNS_cabbeling(resolution::Tuple, diffusivities::NamedTuple)
 Setup a quasi (i.e. not true DNS resolution and parameterised `ScalarDiffusivity`) Direct
-Numerical Simulation in a 0.5m × 0.5m × 1m box. The argument `resoltuion` is a `NamedTuple`
+Numerical Simulation in a 0.05m × 0.05m × 1m box. The argument `resoltuion` is a `NamedTuple`
 and needs to be passed as (Nx = , Ny = , Nz = ) and `diffusivities` is a also a `NamedTuple`
 of form `(ν = , κ = )` for the momentum and tracer diffusivities.
 The equation of state used to evolve the buoyancy is the [polynomial approximation to the
@@ -13,12 +13,18 @@ about. If nothing is passed default reference density of 1020kgm⁻³ is used.
 function quasiDNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple;
                             reference_density = nothing)
 
-    Lx, Ly, Lz = 0.5, 0.5, 1
+    Lx, Ly, Lz = 0.1, 0.1, 1
+    # Grid stretching, mm resolution from z = [-0.55, -0.45] otherwise cm resolution
+    Δz_mm, Δz_cm = 1e-4, 1e-2
+    z_spacing_vector = vcat(-Lz:Δz_cm:-Lz /2 - 0.06,
+                            -Lz /2 - 0.05:Δz_mm:-Lz /2 + 0.05,
+                            -Lz /2 + 0.06:Δz_cm:0)
+
     grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                            size = (resolution.Nx, resolution.Ny, resolution.Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),
-                           z = (-Lz, 0))
+                           z = z_spacing_vector)
 
     eos = isnothing(reference_density) ? SeawaterPolynomials.TEOS10EquationOfState() :
                             SeawaterPolynomials.TEOS10EquationOfState(; reference_density)

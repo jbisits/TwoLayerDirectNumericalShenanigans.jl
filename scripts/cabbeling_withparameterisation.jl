@@ -17,7 +17,7 @@ set_two_layer_initial_conditions!(model, S₀, Θ₀)
 test_array = size(model.grid)
 Θ₀_test = range(Θ₀.upper, Θ₀.lower; length = resolution.Nz)
 
-scatterlines(-tanh.(10 .* (Θ₀_test .+ 0.5)), -1:1/resolution.Nz:0-1/resolution.Nz)
+scatterlines(-tanh.(10 .* (Θ₀_test .+ 0.5))./2 .- 0.5, -1:1/resolution.Nz:0-1/resolution.Nz)
 
 ## visualise the temperature initial condition on x-z plane
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))

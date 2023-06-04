@@ -1,6 +1,6 @@
-using DirectNumericalShenanigans
+using DirectNumericalCabbelingShenanigans
 using Test
 
-@testset "DirectNumericalShenanigans.jl" begin
+@testset "DirectNumericalCabbelingShenanigans.jl" begin
     # Write your tests here.
 end

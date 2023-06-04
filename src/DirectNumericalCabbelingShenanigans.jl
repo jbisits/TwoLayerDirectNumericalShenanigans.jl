@@ -1,4 +1,4 @@
-module DirectNumericalShenanigans
+module DirectNumericalCabbelingShenanigans
 
 using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, Reexport
 

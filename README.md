@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/jbisits/DirectNumericalShenanigans.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jbisits/DirectNumericalShenanigans.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
-An unregistered Julia package for Direct Numerical Simulation experiments using [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
+A Julia package (unregistered) to explore the cabbeling instability using Direct Numerical Simulation experiments built with [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
 
 **NOTE:** Currently this repository is just experimenting some proof of concept setups, the full DNS setup is still to come.
 

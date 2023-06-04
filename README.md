@@ -9,5 +9,5 @@ An unregistered Julia package for Direct Numerical Simulation experiments using 
 To use the package:
 ```julia
 julia> using Pkg
-julia> Pkg.add(url="https://github.com/jbisits/DirectNumericalShenanigans.jl.git")
+julia> Pkg.add(url="https://github.com/jbisits/DirectNumericalCabbelingShenanigans.jl.git")
 ```

@@ -1,11 +1,11 @@
 module DirectNumericalCabbelingShenanigans
 
-using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, Reexport
+using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, Reexport, GibbsSeaWater
 
-@reexport using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf
+@reexport using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, GibbsSeaWater
 
 export SIMULATION_PATH,
-       quasiDNS_cabbeling,
+       DNS_cabbeling,
        set_two_layer_initial_conditions!,
        simulation_progress
 

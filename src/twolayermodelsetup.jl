@@ -3,28 +3,21 @@
 Set initial conditions for temperature and salinity in a two layer model. Initial values for
 the absolute salinity (`S`) and conservative temperature (`Θ`) in each layer must be passed
 to the function as a `NamedTuple` in the form `S = (upper = value, lower = value)` as well
-as the model where the initial conditions should be set. **Note** the interface of the
-layers is in the middle of the domain.
+as the model where the initial conditions should be set. **Note** by default the interface
+is in the middle of the domain, `z_centre = 0.5`, with width of `interface_thickness = 100`
+These can be altered by passing keyworkd arguments.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel, S::NamedTuple,
-                                           Θ::NamedTuple)
+                                           Θ::NamedTuple; z_centre = 0.5,
+                                           interface_thickness = 100)
 
-    S₀ = Array{Float64}(undef, size(model.grid))
-    Θ₀ = Array{Float64}(undef, size(model.grid))
+    ΔS = (S.upper - S.lower) / 2
+    ΔΘ = (Θ.upper - Θ.lower) / 2
 
-    for i ∈ axes(S₀, 3)
+    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS)
+    initial_Θ_profile(x, y, z) = ΔΘ * tanh(interface_thickness * (z + z_centre)) + (Θ.lower + ΔΘ)
 
-        if i ≤ floor(model.grid.Nz / 2)
-            S₀[:, :, i] .= S.lower
-            Θ₀[:, :, i] .= Θ.lower
-        else
-            S₀[:, :, i] .= S.upper
-            Θ₀[:, :, i] .= Θ.upper
-        end
-
-    end
-
-    set!(model, T = Θ₀, S = S₀)
+    set!(model, S = initial_S_profile, T = initial_Θ_profile)
 
     return nothing
 

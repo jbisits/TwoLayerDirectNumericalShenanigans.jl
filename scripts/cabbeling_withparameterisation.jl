@@ -14,40 +14,15 @@ model.grid
 
 set_two_layer_initial_conditions!(model, S₀, Θ₀)
 
-## This will be new way to set initial conditions with tanh
-# Temperature
-test_array_Θ = Array{Float64}(undef, size(model.grid))
-Θ₀_test = range(-2, 1; length = resolution.Nz)
-# ΔΘ = -2
-# scale = ΔΘ / 2
-# xy_centre = ΔΘ == -1 ? 0 : ΔΘ < -1 ? scale / 2 : -scale
-#ΔΘ = (Θ₀.upper - Θ₀.lower) / 2
-ΔΘ = (-1 - Θ₀.lower) / 2
-z_centre = 0.5
-interface = 10
-test_initial_profile = ΔΘ .* tanh.(interface .* (Θ₀_test .+ z_centre)) .+ (Θ₀.lower + ΔΘ)
-scatterlines(test_initial_profile, -1:1/resolution.Nz:0-1/resolution.Nz)
-
-for i ∈ axes(test_array, 1), j ∈ axes(test_array, 2)
-    test_array_Θ[i, j, :] = test_initial_profile
-end
-
-# Salt
-test_array_S = Array{Float64}(undef, size(model.grid))
-S₀_test = range(-1, 0; length = resolution.Nz)
-ΔS = (S₀.upper - S₀.lower) / 2
-z_centre = 0.5
-interface = 10
-test_initial_profile = ΔS .* tanh.(interface .* (z .+ z_centre)) .+ (S₀.lower + ΔS)
-scatterlines(test_initial_profile, -1:1/resolution.Nz:0-1/resolution.Nz)
-
-## visualise the temperature initial condition on x-z plane
+## visualise the salt initial condition on x-z plane
 
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
 fig, ax, hm = heatmap(x, z, interior(model.tracers.S, :, 1, :); colormap = :haline)
-fig, ax, plt = lines(interior(model.tracers.S, 1, 1, :), z)
 Colorbar(fig[1, 2], hm)
 fig
+
+## visualise temperature profile
+fig, ax, plt = lines(interior(model.tracers.T, 1, 1, :), z)
 
 ## Random noise in horizontal velocities
 u, v, w = model.velocities

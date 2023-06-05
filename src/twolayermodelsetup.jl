@@ -14,13 +14,25 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel, S:
     ΔS = (S.upper - S.lower) / 2
     ΔΘ = (Θ.upper - Θ.lower) / 2
 
-    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS)
+    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS) + perturb_salintiy(z)
     initial_Θ_profile(x, y, z) = ΔΘ * tanh(interface_thickness * (z + z_centre)) + (Θ.lower + ΔΘ)
 
     set!(model, S = initial_S_profile, T = initial_Θ_profile)
 
     return nothing
 
+end
+
+"""
+    function perturb_salintiy(z; salinity_pertubration)
+Where and what value to add to perturb the salinity initial condition.
+"""
+function perturb_salintiy(z; salinity_pertubration = 0.032)
+    if -0.2 > z > -0.25
+        salinity_pertubration
+    else
+        0
+    end
 end
 
 """

@@ -14,16 +14,14 @@ function DNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple;
 
     Lx, Ly, Lz = 0.1, 0.1, 1
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
-    # cubically_spaced_faces(k) = k < Nz / 2 ?
-    #                             -((k - Nz/2)/(1 - Nz/2))^(3)/2 - Lz/2 :
-    #                              ((k - Nz/2)/(1 + Nz/2))^(3)/2 - Lz/2
+
     # Not enough strecthing from funtion below and does not start at z = [-1, 0]
-    sinh_spaced_faces(k) = sinh((k - resolution.Nz/2) / (resolution.Nz + 1)) - 0.5
+    # sinh_spaced_faces(k) = sinh((k - resolution.Nz/2) / (resolution.Nz)) - Lz / 2
     grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                            size = (Nx, Ny, Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),
-                           z = sinh_spaced_faces)
+                           z = (-Lz, 0))
 
     eos = isnothing(reference_density) ? SeawaterPolynomials.TEOS10EquationOfState() :
                             SeawaterPolynomials.TEOS10EquationOfState(; reference_density)

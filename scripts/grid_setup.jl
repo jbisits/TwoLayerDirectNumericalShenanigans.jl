@@ -2,7 +2,7 @@
 #  domian and increasing/decreasing resolution at the upper/lower part of domain.
 #  This is NOT WORKING YET.
 
-resolution = (Nx = 10, Ny = 10 , Nz = 100)
+resolution = (Nx = 10, Ny = 10 , Nz = 50)
 
 h(k) = -(k - 1) / resolution.Nz
 function z_face_spacing(k)
@@ -33,16 +33,34 @@ z_spacing_vector = vcat(-Lz:Δz_cm:-Lz /2 - 0.06,
                         -Lz /2 - 0.05:Δz_mm:-Lz /2 + 0.05,
                         -Lz /2 + 0.06:Δz_cm:0)
 
-cubically_spaced_faces(k) = k < resolution.Nz / 2 ?
-                            -((k - resolution.Nz/2)/(1 - resolution.Nz/2))^(1/2)/2 - 0.5 :
-                            ((k - resolution.Nz/2)/(resolution.Nz/2))^(1/2)/2 - 0.5
+function cubically_spaced_faces(k)
+    if  k < resolution.Nz / 2
+        -((1 - k)/(1 - resolution.Nz/2))^(1/2)/2 - 0.5
+    else k > resolution.Nz / 2
+        ((resolution.Nz + 1 - k)/(1 + resolution.Nz/2))^(1/2)/2 - 0.5
+    #else
+
+    end
+end
 sinh_spaced_faces(k) = sinh((k - resolution.Nz/2) / (resolution.Nz + 1)) - 0.5
-tanh_spaced_faces(k) = k < resolution.Nz / 2 ?
-                        -cosh((k - resolution.Nz/2) / (1 + resolution.Nz)) -0.5 :
-                        cosh((k - resolution.Nz/2) / (1 + resolution.Nz)) -0.5
+function tanh_spaced_faces(k)
+    if k ≤ resolution.Nz / 4
+        -1
+        #1/2 - tanh((k - resolution.Nz) / (1 - resolution.Nz / 4)) / 2tanh(1)
+    elseif k ≥ 3*resolution.Nz / 4
+        0
+        #1/2 + tanh((k - 3*resolution.Nz / 4) / (resolution.Nz + 1 - 3*resolution.Nz / 4 )) / 2tanh(1)
+    else
+        #tanh((k - resolution.Nz/4) / (resolution.Nz / 4))
+        1
+    end
+end
+σ = 1.1
+hyperbolically_spaced_faces(k) = - 1 * (1 - tanh(σ * (k - 1) / resolution.Nz) / tanh(σ))
 grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                         size = (resolution.Nx, resolution.Ny, resolution.Nz),
                         x = (-0.5/2, 0.5/2),
                         y = (-0.5/2, 0.5/2),
                         z = tanh_spaced_faces)
 scatterlines(zspacings(grid, Center()), znodes(grid, Center()))
+zspacings(grid, Center())

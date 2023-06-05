@@ -26,7 +26,7 @@ fig, ax, plt = lines(interior(model.tracers.T, 1, 1, :), z)
 
 ## viualise vertical grid resolution
 scatterlines(zspacings(model.grid, Center()), znodes(model.grid, Center()))
-
+sum(zspacings(model.grid, Center()))
 ## simulation
 Δt = 1e-4
 stop_iteration = 100

@@ -14,7 +14,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel, S:
     ΔS = (S.upper - S.lower) / 2
     ΔΘ = (Θ.upper - Θ.lower) / 2
 
-    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS) + perturb_salintiy(z)
+    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS) #+ perturb_salintiy(z)
     initial_Θ_profile(x, y, z) = ΔΘ * tanh(interface_thickness * (z + z_centre)) + (Θ.lower + ΔΘ)
 
     set!(model, S = initial_S_profile, T = initial_Θ_profile)

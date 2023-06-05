@@ -2,6 +2,8 @@
 #  domian and increasing/decreasing resolution at the upper/lower part of domain.
 #  This is NOT WORKING YET.
 
+resolution = (Nx = 10, Ny = 10 , Nz = 100)
+
 h(k) = -(k - 1) / resolution.Nz
 function z_face_spacing(k)
 
@@ -30,3 +32,17 @@ scatterlines(zspacings(grid, Center()), znodes(grid, Center()))
 z_spacing_vector = vcat(-Lz:Δz_cm:-Lz /2 - 0.06,
                         -Lz /2 - 0.05:Δz_mm:-Lz /2 + 0.05,
                         -Lz /2 + 0.06:Δz_cm:0)
+
+cubically_spaced_faces(k) = k < resolution.Nz / 2 ?
+                            -((k - resolution.Nz/2)/(1 - resolution.Nz/2))^(1/2)/2 - 0.5 :
+                            ((k - resolution.Nz/2)/(resolution.Nz/2))^(1/2)/2 - 0.5
+sinh_spaced_faces(k) = sinh((k - resolution.Nz/2) / (resolution.Nz + 1)) - 0.5
+tanh_spaced_faces(k) = k < resolution.Nz / 2 ?
+                        -cosh((k - resolution.Nz/2) / (1 + resolution.Nz)) -0.5 :
+                        cosh((k - resolution.Nz/2) / (1 + resolution.Nz)) -0.5
+grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
+                        size = (resolution.Nx, resolution.Ny, resolution.Nz),
+                        x = (-0.5/2, 0.5/2),
+                        y = (-0.5/2, 0.5/2),
+                        z = tanh_spaced_faces)
+scatterlines(zspacings(grid, Center()), znodes(grid, Center()))

@@ -24,14 +24,11 @@ fig
 ## visualise temperature profile
 fig, ax, plt = lines(interior(model.tracers.T, 1, 1, :), z)
 
-## Random noise in horizontal velocities
-u, v, w = model.velocities
-ϵ = 1e-4
-uᵢ, vᵢ = ϵ * randn(size(u)), ϵ * randn(size(v))
-set!(model, u = uᵢ, v = vᵢ)
+## viualise vertical grid resolution
+scatterlines(zspacings(model.grid, Center()), znodes(model.grid, Center()))
 
 ## simulation
-Δt = 1e-2
+Δt = 1e-4
 stop_iteration = 100
 simulation = Simulation(model; Δt, stop_iteration)
 

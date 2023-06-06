@@ -2,7 +2,7 @@
 #  domian and increasing/decreasing resolution at the upper/lower part of domain.
 #  This is NOT WORKING YET.
 
-resolution = (Nx = 10, Ny = 10 , Nz = 50)
+resolution = (Nx = 10, Ny = 10 , Nz = 5000)
 
 h(k) = -(k - 1) / resolution.Nz
 function z_face_spacing(k)
@@ -19,7 +19,7 @@ end
 Δz_mm, Δz_cm = 1e-4, 1e-2
 
 cumsum(z_face_spacing.(1:resolution.Nz + 1))
-gaussian_spacing(k) = exp(-((k - 1)/ resolution.Nz - 0.5)^2/2)
+gaussian_spacing(k) = exp(-(((k - resolution.Nz/2)/ resolution.Nz )- 0.5)^2/2)
 grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                         size = (resolution.Nx, resolution.Ny, resolution.Nz),
                         x = (-0.5/2, 0.5/2),
@@ -55,12 +55,29 @@ function tanh_spaced_faces(k)
         1
     end
 end
-σ = 1.1
-hyperbolically_spaced_faces(k) = - 1 * (1 - tanh(σ * (k - 1) / resolution.Nz) / tanh(σ))
+σ = 2
+hyperbolically_spaced_faces(k) = -1 * (1 - tanh(σ * (k - 1) / resolution.Nz)/ tanh(σ))
+refinement = 1.8 # controls spacing near surface (higher means finer spaced)
+stretching = 20  # controls rate of stretching at bottom
+
+# Normalized height ranging from 0 to 1
+h_(k) = (k - 1) / resolution.Nz
+
+# Linear near-surface generator
+ζ₀(k) = 1 + (h_(k) - 1) / refinement
+
+# Bottom-intensified stretching function
+Σ(k) = (1 - exp(-stretching * h_(k))) / (1 - exp(-stretching))
+
+# Generating function
+z_faces(k) = 1 * (ζ₀(k) * Σ(k) - 1)
 grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                         size = (resolution.Nx, resolution.Ny, resolution.Nz),
                         x = (-0.5/2, 0.5/2),
                         y = (-0.5/2, 0.5/2),
-                        z = tanh_spaced_faces)
-scatterlines(zspacings(grid, Center()), znodes(grid, Center()))
-zspacings(grid, Center())
+                        z = z_faces)
+fig, ax = scatterlines(zspacings(grid, Center()), znodes(grid, Center()))
+ax.title = "Grid spacing for DNS"
+ax.xlabel = "Δz"
+ax.ylabel = "z"
+fig

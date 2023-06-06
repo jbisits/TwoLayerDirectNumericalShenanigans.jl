@@ -58,7 +58,7 @@ end
 σ = 2
 hyperbolically_spaced_faces(k) = -1 * (1 - tanh(σ * (k - 1) / resolution.Nz)/ tanh(σ))
 refinement = 1.8 # controls spacing near surface (higher means finer spaced)
-stretching = 20  # controls rate of stretching at bottom
+stretching = 100  # controls rate of stretching at bottom
 
 # Normalized height ranging from 0 to 1
 h_(k) = (k - 1) / resolution.Nz

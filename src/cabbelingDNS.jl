@@ -15,13 +15,24 @@ function DNS_cabbeling(resolution::NamedTuple, diffusivities::NamedTuple;
     Lx, Ly, Lz = 0.1, 0.1, 1
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
 
-    # Not enough strecthing from funtion below and does not start at z = [-1, 0]
-    # sinh_spaced_faces(k) = sinh((k - resolution.Nz/2) / (resolution.Nz)) - Lz / 2
+    # Grid spacing
+    refinement = 1.2 # controls spacing near surface (higher means finer spaced)
+    stretching = 100  # controls rate of stretching at bottom
+
+    # Normalized height ranging from 0 to 1
+    h(k) = (k - 1) / resolution.Nz
+    # Linear near-surface generator
+    ζ₀(k) = 1 + (h(k) - 1) / refinement
+    # Bottom-intensified stretching function
+    Σ(k) = (1 - exp(-stretching * h(k))) / (1 - exp(-stretching))
+    # Generating function
+    z_faces(k) = 1 * (ζ₀(k) * Σ(k) - 1)
+
     grid = RectilinearGrid(topology = (Periodic, Periodic, Bounded),
                            size = (Nx, Ny, Nz),
                            x = (-Lx/2, Lx/2),
                            y = (-Ly/2, Ly/2),
-                           z = (-Lz, 0))
+                           z = z_faces)
 
     eos = isnothing(reference_density) ? SeawaterPolynomials.TEOS10EquationOfState() :
                             SeawaterPolynomials.TEOS10EquationOfState(; reference_density)

@@ -2,7 +2,7 @@
 
 using DirectNumericalCabbelingShenanigans
 
-resolution = (Nx = 10, Ny = 10 , Nz = 1000)
+resolution = (Nx = 10, Ny = 10 , Nz = 5000)
 diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 ## Initial conditions, interface in middle of domain
 S₀ = (upper = 34.568, lower = 34.7)
@@ -12,7 +12,7 @@ reference_density = gsw_rho(S₀.lower, Θ₀.lower, 0)
 model = DNS_cabbeling(resolution, diffusivities; reference_density)
 model.grid
 
-set_two_layer_initial_conditions!(model, S₀, Θ₀)
+set_two_layer_initial_conditions!(model, S₀, Θ₀; z_centre = 0.25)
 
 ## visualise the salt initial condition on x-z plane
 
@@ -27,6 +27,7 @@ fig, ax, plt = lines(interior(model.tracers.T, 1, 1, :), z)
 ## viualise vertical grid resolution
 scatterlines(zspacings(model.grid, Center()), znodes(model.grid, Center()))
 sum(zspacings(model.grid, Center()))
+
 ## simulation
 Δt = 1e-4
 stop_iteration = 100

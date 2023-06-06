@@ -8,14 +8,16 @@ is in the middle of the domain, `z_centre = 0.5`, with width of `interface_thick
 These can be altered by passing keyworkd arguments.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel, S::NamedTuple,
-                                           Θ::NamedTuple; z_centre = 0.5,
+                                           Θ::NamedTuple; z_interface = 0.5,
                                            interface_thickness = 100)
 
     ΔS = (S.upper - S.lower) / 2
     ΔΘ = (Θ.upper - Θ.lower) / 2
 
-    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_centre)) + (S.lower + ΔS) #+ perturb_salintiy(z)
-    initial_Θ_profile(x, y, z) = ΔΘ * tanh(interface_thickness * (z + z_centre)) + (Θ.lower + ΔΘ)
+    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + z_interface)) +
+                                 (S.lower + ΔS) #+ perturb_salintiy(z)
+    initial_Θ_profile(x, y, z) = ΔΘ * tanh(interface_thickness * (z + z_interface)) +
+                                 (Θ.lower + ΔΘ)
 
     set!(model, S = initial_S_profile, T = initial_Θ_profile)
 
@@ -28,7 +30,7 @@ end
 Where and what value to add to perturb the salinity initial condition.
 """
 function perturb_salintiy(z; salinity_pertubration = 0.032)
-    if -0.2 > z > -0.25
+    if -0.1 > z > -0.15
         salinity_pertubration
     else
         0

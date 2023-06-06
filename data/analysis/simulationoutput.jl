@@ -14,7 +14,7 @@ for i ∈ eachindex(t)
 end
 
 ## Plots (x-z)
-fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1); colormap = :thermal)
+fig, ax, hm = heatmap(x, z, interior(S_ts, :, 1, :, 1); colormap = :thermal)
 Colorbar(fig[1, 2], hm)
 fig
 

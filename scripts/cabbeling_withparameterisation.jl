@@ -4,9 +4,9 @@ using DirectNumericalCabbelingShenanigans
 
 architecture = CPU() # or GPU()
 resolution = (Nx = 10, Ny = 10 , Nz = 1000)
-diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
+diffusivities = (ν = 1e-4, κ = (S = 1e-7, T = 1e-5))
 ## Initial conditions, interface thickness
-S₀ = (upper = 34.568, lower = 34.7)
+S₀ = (upper = 34.55, lower = 34.7)
 Θ₀ = (upper = -1.5, lower = 0.5)
 reference_density = gsw_rho(S₀.lower, Θ₀.lower, 0)
 
@@ -16,24 +16,41 @@ model = DNS_cabbeling(architecture, resolution, diffusivities; reference_density
 scatterlines(zspacings(model.grid, Center()), znodes(model.grid, Center()))
 
 ## set initial conditions
-set_two_layer_initial_conditions!(model, S₀, Θ₀; z_interface = 0.25)
+set_two_layer_initial_conditions!(model, S₀, Θ₀; z_interface = 0.375)
 
 ## visualise the salt initial condition on x-z plane
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
 fig, ax, hm = heatmap(x, z, interior(model.tracers.S, :, 1, :); colormap = :haline)
+ax.title = "Initial salinity (x-z)"
+ax.xlabel = "x (m)"
+ax.ylabel = "z (m)"
 Colorbar(fig[1, 2], hm)
 fig
 
 ## visualise the salinity profile
 fig, ax = lines(interior(model.tracers.S, 1, 1, :), z)
-
+ax.title = "Initial salinity profile"
+ax.xlabel = "S (gkg⁻¹)"
+ax.ylabel = "z (m)"
+fig
 ## visualise temperature profile
 fig, ax = lines(interior(model.tracers.T, 1, 1, :), z)
-
+ax.title = "Initial temperature profile"
+ax.xlabel = "Θ (°C)"
+ax.ylabel = "z (m)"
+fig
 ## visualise density profile and in x-z
 σ₀ = gsw_rho.(interior(model.tracers.S, :, 1, :), interior(model.tracers.T, :, 1, :), 0)
 fig, ax = lines(σ₀[1, :], z)
+ax.title = "Initial density profile"
+ax.xlabel = "σ₀ (kgm⁻³)"
+ax.ylabel = "z (m)"
+fig
+##
 fig, ax, hm = heatmap(x, z, σ₀; colormap = :dense)
+ax.title = "Initial density (x-z)"
+ax.xlabel = "x (m)"
+ax.ylabel = "z (m)"
 Colorbar(fig[1, 2], hm)
 fig
 

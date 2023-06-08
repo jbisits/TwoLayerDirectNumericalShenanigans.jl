@@ -14,11 +14,11 @@ for i ∈ eachindex(t)
 end
 
 ## Plots (x-z)
-fig, ax, hm = heatmap(x, z, interior(S_ts, :, 1, :, 1); colormap = :thermal)
+fig, ax, hm = heatmap(x, z, interior(S_ts, :, 1, :, 1); colormap = :haline)
 Colorbar(fig[1, 2], hm)
 fig
 
-fig, ax, hm = heatmap(x, z, interior(σ₀_ts, :, 1, :, 1); colormap = :dense)
+fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1); colormap = :thermal)
 Colorbar(fig[1, 2], hm)
 fig
 
@@ -45,8 +45,9 @@ end
 ## Density
 n = Observable(1)
 σ₀ⁿ = @lift interior(σ₀_ts[$n], :, 1, :)
+c_limits = extrema(interior(σ₀_ts, :, :, :, 1))
 title = @lift @sprintf("t=%1.2f", t[$n])
-fig, ax, hm = heatmap(x, z, σ₀ⁿ; colormap = :dense)
+fig, ax, hm = heatmap(x, z, σ₀ⁿ; colormap = :dense, colorrange = c_limits)
 ax.xlabel = "x"
 ax.ylabel = "z"
 Colorbar(fig[1, 2], hm, label = "σ₀ (kgm⁻³)")

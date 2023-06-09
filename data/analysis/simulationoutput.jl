@@ -22,41 +22,6 @@ fig, ax, hm = heatmap(x, z, interior(Θ_ts, :, 1, :, 1); colormap = :thermal)
 Colorbar(fig[1, 2], hm)
 fig
 
-# Animations (x-z)
-
-## Temperature
-n = Observable(1)
-Θₙ = @lift interior(Θ_ts[$n], :, 1, :)
-title = @lift @sprintf("t=%1.2f", t[$n])
-fig, ax, hm = heatmap(x, z, Θₙ; colormap = :thermal)
-ax.xlabel = "x"
-ax.ylabel = "z"
-Colorbar(fig[1, 2], hm, label = "Temperature (°C)")
-fig
-
-frames = eachindex(t)
-
-record(fig, joinpath(@__DIR__, "xz_temperature.mp4"), frames, framerate=8) do i
-    msg = string("Plotting frame ", i, " of ", frames[end])
-    print(msg * " \r")
-    n[] = i
-end
-
-## Density
-n = Observable(1)
-σ₀ⁿ = @lift interior(σ₀_ts[$n], :, 1, :)
-c_limits = extrema(interior(σ₀_ts, :, :, :, 1))
-title = @lift @sprintf("t=%1.2f", t[$n])
-fig, ax, hm = heatmap(x, z, σ₀ⁿ; colormap = :dense, colorrange = c_limits)
-ax.xlabel = "x"
-ax.ylabel = "z"
-Colorbar(fig[1, 2], hm, label = "σ₀ (kgm⁻³)")
-fig
-
-frames = eachindex(t)
-
-record(fig, joinpath(@__DIR__, "xz_sigma0.mp4"), frames, framerate=8) do i
-    msg = string("Plotting frame ", i, " of ", frames[end])
-    print(msg * " \r")
-    n[] = i
-end
+## Animations (x-z)
+animate_2D_field(Θ_ts, "Θ (°C)", (x = x, z = z))
+animate_2D_field(σ₀_ts, "σ₀ (kgm⁻³)", (x = x, z = z))

@@ -4,9 +4,9 @@ using DirectNumericalCabbelingShenanigans
 
 architecture = CPU() # or GPU()
 resolution = (Nx = 50, Ny = 50, Nz = 1000)
-diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
+diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 ## Initial conditions
-S₀ = (upper = 34.6, lower = 34.7)
+S₀ = (upper = 34.568, lower = 34.7)
 Θ₀ = (upper = -1.5, lower = 0.5)
 reference_density = gsw_rho(S₀.lower, Θ₀.lower, 0)
 
@@ -24,7 +24,7 @@ fig
 ## set initial conditions
 set_two_layer_initial_conditions!(model, S₀, Θ₀;
                                   interface_location = 0.375, interface_thickness = 100,
-                                  salinity_perturbation_width = 200)
+                                  salinity_perturbation_width = 100)
 non_dimensional_numbers(model, S₀, Θ₀)
 ## visualise the salt initial condition on x-z plane
 x, y, z = nodes(model.grid, (Center(), Center(), Center()))
@@ -75,7 +75,7 @@ simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 outputs = (S = model.tracers.S, T = model.tracers.T)
 simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                 filename = joinpath("data/simulations",
-                                                                    "unstable.jld2"),
+                                                                    "cabbeling.jld2"),
                                                 schedule = IterationInterval(50),
                                                 overwrite_existing = true)
 

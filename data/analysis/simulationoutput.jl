@@ -4,7 +4,7 @@ using Oceananigans.Fields, GibbsSeaWater
 sim_path = joinpath(SIMULATION_PATH, "cabbeling.jld2")
 Θ_ts = FieldTimeSeries(sim_path, "T")
 S_ts = FieldTimeSeries(sim_path, "S")
-x, y, z = nodes(model.grid, (Center(), Center(), Center()))
+x, y, z = nodes(Θ_ts[1])
 t = Θ_ts.times
 
 σ₀_ts = deepcopy(S_ts)

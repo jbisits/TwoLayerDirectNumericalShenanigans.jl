@@ -31,3 +31,47 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     end
 
 end
+
+"""
+    function visualise_initial_conditions(model::Oceanangians.AbstractModel)
+Plot the initial state of the `tracers` in a `model`. This function assumes there are two
+tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.
+"""
+function visualise_initial_conditions(model::Oceananigans.AbstractModel)
+
+    x, y, z = nodes(model.grid, (Center(), Center(), Center()))
+    S = model.tracers.S
+    T = model.tracers.T
+    fig = Figure(size = (600, 1500))
+    ax = [Axis(fig[j, i]) for i ∈ 1:2, j ∈ 1:3]
+
+    hm = heatmap!(ax[1], x, z, interior(S, :, 1, :, 1); colormap = :haline)
+    ax[1].title = "Initial salinity (x-z)"
+    ax[1].xlabel = "x (m)"
+    ax[1].ylabel = "z (m)"
+    heatmap!(ax[2], x, z, interior(S, 1, :, :, 1); colormap = :haline)
+    ax[2].title = "Initial salinity (y-z)"
+    ax[2].xlabel = "y (m)"
+    ax[2].ylabel = "z (m)"
+    Colorbar(fig[1, 3], hm, label = "S (gkg⁻¹)")
+    hm = heatmap!(ax[3], y, z, interior(T, :, 1, :, 1); colormap = :thermal)
+    ax[3].title = "Initial temperature (x-z)"
+    ax[3].xlabel = "x (m)"
+    ax[3].ylabel = "z (m)"
+    heatmap!(ax[4], y, z, interior(T, 1, :, :, 1); colormap = :thermal)
+    ax[4].title = "Initial temperature (y-z)"
+    ax[4].xlabel = "y (m)"
+    ax[4].ylabel = "z (m)"
+    Colorbar(fig[2, 3], hm, label = "Θ (°C)")
+    lines!(ax[5], interior(S, 1, 1, :, 1), z)
+    ax[5].title = "Initial salinity profile"
+    ax[5].xlabel = "S (gkg⁻¹)"
+    ax[5].ylabel = "z (m)"
+    lines!(ax[6], interior(T, 1, 1, :, 1), z)
+    ax[6].title = "Initial temperature profile"
+    ax[6].xlabel =  "Θ (°C)"
+    ax[6].ylabel = "z (m)"
+
+    return fig
+
+end

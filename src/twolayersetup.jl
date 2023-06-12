@@ -6,7 +6,7 @@ cabbeling instability.
 module TwoLayerDNS
 
 using DirectNumericalCabbelingShenanigans
-using DirectNumericalCabbelingShenanigans.simulation_progress
+using DirectNumericalCabbelingShenanigans: simulation_progress
 
 export
     TwoLayerInitialConditions,

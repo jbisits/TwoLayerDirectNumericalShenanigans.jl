@@ -75,3 +75,23 @@ function visualise_initial_conditions(model::Oceananigans.AbstractModel)
     return fig
 
 end
+
+"""
+    function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
+                             reference_pressure = 0)
+Return a density `FieldTimeSeries` calculated from the salinity and temperature
+`FieldTimeSeries` DNS simulation output. The keyword argument `reference_pressure` can be
+passed to specify a reference pressure at which to compute the density variable.
+"""
+function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
+                         reference_pressure = 0)
+
+    ρ_ts = deepcopy(S_timeseries)
+    for i ∈ eachindex(t)
+        Sᵢ, Θᵢ = S_timeseries[i], T_timeseries[i]
+        ρ_ts[i] .= @at (Center, Center, Center) gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+    end
+
+    return ρ_ts
+
+end

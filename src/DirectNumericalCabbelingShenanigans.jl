@@ -6,10 +6,8 @@ using Oceananigans: AbstractModel
 @reexport using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, GibbsSeaWater
 
 export SIMULATION_PATH,
-       DNS_cabbeling,
-       set_two_layer_initial_conditions!,
-       non_dimensional_numbers,
-       simulation_progress,
+       DNS,
+       DNS_simulation_setup,
        animate_2D_field,
        visualise_initial_conditions
 
@@ -19,7 +17,8 @@ if !isdir(SIMULATION_PATH)
     mkdir(SIMULATION_PATH)
 end
 
-include("cabbelingDNS.jl")
+include("DNS.jl")
+include("twolayersetup.jl")
 include("utils.jl")
 
 end

@@ -4,6 +4,7 @@ using DirectNumericalCabbelingShenanigans
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
+domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
 resolution = (Nx = 50, Ny = 50, Nz = 7000)
 
 ## Initial salinity and temperature conditions

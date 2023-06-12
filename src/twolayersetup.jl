@@ -1,12 +1,18 @@
 """
     module TwoLayerDNS
-Module containing the setup for a two layer Direct Numerical Simulation to explore the
-cabbeling instability.
+Module containing the setup for a two layer Direct Numerical Simulation, mainly to explore
+the cabbeling instability. The two layer model has horizontally uniform initial salinity and
+temperature that are set as a hyperbolic tangent vertically to avoid dicontinuities that can
+cause the Direct Numerical Simulations to crash. The length over which the transition
+between the two layers takes place (i.e. the steepness of the change in the hyperbolic
+tangent curve) is a value that can be set.
 """
 module TwoLayerDNS
 
-using DirectNumericalCabbelingShenanigans
+using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
+
+@reexport using GibbsSeaWater
 
 export
     TwoLayerInitialConditions,
@@ -72,12 +78,12 @@ UnstableTwoLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
     UnstableTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ, T₀ᵘ, T₀ˡ, T₀ᵘ -T₀ˡ)
 """
     const T₀ˡ = 0.5
-Lower layer initial temperature across all two layer experiments is the same.
+Lower layer initial temperature across all two layer experiments.
 """
 const T₀ˡ = 0.5
 """
     const S₀ˡ = 34.7
-Lower layer initial salinity across all two layer experiments is the same.
+Lower layer initial salinity across all two layer experiments.
 """
 const S₀ˡ = 34.7
 """
@@ -166,10 +172,13 @@ end
     function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
                                   stop_time::Number,
                                   initial_conditions::TwoLayerInitialConditions)
+Setup a DNS from `initial_conditions` that are of type `TwoLayerInitialConditions`.
+Important non-dimensional numnbers that are part of this experiment are computed and saved
+to the simulation output file.
 """
-function DirectNumericalCabbelingShenanigans.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                              stop_time::Number,
-                              initial_conditions::TwoLayerInitialConditions)
+function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
+                                   stop_time::Number,
+                                   initial_conditions::TwoLayerInitialConditions)
 
     simulation = Simulation(model; Δt, stop_time)
 

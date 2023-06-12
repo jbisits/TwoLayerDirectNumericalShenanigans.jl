@@ -1,17 +1,18 @@
 module DirectNumericalCabbelingShenanigans
 
-using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, Reexport, GibbsSeaWater
+using Oceananigans, SeawaterPolynomials, Printf, Reexport
 using Oceananigans: AbstractModel
 
-@reexport using Oceananigans, SeawaterPolynomials, CairoMakie, JLD2, Printf, GibbsSeaWater
+@reexport using Oceananigans, Reexport
 
-export SIMULATION_PATH,
-       DNS,
-       DNS_simulation_setup,
-       animate_2D_field,
-       visualise_initial_conditions
+export
+    SIMULATION_PATH,
+    DNCS,
+    DNS,
+    DNS_simulation_setup
 
 const SIMULATION_PATH = joinpath(@__DIR__, "../data/simulations")
+const DNCS = DirectNumericalCabbelingShenanigans # alias
 
 if !isdir(SIMULATION_PATH)
     mkdir(SIMULATION_PATH)
@@ -19,6 +20,6 @@ end
 
 include("DNS.jl")
 include("twolayersetup.jl")
-include("utils.jl")
+include("output_utils.jl")
 
 end

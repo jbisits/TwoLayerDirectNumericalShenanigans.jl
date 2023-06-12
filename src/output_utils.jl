@@ -1,4 +1,21 @@
 """
+    module OutputUtilities
+Module to help process and analyse output data from running a Direct Numerical Simulation.
+"""
+module OutputUtilities
+
+using DirectNumericalCabbelingShenanigans, Printf
+using Oceananigans.Fields
+
+@reexport using CairoMakie, JLD2, GibbsSeaWater
+
+export
+    animate_2D_field,
+    visualise_initial_conditions,
+    visualise_snapshot,
+    compute_density
+
+"""
     function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                               field_dimensions::NamedTuple, file_name::AbstractString;
                               colormap = :thermal)
@@ -75,6 +92,32 @@ function visualise_initial_conditions(model::Oceananigans.AbstractModel)
     return fig
 
 end
+"""
+function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
+                            snapshot::Int64)
+Plot a `snapshot` of the `field_timeseries`  with `field_name`.
+"""
+function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
+                            snapshot::Int64; colormap = :thermal)
+
+    x, y, z = nodes(field_timeseries[1])
+    t = round(field_timeseries.times[snapshot]; digits = 3)
+    fig = Figure(size = (1000, 500))
+    ax = [Axis(fig[1, i]) for i ∈ 1:2]
+
+    hm = heatmap!(ax[1], x, z, interior(field_timeseries, :, 1, :, snapshot); colormap)
+    ax[1].title = field_name * " at time t = $(t) (x-z)"
+    ax[1].xlabel = "x (m)"
+    ax[1].ylabel = "z (m)"
+    Colorbar(fig[2, 1], hm, vertical = false, label = field_name, flipaxis = false)
+    lines!(ax[2], interior(field_timeseries, 1, 1, :, snapshot), z)
+    ax[2].title = field_name * " profile at time t = $(t)"
+    ax[2].xlabel = field_name
+    ax[2].ylabel = "z (m)"
+
+    return fig
+
+end
 
 """
     function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
@@ -87,6 +130,7 @@ function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeS
                          reference_pressure = 0)
 
     ρ_ts = deepcopy(S_timeseries)
+    t = S_timeseries.times
     for i ∈ eachindex(t)
         Sᵢ, Θᵢ = S_timeseries[i], T_timeseries[i]
         ρ_ts[i] .= @at (Center, Center, Center) gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
@@ -95,3 +139,5 @@ function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeS
     return ρ_ts
 
 end
+
+end # module

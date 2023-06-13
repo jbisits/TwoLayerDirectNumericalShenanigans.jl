@@ -2,7 +2,7 @@
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 
-architecture = CPU()
+architecture = GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-6, T = 1e-5))
 resolution = (Nx = 20, Ny = 20, Nz = 4000)
 reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)

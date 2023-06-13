@@ -15,6 +15,9 @@ using DirectNumericalCabbelingShenanigans: simulation_progress
 @reexport using GibbsSeaWater
 
 export
+    StableUpperLayerInitialConditions,
+    CabbelingUpperLayerInitialConditions,
+    UnstableUpperLayerInitialConditions,
     TwoLayerInitialConditions,
     StableTwoLayerInitialConditions,
     CabbelingTwoLayerInitialConditions,
@@ -22,15 +25,48 @@ export
     set_two_layer_initial_conditions!,
     S₀ˡ, T₀ˡ,
     domain_extent,
+    SO_diffusivities,
     non_dimensional_numbers
 
 """
-    const domain_extent
-Domain extent on which the two layer simulations are run.
+    abstract type UpperLayerInitialConditions
+Abstract super type for initial conditions.
 """
-const domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
+abstract type UpperLayerInitialConditions end
 """
-    struct TwoLayerInitialConditions
+    struct StableUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are stable relative to `S₀ˡ`
+and `T₀ˡ`.
+"""
+struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    S₀ᵘ :: T
+    T₀ᵘ :: T
+end
+StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) = StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
+"""
+    struct CabbelingUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are unstable to cabbeling
+relative to `S₀ˡ` and `T₀ˡ`.
+"""
+struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    S₀ᵘ :: T
+    T₀ᵘ :: T
+end
+CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
+    CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
+"""
+    struct UnstableUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are unstable relative to `S₀ˡ`
+and `T₀ˡ`.
+"""
+struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    S₀ᵘ :: T
+    T₀ᵘ :: T
+end
+UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
+    UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
+"""
+    abstract type TwoLayerInitialConditions
 Abstract supertype for two layer model initial conditions.
 """
 abstract type TwoLayerInitialConditions end
@@ -46,8 +82,10 @@ struct StableTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     T₀ˡ :: T
     ΔT₀ :: T
 end
-StableTwoLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    StableTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ, T₀ᵘ, T₀ˡ, T₀ᵘ -T₀ˡ)
+TwoLayerInitialConditions(initial_conditions::StableUpperLayerInitialConditions) =
+    StableTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
+                                    initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
+                                    T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
 """
     struct CabbelingTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are unstable to cabbeling.
@@ -60,8 +98,10 @@ struct CabbelingTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     T₀ˡ :: T
     ΔT₀ :: T
 end
-CabbelingTwoLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    CabbelingTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ, T₀ᵘ, T₀ˡ, T₀ᵘ -T₀ˡ)
+TwoLayerInitialConditions(initial_conditions::CabbelingUpperLayerInitialConditions) =
+    CabbelingTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
+                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
+                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
 """
     struct UnstableTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are gravitationally unstable.
@@ -74,8 +114,10 @@ struct UnstableTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     T₀ˡ :: T
     ΔT₀ :: T
 end
-UnstableTwoLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    UnstableTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ, T₀ᵘ, T₀ˡ, T₀ᵘ -T₀ˡ)
+TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialConditions) =
+    UnstableTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
+                                      initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
+                                      T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
 """
     const T₀ˡ = 0.5
 Lower layer initial temperature across all two layer experiments.
@@ -86,6 +128,16 @@ const T₀ˡ = 0.5
 Lower layer initial salinity across all two layer experiments.
 """
 const S₀ˡ = 34.7
+"""
+    const domain_extent
+Domain extent on which the two layer simulations are run.
+"""
+const domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
+"""
+    const SO_diffusivities
+Diffusivity estimates for the Southern Ocean.
+"""
+const SO_diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 """
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
                                               initial_conditions::TwoLayerInitialConditions;
@@ -104,6 +156,8 @@ Keyword arguments:
 - `interface_location`: location of the interface of the two layers;
 - `interface_thickness`: width of the hyperbolic tangent for setting the change betwen the
 two layers;
+- `perturb_salinity`: whether or not to peturb the salinity in the upper layer to form an
+instability;
 - `salinity_perturbation_width`: width of the Gaussian for the salinity perturbation in the
 upper layer. This is what creates the instability to cause mixing.
 """
@@ -111,15 +165,19 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions;
                                            interface_location = 0.5,
                                            interface_thickness = 100,
+                                           perturb_salinity = true,
                                            salinity_perturbation_width = 100)
 
     ΔS = initial_conditions.ΔS₀ / 2
     ΔT = initial_conditions.ΔT₀ / 2
 
-    initial_S_profile(x, y, z) = ΔS * tanh(interface_thickness * (z + interface_location)) +
+    initial_S_profile(x, y, z) = perturb_salinity == true ?
+                                 ΔS * tanh(interface_thickness * (z + interface_location)) +
                                  (initial_conditions.S₀ˡ + ΔS) +
                                   perturb_salintiy(z, interface_location,
-                                                   salinity_perturbation_width)
+                                                   salinity_perturbation_width) :
+                                 ΔS * tanh(interface_thickness * (z + interface_location)) +
+                                 (initial_conditions.S₀ˡ + ΔS)
     initial_T_profile(x, y, z) = ΔT * tanh(interface_thickness * (z + interface_location)) +
                                  (initial_conditions.T₀ˡ + ΔT)
 

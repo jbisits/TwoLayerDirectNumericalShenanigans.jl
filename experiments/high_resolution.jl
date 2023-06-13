@@ -1,4 +1,4 @@
-# High resolution simulation
+# High resolution two layer simulation
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 

@@ -1,4 +1,4 @@
-# Medium resolution model
+# Medium resolution two layer simulation
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 

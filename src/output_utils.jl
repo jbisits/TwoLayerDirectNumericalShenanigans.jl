@@ -18,28 +18,39 @@ export
 
 """
     function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                              field_dimensions::NamedTuple, file_name::AbstractString;
-                              colormap = :thermal)
-Animate a time series that is saved in memory. Pass in the timeseries, the name of the field,
-a `NamedTuple` of the dimensions along and optional colourmap. Filename is inferred from the
-`Field` and the dimensions.
+                              field_dimensions::NamedTuple{Symbol, Symbol}; colormap = :thermal)
+Animate a time series that is saved in memory.
+
+Function arguments:
+
+- `field_timeseries` to be animated;
+- `field_name` the name of the variable in the `field_timeseries`
+- `field_dimensions` the dimensions over which to animate, two dimensions need to be passed
+in a `Tuple` where each entry is a `Symbol` e.g. `(:x, :z)`.
+
+Keyword arguments:
+
+- `colormap` for the animated `field_timeseries`
 """
 function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                          field_dimensions::NamedTuple; colormap = :thermal)
+                          field_dimensions::Tuple{Symbol, Symbol}; colormap = :thermal)
 
+    x, y, z = nodes(field_timeseries[1])
+    plot_dims = field_dimensions == (:x, :z) ? (x, z) :
+                                               field_dimensions == (:y, :z) ? (y, z) : (x, y)
     t = field_timeseries.times
     n = Observable(1)
     field_tₙ = @lift interior(field_timeseries[$n], :, 1, :)
     c_limits = extrema(interior(field_timeseries, :, :, :, 1))
     title = @lift @sprintf("t=%1.2f", t[$n])
-    fig, ax, hm = heatmap(field_dimensions[1], field_dimensions[2], field_tₙ;
+    fig, ax, hm = heatmap(plot_dims[1], plot_dims[2], field_tₙ;
                           colormap, colorrange = c_limits)
-    ax.xlabel = string(keys(field_dimensions)[1])
-    ax.ylabel = string(keys(field_dimensions)[2])
+    ax.xlabel = string(field_dimensions[1])
+    ax.ylabel = string(field_dimensions[2])
     Colorbar(fig[1, 2], hm, label = field_name)
 
     frames = eachindex(t)
-    filename = string(keys(field_dimensions)[1]) * string(keys(field_dimensions)[2]) * "_" *
+    filename = string(field_dimensions[1]) * string(field_dimensions[2]) * "_" *
                 field_name
     record(fig, joinpath(@__DIR__, "../data/analysis/", filename * ".mp4"),
           frames, framerate=8) do i

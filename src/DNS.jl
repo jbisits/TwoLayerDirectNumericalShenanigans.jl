@@ -91,14 +91,19 @@ Function arguments:
 the course of a simulation;
 - `stop_time` length of simulation time (in seconds) to run the model for;
 - `savefile` name of the file to save the data to.
+
+Keyword arguments:
+
+- `max_Δt` the maximum timestep.
 """
 function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                              stop_time::Number, savefile::AbstractString)
+                              stop_time::Number, savefile::AbstractString;
+                              max_Δt = 1e-2)
 
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
-    wizard = TimeStepWizard(cfl = 0.75, max_Δt = 1e-2, max_change = 1.2)
+    wizard = TimeStepWizard(cfl = 0.75, max_change = 1.2; max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output

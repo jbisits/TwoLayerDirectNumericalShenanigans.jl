@@ -236,12 +236,13 @@ to the simulation output file.
 """
 function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
                                    stop_time::Number,
-                                   initial_conditions::TwoLayerInitialConditions)
+                                   initial_conditions::TwoLayerInitialConditions;
+                                   max_Δt = 1e-3)
 
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
-    wizard = TimeStepWizard(cfl = 0.75, max_Δt = 1e-2, max_change = 1.2)
+    wizard = TimeStepWizard(cfl = 0.75, max_change = 1.2; max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output

@@ -18,10 +18,12 @@ export
     StableUpperLayerInitialConditions,
     CabbelingUpperLayerInitialConditions,
     UnstableUpperLayerInitialConditions,
+    IsohalineUpperLayerInitialConditions,
     TwoLayerInitialConditions,
     StableTwoLayerInitialConditions,
     CabbelingTwoLayerInitialConditions,
     UnstableTwoLayerInitialConditions,
+    IsohalineTwoLayerInitialConditions,
     set_two_layer_initial_conditions!,
     S₀ˡ, T₀ˡ,
     domain_extent,
@@ -65,6 +67,16 @@ struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
 end
 UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
     UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
+"""
+    struct IsohalineUpperLayerInitialConditions
+Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
+"""
+struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    S₀ᵘ :: T
+    T₀ᵘ :: T
+end
+IsohalineUpperLayerInitialConditions(T₀ᵘ) =
+    IsohalineUpperLayerInitialConditions(S₀ˡ, T₀ᵘ)
 """
     abstract type TwoLayerInitialConditions
 Abstract supertype for two layer model initial conditions.
@@ -116,6 +128,22 @@ struct UnstableTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
 end
 TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialConditions) =
     UnstableTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
+                                      initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
+                                      T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
+                                      """
+    struct IsohalineTwoLayerInitialConditions
+Container for initial salinity and temperature conditions that are gravitationally unstable.
+"""
+struct IsohalineTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    S₀ᵘ :: T
+    S₀ˡ :: T
+    ΔS₀ :: T
+    T₀ᵘ :: T
+    T₀ˡ :: T
+    ΔT₀ :: T
+end
+TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditions) =
+    IsohalineTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
 """
@@ -237,12 +265,12 @@ to the simulation output file.
 function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
                                    stop_time::Number,
                                    initial_conditions::TwoLayerInitialConditions;
-                                   max_Δt = 1e-3)
+                                   max_Δt = 1e-2)
 
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
-    wizard = TimeStepWizard(cfl = 0.75, max_change = 1.2; max_Δt)
+    wizard = TimeStepWizard(cfl = 0.75, diffusive_cfl = 1, max_change = 1.2; max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output
@@ -273,7 +301,9 @@ function form_filename(initial_conditions::TwoLayerInitialConditions)
     ic_type = typeof(initial_conditions)
     savefile = ic_type == StableTwoLayerInitialConditions{parameter} ? "stable" :
                             ic_type == CabbelingTwoLayerInitialConditions{parameter} ?
-                                "cabbeling" : "unstable"
+                                "cabbeling" :
+                                ic_type == UnstableTwoLayerInitialConditions{parameter} ?
+                                "unstable" : "isohaline"
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
 
     return filename

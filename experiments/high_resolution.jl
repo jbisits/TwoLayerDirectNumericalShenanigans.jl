@@ -12,18 +12,20 @@ model = DNS(architecture, domain_extent, resolution, diffusivities; reference_de
 
 ## set initial conditions
 T₀ᵘ = -1.5
-S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.6)
+S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.6, isohaline = S₀ˡ)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
-initial_conditions = TwoLayerInitialConditions(unstable)
+isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
+initial_conditions = TwoLayerInitialConditions(isohaline)
 set_two_layer_initial_conditions!(model, initial_conditions;
                                   perturb_salinity = false,
-                                  interface_location = 0.375, interface_thickness = 100,
+                                  interface_location = 0.375, interface_thickness = 10000,
                                   salinity_perturbation_width = 100)
-
+DNCS.OutputUtilities.visualise_initial_conditions(model)
+DNCS.OutputUtilities.visualise_initial_density(model, 0)
 ## build the simulation
-Δt = 1e-5
+Δt = 1e-4
 stop_time = 2
 simulation = DNS_simulation_setup(model, Δt, stop_time, initial_conditions)
 

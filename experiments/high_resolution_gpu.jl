@@ -12,7 +12,7 @@ model = DNS(architecture, domain_extent, resolution, diffusivities; reference_de
 
 ## set initial conditions
 T₀ᵘ = -1.5
-S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.6, isohaline = S₀ˡ)
+S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.6)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)

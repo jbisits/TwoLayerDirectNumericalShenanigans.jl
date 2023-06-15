@@ -340,6 +340,10 @@ function form_filename(initial_conditions::TwoLayerInitialConditions)
                                 "cabbeling" :
                                 ic_type == UnstableTwoLayerInitialConditions{parameter} ?
                                 "unstable" : "isohaline"
+    # make a simulation directory if one is not present
+    if !isdir(SIMULATION_PATH)
+        mkdir(SIMULATION_PATH)
+    end
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
 
     return filename

@@ -114,6 +114,10 @@ function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
 
     # save output
     outputs = (S = model.tracers.S, T = model.tracers.T)
+    # make a simulation directory if one is not present
+    if !isdir(SIMULATION_PATH)
+        mkdir(SIMULATION_PATH)
+    end
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,

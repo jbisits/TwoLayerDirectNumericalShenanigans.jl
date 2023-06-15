@@ -94,16 +94,22 @@ the course of a simulation;
 
 Keyword arguments:
 
+- `cfl` maximum cfl value used to determine the adaptive timestep size;
+- `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
+- `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep.
 """
 function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
                               stop_time::Number, savefile::AbstractString;
+                              cfl = 0.75,
+                              diffusive_cfl = 0.75,
+                              max_change = 1.2,
                               max_Δt = 1e-2)
 
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
-    wizard = TimeStepWizard(cfl = 0.75, max_change = 1.2; max_Δt)
+    wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output

@@ -8,7 +8,7 @@ To evolve the temperature and salinity tracers, the [polynomial approximation to
 full non-linear TEOS10 equation of state appropriate for Boussinesq models](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.TEOS10)
 is used
 
-Function arguments:
+## Function arguments:
 
 - architecture, `CPU()` or `GPU()`;
 - domain_extent::NamedTuple in the format `(Lx = , Ly = , Lz = )`;
@@ -18,7 +18,7 @@ Function arguments:
 **Note:** to set different diffusivities for temperature and salinity `κ` must also be a
 `NamedTuple` in the format `κ = (S = , T = )`.
 
-Keyword arguments:
+## Keyword arguments:
 
 - `reference_density = nothing` for use in the equation of state, defaults to 1020kgm⁻³ but
 any value can be passed in;
@@ -84,7 +84,7 @@ end
     function DNS_simulation_setup(model::Oceananigans.AbstractModel)
 Setup the simulation for `DNS` model.
 
-Function arguments:
+## Function arguments:
 
 - `model` which is assumed to be a Direct Numerical Simulation setup using `DNS`;
 - `Δt` timestep. A timestep wizard is also setup so the size of the timestep may change over
@@ -92,7 +92,7 @@ the course of a simulation;
 - `stop_time` length of simulation time (in seconds) to run the model for;
 - `savefile` name of the file to save the data to.
 
-Keyword arguments:
+## Keyword arguments:
 
 - `cfl` maximum cfl value used to determine the adaptive timestep size;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;

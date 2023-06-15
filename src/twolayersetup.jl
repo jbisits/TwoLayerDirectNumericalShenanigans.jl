@@ -41,7 +41,9 @@ Container for initial salinity and temperature conditions that are stable relati
 and `T₀ˡ`.
 """
 struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
 StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) = StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
@@ -51,7 +53,9 @@ Container for initial salinity and temperature conditions that are unstable to c
 relative to `S₀ˡ` and `T₀ˡ`.
 """
 struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
 CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
@@ -62,7 +66,9 @@ Container for initial salinity and temperature conditions that are unstable rela
 and `T₀ˡ`.
 """
 struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
 UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
@@ -72,7 +78,9 @@ UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
 Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
 """
 struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
 IsohalineUpperLayerInitialConditions(T₀ᵘ) =
@@ -87,11 +95,17 @@ abstract type TwoLayerInitialConditions end
 Container for initial salinity and temperature conditions that are stable.
 """
 struct StableTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial salinity in the lower layer"
     S₀ˡ :: T
+    "Initial difference in salinity between the layers"
     ΔS₀ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
+    "Initial temperature in the lower layer"
     T₀ˡ :: T
+    "Initial temperature difference between the layers"
     ΔT₀ :: T
 end
 TwoLayerInitialConditions(initial_conditions::StableUpperLayerInitialConditions) =
@@ -103,11 +117,17 @@ TwoLayerInitialConditions(initial_conditions::StableUpperLayerInitialConditions)
 Container for initial salinity and temperature conditions that are unstable to cabbeling.
 """
 struct CabbelingTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial salinity in the lower layer"
     S₀ˡ :: T
+    "Initial difference in salinity between the layers"
     ΔS₀ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
+    "Initial temperature in the lower layer"
     T₀ˡ :: T
+    "Initial temperature difference between the layers"
     ΔT₀ :: T
 end
 TwoLayerInitialConditions(initial_conditions::CabbelingUpperLayerInitialConditions) =
@@ -119,11 +139,17 @@ TwoLayerInitialConditions(initial_conditions::CabbelingUpperLayerInitialConditio
 Container for initial salinity and temperature conditions that are gravitationally unstable.
 """
 struct UnstableTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial salinity in the lower layer"
     S₀ˡ :: T
+    "Initial difference in salinity between the layers"
     ΔS₀ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
+    "Initial temperature in the lower layer"
     T₀ˡ :: T
+    "Initial temperature difference between the layers"
     ΔT₀ :: T
 end
 TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialConditions) =
@@ -135,11 +161,17 @@ TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialCondition
 Container for initial salinity and temperature conditions that are gravitationally unstable.
 """
 struct IsohalineTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    "Initial salinity in the upper layer"
     S₀ᵘ :: T
+    "Initial salinity in the lower layer"
     S₀ˡ :: T
+    "Initial difference in salinity between the layers"
     ΔS₀ :: T
+    "Initial temperature in the upper layer"
     T₀ᵘ :: T
+    "Initial temperature in the lower layer"
     T₀ˡ :: T
+    "Initial temperature difference between the layers"
     ΔT₀ :: T
 end
 TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditions) =
@@ -174,12 +206,13 @@ const SO_diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
                                               salinity_perturbation_width = 100)
 Set initial conditions for a two layer model with hyperbolic tangent transition between the
 upper and lower layers.
-Function arguments:
+
+## Function arguments:
 
 - `model`: to set the initial salinity and temperature in;
 - `initial_conditions`: the values for the initial conditions in an appropriate container.
 
-Keyword arguments:
+## Keyword arguments:
 
 - `interface_location`: location of the interface of the two layers;
 - `interface_thickness`: width of the hyperbolic tangent for setting the change betwen the

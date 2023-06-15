@@ -270,7 +270,7 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
-    wizard = TimeStepWizard(cfl = 0.75, diffusive_cfl = 1, max_change = 1.2; max_Δt)
+    wizard = TimeStepWizard(cfl = 0.75, diffusive_cfl = 0.75, max_change = 1.2; max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output

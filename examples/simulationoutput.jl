@@ -1,4 +1,4 @@
-## File to view saved output
+## Example script for viewing output
 using Oceananigans.Fields
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.OutputUtilities

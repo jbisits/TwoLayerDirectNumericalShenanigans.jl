@@ -14,10 +14,6 @@ export
 const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
 const DNCS = DirectNumericalCabbelingShenanigans # alias
 
-if !isdir(SIMULATION_PATH)
-    mkdir(SIMULATION_PATH)
-end
-
 include("DNS.jl")
 include("twolayersetup.jl")
 include("output_utils.jl")

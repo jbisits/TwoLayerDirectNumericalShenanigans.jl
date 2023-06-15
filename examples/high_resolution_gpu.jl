@@ -10,7 +10,7 @@ reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
 ## Setup the model
 model = DNS(architecture, domain_extent, resolution, diffusivities; reference_density)
 
-## set initial conditions
+## set initial conditions, currently there are four options available in this submodule
 T₀ᵘ = -1.5
 S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.6)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)

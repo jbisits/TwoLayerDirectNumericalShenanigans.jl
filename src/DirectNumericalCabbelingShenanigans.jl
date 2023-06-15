@@ -11,7 +11,7 @@ export
     DNS,
     DNS_simulation_setup
 
-const SIMULATION_PATH = joinpath(@__DIR__, "../data/simulations")
+const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
 const DNCS = DirectNumericalCabbelingShenanigans # alias
 
 if !isdir(SIMULATION_PATH)

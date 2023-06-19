@@ -9,8 +9,9 @@ tangent curve) is a value that can be set.
 """
 module TwoLayerDNS
 
-using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
+using DirectNumericalCabbelingShenanigans, JLD2
 using DirectNumericalCabbelingShenanigans: simulation_progress
+using SpecialFunctions: erf
 
 @reexport using GibbsSeaWater
 
@@ -28,6 +29,7 @@ export
     S₀ˡ, T₀ˡ,
     domain_extent,
     SO_diffusivities,
+    reference_density,
     non_dimensional_numbers
 
 """
@@ -199,6 +201,12 @@ Diffusivity estimates for the Southern Ocean.
 """
 const SO_diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 """
+    const reference_density
+Reference density for use in the two layer DNS. Calculated using the salinity `S₀ˡ` and
+temperature `T₀ˡ` of the lower layer .
+"""
+const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
+"""
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
                                               initial_conditions::TwoLayerInitialConditions;
                                               interface_location = 0.5,
@@ -210,43 +218,62 @@ upper and lower layers.
 ## Function arguments:
 
 - `model`: to set the initial salinity and temperature in;
-- `initial_conditions`: the values for the initial conditions in an appropriate container.
+- `initial_conditions`: the values for the initial conditions in an appropriate container;
+- `interface_location`: location of the interface of the two layers (i.e. where the step
+change takes place).
 
 ## Keyword arguments:
 
-- `interface_location`: location of the interface of the two layers;
-- `interface_thickness`: width of the hyperbolic tangent for setting the change betwen the
-two layers;
+- `t` the time at which to evaluate the solution (i.e. how long the tracer has been
+diffusing for);
 - `perturb_salinity`: whether or not to peturb the salinity in the upper layer to form an
 instability;
 - `salinity_perturbation_width`: width of the Gaussian for the salinity perturbation in the
 upper layer. This is what creates the instability to cause mixing.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                           initial_conditions::TwoLayerInitialConditions;
-                                           interface_location = 0.5,
-                                           interface_thickness = 100,
-                                           perturb_salinity = true,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           interface_location::Number,
+                                           t = 10,
+                                           perturb_salinity = false,
                                            salinity_perturbation_width = 100)
 
-    ΔS = initial_conditions.ΔS₀ / 2
-    ΔT = initial_conditions.ΔT₀ / 2
-
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
     initial_S_profile(x, y, z) = perturb_salinity == true ?
-                                 ΔS * tanh(interface_thickness * (z + interface_location)) +
-                                 (initial_conditions.S₀ˡ + ΔS) +
-                                  perturb_salintiy(z, interface_location,
-                                                   salinity_perturbation_width) :
-                                 ΔS * tanh(interface_thickness * (z + interface_location)) +
-                                 (initial_conditions.S₀ˡ + ΔS)
-    initial_T_profile(x, y, z) = ΔT * tanh(interface_thickness * (z + interface_location)) +
-                                 (initial_conditions.T₀ˡ + ΔT)
+                                 tracer_solution(z, S₀, ΔS, t, κₛ, interface_location) +
+                                    perturb_salintiy(z, interface_location,
+                                                     salinity_perturbation_width) :
+                                 tracer_solution(z, S₀, ΔS, t, κₛ, interface_location)
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+    initial_T_profile(x, y, z) = tracer_solution(z, T₀, ΔT, t, κₜ, interface_location)
 
     set!(model, S = initial_S_profile, T = initial_T_profile)
 
     return nothing
 
 end
+"""
+    function tracer_solution(z, C::Number, ΔC::Number, t::Number, interface_location)
+Solution to the heat equation for a tracer concentration field `C` subject to initial
+conditions that are a Heaviside (or modified Heaviside) step function aat time `t`.
+
+## Function arguments:
+
+- `z` for the Oceananigans model grid to evaulate the function at;
+- `C` tracer value in deeper part of the step;
+- `ΔC` difference in tracer between the steps;
+- `κ` the diffusivity of the tracer;
+- `t` time at which to evaluate the solution.
+
+## Keyword arguments:
+- `interface_location` where the step change takes place e.g. `z - interface_location < 0 ? 0 : 1`.
+Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
+"""
+tracer_solution(z, C::Number, ΔC::Number, κ::Number, t::Number, interface_location) =
+    C + 0.5 * ΔC * (1 + erf((z - interface_location) / sqrt(4 * κ * t)))
 """
     function perturb_salintiy(z, interface_location)
 Where and what value to add to perturb the salinity initial condition.

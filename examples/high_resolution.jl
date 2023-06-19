@@ -17,16 +17,13 @@ cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(isohaline)
-set_two_layer_initial_conditions!(model, initial_conditions;
-                                  perturb_salinity = false,
-                                  interface_location = 0.375, interface_thickness = 10000,
-                                  salinity_perturbation_width = 100)
-DNCS.OutputUtilities.visualise_initial_conditions(model)
-DNCS.OutputUtilities.visualise_initial_density(model, 0)
+set_two_layer_initial_conditions!(model, initial_conditions, interface_location)
+
 ## build the simulation
 Δt = 1e-4
 stop_time = 2
-simulation = DNS_simulation_setup(model, Δt, stop_time, initial_conditions)
+save_schedule = 0.5 # seconds
+simulation = DNS_simulation_setup(model, Δt, stop_time, save_schedule, initial_conditions)
 
 ## Run the simulation
 run!(simulation)

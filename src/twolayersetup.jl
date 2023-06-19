@@ -233,7 +233,7 @@ upper layer. This is what creates the instability to cause mixing.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number,
+                                           interface_location::Number;
                                            t = 10,
                                            perturb_salinity = false,
                                            salinity_perturbation_width = 100)
@@ -323,7 +323,7 @@ Important non-dimensional numnbers that are part of this experiment are computed
 to the simulation output file.
 """
 function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                                   stop_time::Number,
+                                   stop_time::Number, save_schedule::Number,
                                    initial_conditions::TwoLayerInitialConditions;
                                    cfl = 0.75,
                                    diffusive_cfl = 0.75,
@@ -341,14 +341,14 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
     filename = form_filename(initial_conditions)
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,
-                                                    schedule = IterationInterval(50),
+                                                    schedule = TimeInterval(save_schedule),
                                                     overwrite_existing = true)
     jldopen(filename, "a+") do file
         file["Non_dimensional_numbers"] = non_dimensional_numbers(model, initial_conditions)
     end
 
     # progress reporting
-    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(50))
+    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
 
     return simulation
 

@@ -17,6 +17,7 @@ CairoMakie = "0.10"
 GibbsSeaWater = "0.1"
 Oceananigans = "0.82, 0.83"
 Reexport = "1.2"
+SeawaterPolynomials = "0.3"
 julia = "1"
 
 [extras]

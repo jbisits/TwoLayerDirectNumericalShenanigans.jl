@@ -90,7 +90,9 @@ Setup the simulation for `DNS` model.
 - `Δt` timestep. A timestep wizard is also setup so the size of the timestep may change over
 the course of a simulation;
 - `stop_time` length of simulation time (in seconds) to run the model for;
-- `savefile` name of the file to save the data to.
+- `savefile` name of the file to save the data to,
+- `save_schedule` number (representing time in seconds) at which to save model output, e.g.,
+`save_schedule = 1` saves output every second.
 
 ## Keyword arguments:
 
@@ -100,7 +102,8 @@ the course of a simulation;
 - `max_Δt` the maximum timestep.
 """
 function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                              stop_time::Number, savefile::AbstractString;
+                              stop_time::Number, savefile::AbstractString,
+                              save_schedule::Number;
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
@@ -121,7 +124,7 @@ function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,
-                                                    schedule = IterationInterval(50),
+                                                    schedule = TimeInterval(save_schedule),
                                                     overwrite_existing = true)
 
     # progress reporting

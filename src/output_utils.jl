@@ -5,6 +5,7 @@ Module to help process and analyse output data from running a Direct Numerical S
 module OutputUtilities
 
 using DirectNumericalCabbelingShenanigans, Printf
+using DirectNumericalCabbelingShenanigans.TwoLayerDNS: TwoLayerInitialConditions
 using Oceananigans.Fields
 
 @reexport using CairoMakie, JLD2, GibbsSeaWater
@@ -12,6 +13,7 @@ using Oceananigans.Fields
 export
     animate_2D_field,
     visualise_initial_conditions,
+    visualise_initial_stepchange,
     visualise_initial_density,
     visualise_snapshot,
     compute_density
@@ -52,7 +54,7 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     frames = eachindex(t)
     filename = string(field_dimensions[1]) * string(field_dimensions[2]) * "_" *
                 field_name
-    record(fig, joinpath(@__DIR__, "../data/analysis/", filename * ".mp4"),
+    record(fig, joinpath(pwd(), "/data/analysis/", filename * ".mp4"),
           frames, framerate=8) do i
         msg = string("Plotting frame ", i, " of ", frames[end])
         print(msg * " \r")
@@ -60,7 +62,74 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     end
 
 end
+"""
+    function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
+                                          initial_conditions::TwoLayereInitialConditions,
+                                          interface_location::Number)
+Plot an initial step change of the `tracers` in a `model`. This function assumes there are two
+tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.
+"""
+function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
+                                      initial_conditions::TwoLayerInitialConditions,
+                                      interface_location::Number)
 
+    x, y, z = nodes(model.grid, (Center(), Center(), Center()))
+    S₀ˡ, ΔS₀ = initial_conditions.S₀ˡ, initial_conditions.ΔS₀
+    T₀ˡ, ΔT₀ = initial_conditions.T₀ˡ, initial_conditions.ΔT₀
+    S_stepchange = initial_tracer_heaviside.(z, S₀ˡ, ΔS₀, interface_location)
+    S_sc_array = repeat(S_stepchange', length(x), 1)
+    T_stepchange = initial_tracer_heaviside.(z, T₀ˡ, ΔT₀, interface_location)
+    T_sc_array = repeat(T_stepchange', length(x), 1)
+    fig = Figure(size = (600, 1500))
+    ax = [Axis(fig[j, i]) for i ∈ 1:2, j ∈ 1:3]
+
+    hm = heatmap!(ax[1], x, z, S_sc_array; colormap = :haline)
+    ax[1].title = "Initial salinity (x-z)"
+    ax[1].xlabel = "x (m)"
+    ax[1].ylabel = "z (m)"
+    heatmap!(ax[2], x, z, S_sc_array; colormap = :haline)
+    ax[2].title = "Initial salinity (y-z)"
+    ax[2].xlabel = "y (m)"
+    ax[2].ylabel = "z (m)"
+    Colorbar(fig[1, 3], hm, label = "S (gkg⁻¹)")
+    hm = heatmap!(ax[3], y, z, T_sc_array; colormap = :thermal)
+    ax[3].title = "Initial temperature (x-z)"
+    ax[3].xlabel = "x (m)"
+    ax[3].ylabel = "z (m)"
+    heatmap!(ax[4], y, z, T_sc_array; colormap = :thermal)
+    ax[4].title = "Initial temperature (y-z)"
+    ax[4].xlabel = "y (m)"
+    ax[4].ylabel = "z (m)"
+    Colorbar(fig[2, 3], hm, label = "Θ (°C)")
+    lines!(ax[5], S_stepchange, z)
+    ax[5].title = "Initial salinity profile"
+    ax[5].xlabel = "S (gkg⁻¹)"
+    ax[5].ylabel = "z (m)"
+    lines!(ax[6], T_stepchange, z)
+    ax[6].title = "Initial temperature profile"
+    ax[6].xlabel =  "Θ (°C)"
+    ax[6].ylabel = "z (m)"
+
+    return fig
+
+end
+"""
+    initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location)
+Modified Heaviside function for initial condition of a tracer with depth. The interface_location of the
+Heaviside function is calculated from the `extrema` of the depth array `z`.
+
+## Function arguments:
+
+- `z` for the Oceananigans model grid to evaulate the function at;
+- `C` tracer value in deeper part of the step;
+- `ΔC` difference in tracer between the steps.
+
+## Keyword arguments:
+- `interface_location` where the step takes place e.g. `z - interface_location < 0 ? 0 : 1`.
+Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
+"""
+initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location) =
+                                                    z - interface_location < 0 ? C : C + ΔC
 """
     function visualise_initial_conditions(model::Oceanangians.AbstractModel)
 Plot the initial state of the `tracers` in a `model`. This function assumes there are two

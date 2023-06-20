@@ -16,6 +16,7 @@ SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 GibbsSeaWater = "0.1"
 Oceananigans = "0.82"
 Reexport = "1.2"
+SeawaterPolynomials = "0.3"
 julia = "1"
 
 [extras]

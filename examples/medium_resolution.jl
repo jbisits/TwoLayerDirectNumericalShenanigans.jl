@@ -18,7 +18,9 @@ unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(unstable)
 interface_location = -0.375
-set_two_layer_initial_conditions!(model, initial_conditions, interface_location)
+set_two_layer_initial_conditions!(model, initial_conditions, interface_location,
+                                  salinity_perturbation = true)
+DNCS.OutputUtilities.visualise_initial_conditions(model)
 
 ## build the simulation
 Δt = 1e-4

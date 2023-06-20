@@ -208,9 +208,10 @@ temperature `T₀ˡ` of the lower layer .
 const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
 """
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
-                                              initial_conditions::TwoLayerInitialConditions;
-                                              interface_location = 0.5,
-                                              interface_thickness = 100,
+                                              initial_conditions::TwoLayerInitialConditions,
+                                              interface_location::Number;
+                                              t = 10,
+                                              salinity_perturbation = false,
                                               salinity_perturbation_width = 100)
 Set initial conditions for a two layer model with hyperbolic tangent transition between the
 upper and lower layers.
@@ -226,7 +227,7 @@ change takes place).
 
 - `t` the time at which to evaluate the solution (i.e. how long the tracer has been
 diffusing for);
-- `perturb_salinity`: whether or not to peturb the salinity in the upper layer to form an
+- `salinity_perturbation`: whether or not to peturb the salinity in the upper layer to form an
 instability;
 - `salinity_perturbation_width`: width of the Gaussian for the salinity perturbation in the
 upper layer. This is what creates the instability to cause mixing.
@@ -235,13 +236,13 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            interface_location::Number;
                                            t = 10,
-                                           perturb_salinity = false,
+                                           salinity_perturbation = false,
                                            salinity_perturbation_width = 100)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     S₀ = initial_conditions.S₀ˡ
     ΔS = initial_conditions.ΔS₀
-    initial_S_profile(x, y, z) = perturb_salinity == true ?
+    initial_S_profile(x, y, z) = salinity_perturbation == true ?
                                  tracer_solution(z, S₀, ΔS, t, κₛ, interface_location) +
                                     perturb_salintiy(z, interface_location,
                                                      salinity_perturbation_width) :
@@ -279,8 +280,8 @@ tracer_solution(z, C::Number, ΔC::Number, κ::Number, t::Number, interface_loca
 Where and what value to add to perturb the salinity initial condition.
 """
 function perturb_salintiy(z, interface_location, salinity_perturbation_width)
-    if z > -interface_location
-        exp(-((z + interface_location) - (interface_location / 2))^2 /
+    if z > interface_location
+        exp(-((z - interface_location) + (interface_location / 2))^2 /
               2*(salinity_perturbation_width)^2) / sqrt(2*π*salinity_perturbation_width^2)
     else
         0

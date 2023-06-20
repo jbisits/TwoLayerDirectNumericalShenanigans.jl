@@ -14,6 +14,7 @@ SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 
 [compat]
 GibbsSeaWater = "0.1"
+JLD2 = "0.4"
 Oceananigans = "0.82"
 Reexport = "1.2"
 julia = "1"

@@ -54,7 +54,7 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     frames = eachindex(t)
     filename = string(field_dimensions[1]) * string(field_dimensions[2]) * "_" *
                 field_name
-    record(fig, joinpath(@__DIR__, "../data/analysis/", filename * ".mp4"),
+    record(fig, joinpath(pwd(), "/data/analysis/", filename * ".mp4"),
           frames, framerate=8) do i
         msg = string("Plotting frame ", i, " of ", frames[end])
         print(msg * " \r")

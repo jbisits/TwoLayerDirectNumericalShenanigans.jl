@@ -1,19 +1,13 @@
 """
     module TwoLayerDNS
-Module containing the setup for a two layer Direct Numerical Simulation, mainly to explore
-the cabbeling instability. The two layer model has horizontally uniform initial salinity and
-temperature that are set as a hyperbolic tangent vertically to avoid dicontinuities that can
-cause the Direct Numerical Simulations to crash. The length over which the transition
-between the two layers takes place (i.e. the steepness of the change in the hyperbolic
-tangent curve) is a value that can be set.
+Module containing the setup for a two layer Direct Numerical Simulation. This two layer
+model is mainly being used to experiments to investigate the cabbeling instability.
 """
 module TwoLayerDNS
 
-using DirectNumericalCabbelingShenanigans, JLD2
+using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
 using SpecialFunctions: erf
-
-@reexport using GibbsSeaWater
 
 export
     StableUpperLayerInitialConditions,
@@ -219,8 +213,8 @@ const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
                                               t = 10,
                                               salinity_perturbation = false,
                                               salinity_perturbation_width = 100)
-Set initial conditions for a two layer model with hyperbolic tangent transition between the
-upper and lower layers.
+Set initial conditions for a two layer model that are the solution to the heat equation for
+the salinity and temperature tracers (in terms of error functions) at some time `t`.
 
 ## Function arguments:
 

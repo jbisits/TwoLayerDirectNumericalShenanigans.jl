@@ -28,6 +28,7 @@ export
     set_two_layer_initial_conditions!,
     S₀ˡ, T₀ˡ,
     domain_extent,
+    high_resolution,
     SO_diffusivities,
     reference_density,
     non_dimensional_numbers
@@ -196,6 +197,11 @@ Domain extent on which the two layer simulations are run.
 """
 const domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
 """
+    const high_resolution
+Resolution (high) at which to run the DNS.
+"""
+const high_resolution = (Nx = 20, Ny = 20, Nz = 4000)
+"""
     const SO_diffusivities
 Diffusivity estimates for the Southern Ocean.
 """
@@ -361,13 +367,11 @@ output based on the type of initial condition (i.e. stable, cabbeling or unstabl
 """
 function form_filename(initial_conditions::TwoLayerInitialConditions)
 
-    parameter = typeof(initial_conditions.S₀ᵘ)
     ic_type = typeof(initial_conditions)
-    savefile = ic_type == StableTwoLayerInitialConditions{parameter} ? "stable" :
-                            ic_type == CabbelingTwoLayerInitialConditions{parameter} ?
-                                "cabbeling" :
-                                ic_type == UnstableTwoLayerInitialConditions{parameter} ?
-                                "unstable" : "isohaline"
+    savefile = ic_type <: StableTwoLayerInitialConditions ? "stable" :
+                            ic_type <: CabbelingTwoLayerInitialConditions ?
+                                "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
+                                              "unstable" : "isohaline"
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)

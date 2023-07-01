@@ -1,19 +1,13 @@
 """
     module TwoLayerDNS
-Module containing the setup for a two layer Direct Numerical Simulation, mainly to explore
-the cabbeling instability. The two layer model has horizontally uniform initial salinity and
-temperature that are set as a hyperbolic tangent vertically to avoid dicontinuities that can
-cause the Direct Numerical Simulations to crash. The length over which the transition
-between the two layers takes place (i.e. the steepness of the change in the hyperbolic
-tangent curve) is a value that can be set.
+Module containing the setup for a two layer Direct Numerical Simulation. This two layer
+model is mainly being used to experiments to investigate the cabbeling instability.
 """
 module TwoLayerDNS
 
-using DirectNumericalCabbelingShenanigans, JLD2
+using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
 using SpecialFunctions: erf
-
-@reexport using GibbsSeaWater
 
 export
     StableUpperLayerInitialConditions,
@@ -28,6 +22,7 @@ export
     set_two_layer_initial_conditions!,
     S₀ˡ, T₀ˡ,
     domain_extent,
+    high_resolution,
     SO_diffusivities,
     reference_density,
     non_dimensional_numbers
@@ -196,6 +191,11 @@ Domain extent on which the two layer simulations are run.
 """
 const domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
 """
+    const high_resolution
+Resolution (high) at which to run the DNS.
+"""
+const high_resolution = (Nx = 20, Ny = 20, Nz = 4000)
+"""
     const SO_diffusivities
 Diffusivity estimates for the Southern Ocean.
 """
@@ -213,8 +213,8 @@ const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
                                               t = 10,
                                               salinity_perturbation = false,
                                               salinity_perturbation_width = 100)
-Set initial conditions for a two layer model with hyperbolic tangent transition between the
-upper and lower layers.
+Set initial conditions for a two layer model that are the solution to the heat equation for
+the salinity and temperature tracers (in terms of error functions) at some time `t`.
 
 ## Function arguments:
 
@@ -361,13 +361,11 @@ output based on the type of initial condition (i.e. stable, cabbeling or unstabl
 """
 function form_filename(initial_conditions::TwoLayerInitialConditions)
 
-    parameter = typeof(initial_conditions.S₀ᵘ)
     ic_type = typeof(initial_conditions)
-    savefile = ic_type == StableTwoLayerInitialConditions{parameter} ? "stable" :
-                            ic_type == CabbelingTwoLayerInitialConditions{parameter} ?
-                                "cabbeling" :
-                                ic_type == UnstableTwoLayerInitialConditions{parameter} ?
-                                "unstable" : "isohaline"
+    savefile = ic_type <: StableTwoLayerInitialConditions ? "stable" :
+                            ic_type <: CabbelingTwoLayerInitialConditions ?
+                                "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
+                                              "unstable" : "isohaline"
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)

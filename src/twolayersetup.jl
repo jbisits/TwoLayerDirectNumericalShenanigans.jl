@@ -209,24 +209,35 @@ const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
 """
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
                                               initial_conditions::TwoLayerInitialConditions,
-                                              interface_location::Number;
-                                              t = 10,
+                                              interface_location::Number, t::Number;
                                               salinity_perturbation = false,
                                               salinity_perturbation_width = 100)
 Set initial conditions for a two layer model that are the solution to the heat equation for
 the salinity and temperature tracers (in terms of error functions) at some time `t`.
+
+    function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                               initial_conditions::TwoLayerInitialConditions,
+                                               interface_location::Number,
+                                               interface_width::Number,
+                                               tanh_IC::Symbol;
+                                               salinity_perturbation = false,
+                                               salinity_perturbation_width = 100)
+Set initial conditions for a two layer model that are hyperbolic tangent functions.
 
 ## Function arguments:
 
 - `model`: to set the initial salinity and temperature in;
 - `initial_conditions`: the values for the initial conditions in an appropriate container;
 - `interface_location`: location of the interface of the two layers (i.e. where the step
-change takes place).
+change takes place);
+- `t` the time at which to evaluate the solution (i.e. how long the tracer has been
+diffusing for) if using tracer solution initial condition or `interface_width` for how wide
+the `tanh` interface should be if using the `tanh` initial conditions.
+- `tanh_IC` an input `Symbol` (can be anything) to dispatch on when using
+`tanh_initial_condition`.
 
 ## Keyword arguments:
 
-- `t` the time at which to evaluate the solution (i.e. how long the tracer has been
-diffusing for);
 - `salinity_perturbation`: whether or not to peturb the salinity in the upper layer to form an
 instability;
 - `salinity_perturbation_width`: width of the Gaussian for the salinity perturbation in the
@@ -234,8 +245,7 @@ upper layer. This is what creates the instability to cause mixing.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number;
-                                           t = 10,
+                                           interface_location::Number, t::Number=10;
                                            salinity_perturbation = false,
                                            salinity_perturbation_width = 100)
 
@@ -256,6 +266,33 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     return nothing
 
 end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           interface_location::Number,
+                                           tanh_IC::Symbol,
+                                           interface_width::Number=50;
+                                           salinity_perturbation = false,
+                                           salinity_perturbation_width = 100)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    initial_S_profile(x, y, z) = salinity_perturbation == true ?
+                                 tanh_initial_condition(z, S₀, ΔS, interface_location,
+                                                        interface_width) +
+                                 perturb_salintiy(z, interface_location,
+                                                  salinity_perturbation_width) :
+                                 tanh_initial_condition(z, S₀, ΔS, interface_location,
+                                                        interface_width)
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, interface_location,
+                                                        interface_width)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+return nothing
+
+end
 """
     function tracer_solution(z, C::Number, ΔC::Number, t::Number, interface_location)
 Solution to the heat equation for a tracer concentration field `C` subject to initial
@@ -267,14 +304,27 @@ conditions that are a Heaviside (or modified Heaviside) step function aat time `
 - `C` tracer value in deeper part of the step;
 - `ΔC` difference in tracer between the steps;
 - `κ` the diffusivity of the tracer;
-- `t` time at which to evaluate the solution.
-
-## Keyword arguments:
+- `t` time at which to evaluate the solution;
 - `interface_location` where the step change takes place e.g. `z - interface_location < 0 ? 0 : 1`.
+
 Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
 """
-tracer_solution(z, C::Number, ΔC::Number, κ::Number, t::Number, interface_location) =
-    C + 0.5 * ΔC * (1 + erf((z - interface_location) / sqrt(4 * κ * t)))
+tracer_solution(z, Cₗ::Number, ΔC::Number, κ::Number, t::Number, interface_location) =
+    Cₗ + 0.5 * ΔC * (1 + erf((z - interface_location) / sqrt(4 * κ * t)))
+"""
+    tanh_initial_condition(z, Cᵤ::Number, ΔC::Number, interface_location)
+Set a hyperbolic tangent initial condition for a tracer `C` over the vertical domain `z`.
+
+## Function arguments
+
+- `z` for the Oceananigans model grid to evaluate the function at;
+- `Cˡ` tracer value in the lower layer;
+- `ΔC` difference in tracer between upper layer and lower layer;
+- `interface_location`;
+- `interface_width`.
+"""
+tanh_initial_condition(z, Cˡ::Number, ΔC::Number, interface_location, interface_width) =
+    Cˡ + 0.5 * ΔC * (1  + tanh(interface_width * (z - interface_location)))
 """
     function perturb_salintiy(z, interface_location)
 Where and what value to add to perturb the salinity initial condition.

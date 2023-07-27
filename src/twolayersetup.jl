@@ -20,7 +20,7 @@ export
     UnstableTwoLayerInitialConditions,
     IsohalineTwoLayerInitialConditions,
     set_two_layer_initial_conditions!,
-    horiztonal_random_noise!,
+    add_horiztonal_random_noise!,
     S₀ˡ, T₀ˡ,
     domain_extent,
     high_resolution,
@@ -300,7 +300,7 @@ end
 Add standard normally distributed random noise, scaled by `noise_magnitude`, to the
 horizontal velocity fields at the interface of the upper and lower layers.
 """
-function horiztonal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
+function add_horiztonal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
                                   interface_location::Number)
 
     u, v, w = model.velocities

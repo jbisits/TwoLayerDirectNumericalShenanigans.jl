@@ -16,11 +16,12 @@ stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
-initial_conditions = TwoLayerInitialConditions(unstable)
+initial_conditions = TwoLayerInitialConditions(stable)
 interface_location = -0.375
-set_two_layer_initial_conditions!(model, initial_conditions, interface_location,
+set_two_layer_initial_conditions!(model, initial_conditions, interface_location, :tanh,
                                   salinity_perturbation = true)
 DNCS.OutputUtilities.visualise_initial_conditions(model)
+DNCS.OutputUtilities.visualise_initial_density(model, 0)
 
 ## build the simulation
 Δt = 1e-4

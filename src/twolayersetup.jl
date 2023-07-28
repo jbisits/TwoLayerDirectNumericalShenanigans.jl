@@ -20,7 +20,7 @@ export
     UnstableTwoLayerInitialConditions,
     IsohalineTwoLayerInitialConditions,
     set_two_layer_initial_conditions!,
-    add_horiztonal_random_noise!,
+    add_horizontal_random_noise!,
     S₀ˡ, T₀ˡ,
     domain_extent,
     high_resolution,
@@ -295,23 +295,18 @@ return nothing
 
 end
 """
-    function horiztonal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
-                                    interface_location::Number)
+    function add_horizontal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
+                                          interface_location::Number)
 Add standard normally distributed random noise, scaled by `noise_magnitude`, to the
 horizontal velocity fields at the interface of the upper and lower layers.
 """
-function add_horiztonal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
-                                  interface_location::Number)
+function add_horizontal_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
+                                      interface_location::Number)
 
-    u, v, w = model.velocities
-    uᵢ, vᵢ = zeros(size(u)), zeros(size(v))
-    u_noise = noise_magnitude * randn(size(u)[1:2])
-    v_noise = noise_magnitude * randn(size(u)[1:2])
-    interface_index = findall(znodes(model.grid, Face()) .== interface_location)[1]
-    uᵢ[:, :, interface_index] += u_noise
-    vᵢ[:, :, interface_index] += v_noise
+    add_noise(x, y, z) = round(z; digits = 3) == interface_location ?
+                                                 noise_magnitude * randn() : 0
 
-    set!(model, u = uᵢ, v = vᵢ)
+    set!(model, u = add_noise, v = add_noise)
 
     return nothing
 

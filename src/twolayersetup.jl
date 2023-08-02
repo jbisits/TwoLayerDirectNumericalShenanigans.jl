@@ -1,7 +1,9 @@
 """
     module TwoLayerDNS
 Module containing the setup for a two layer Direct Numerical Simulation. This two layer
-model is mainly being used to experiments to investigate the cabbeling instability.
+model is mainly being used to experiments to investigate the cabbeling instability. The
+constants that are exported need not be used, they are just values that I have chosen to use
+for experiments, see [CabbelingExperiments](https://github.com/jbisits/CabbelingExperiments).
 """
 module TwoLayerDNS
 
@@ -22,10 +24,11 @@ export
     set_two_layer_initial_conditions!,
     add_horizontal_random_noise!,
     S₀ˡ, T₀ˡ,
-    domain_extent,
-    high_resolution,
-    SO_diffusivities,
-    reference_density,
+    DOMAIN_EXTENT,
+    HIGH_RESOLUTION,
+    SO_DIFFUSIVITIES,
+    REFERENCE_DENSITY,
+    INTERFACE_LOCATION,
     non_dimensional_numbers
 
 """
@@ -187,26 +190,31 @@ Lower layer initial salinity across all two layer experiments.
 """
 const S₀ˡ = 34.7
 """
-    const domain_extent
+    const DOMAIN_EXTENT
 Domain extent on which the two layer simulations are run.
 """
-const domain_extent = (Lx = 0.1, Ly = 0.1, Lz = 1)
+const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = 1)
 """
-    const high_resolution
+    const HIGH_RESOLUTION
 Resolution (high) at which to run the DNS.
 """
-const high_resolution = (Nx = 20, Ny = 20, Nz = 4000)
+const HIGH_RESOLUTION = (Nx = 20, Ny = 20, Nz = 4000)
 """
-    const SO_diffusivities
+    const SO_DIFFUSIVITIES
 Diffusivity estimates for the Southern Ocean.
 """
-const SO_diffusivities = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
+const SO_DIFFUSIVITIES = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 """
-    const reference_density
+    const REFERENCE_DENSITY
 Reference density for use in the two layer DNS. Calculated using the salinity `S₀ˡ` and
 temperature `T₀ˡ` of the lower layer .
 """
-const reference_density = gsw_rho(S₀ˡ, T₀ˡ, 0)
+const REFERENCE_DENSITY = gsw_rho(S₀ˡ, T₀ˡ, 0)
+"""
+    const INTERFACE_LOCATION
+Location of the interface (in the vertical) between the upper and lower layers.
+"""
+const INTERFACE_LOCATION = -0.375
 """
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
                                               initial_conditions::TwoLayerInitialConditions,

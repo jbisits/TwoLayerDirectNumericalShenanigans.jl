@@ -7,7 +7,7 @@ diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 1000)
 
 ## Setup the model
-model = DNS(architecture, domain_extent, resolution, diffusivities; reference_density)
+model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities; REFERENCE_DENSITY)
 
 ## set initial conditions, currently there are four options available in this submodule
 T₀ᵘ = -1.5
@@ -17,8 +17,7 @@ cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
-interface_location = -0.375
-set_two_layer_initial_conditions!(model, initial_conditions, interface_location, :tanh,
+set_two_layer_initial_conditions!(model, initial_conditions, INTERFACE_LOCATION, :tanh,
                                   salinity_perturbation = true)
 DNCS.OutputUtilities.visualise_initial_conditions(model)
 DNCS.OutputUtilities.visualise_initial_density(model, 0)

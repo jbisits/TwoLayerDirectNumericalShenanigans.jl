@@ -22,7 +22,7 @@ export
     UnstableTwoLayerInitialConditions,
     IsohalineTwoLayerInitialConditions,
     set_two_layer_initial_conditions!,
-    add_veolcity_random_noise!,
+    add_velocity_random_noise!,
     S₀ˡ, T₀ˡ,
     DOMAIN_EXTENT,
     HIGH_RESOLUTION,
@@ -303,12 +303,12 @@ return nothing
 
 end
 """
-    function add_veolcity_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
+    function add_velocity_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
                                           interface_location::Number)
 Add standard normally distributed random noise, scaled by `noise_magnitude`, to the
 horizontal velocity fields at the interface of the upper and lower layers.
 """
-function add_veolcity_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
+function add_velocity_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
                                     interface_location::Number)
 
     add_noise(x, y, z) = round(z; digits = 3) == interface_location ?

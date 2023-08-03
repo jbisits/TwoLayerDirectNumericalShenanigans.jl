@@ -7,7 +7,8 @@ diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 1000)
 
 ## Setup the model
-model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities; REFERENCE_DENSITY)
+model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+            reference_density = REFERENCE_DENSITY)
 
 ## set initial conditions, currently there are four options available in this submodule
 T₀ᵘ = -1.5

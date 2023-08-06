@@ -201,6 +201,8 @@ function visualise_initial_density(model::Oceananigans.AbstractModel,
     ax[2].xlabel = "ρ (kgm⁻³)"
     ax[2].ylabel = "z (m)"
 
+    linkyaxes!(ax[1], ax[2])
+
     return fig
 
 end
@@ -227,6 +229,8 @@ function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::Abstr
     ax[2].title = field_name * " profile at time t = $(t)"
     ax[2].xlabel = field_name
     ax[2].ylabel = "z (m)"
+
+    linkyaxes!(ax[1], ax[2])
 
     return fig
 

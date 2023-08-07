@@ -16,8 +16,10 @@ stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
-initial_conditions = TwoLayerInitialConditions(isohaline)
-set_two_layer_initial_conditions!(model, initial_conditions, INTERFACE_LOCATION)
+initial_conditions = TwoLayerInitialConditions(stable)
+set_two_layer_initial_conditions!(model, initial_conditions, INTERFACE_LOCATION, :tanh;
+                                  salinity_perturbation = true)
+add_velocity_random_noise!(model, 1e-2, INTERFACE_LOCATION)
 
 ## build the simulation
 Δt = 1e-4

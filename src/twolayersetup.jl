@@ -304,18 +304,18 @@ return nothing
 end
 """
     function add_velocity_random_noise!(model::Oceananigans.AbstractModel, noise_magnitude::Number,
-                                        location::Number, horizontal::Bool=false)
+                                        location::Number; horizontal = false)
 Add standard normally distributed random noise, scaled by `noise_magnitude`, to the
 horizontal velocity fields at the interface of the upper and lower layers. If
 `location` for where noise should be seeded is not provided then the noise is added
 everywhere in the domain. To only add horizontal random noise (i.e. in the `u` and `v`
-velocity fields) set `true` for the `horizontal` argument.
+velocity fields) set `true` for the `horizontal` keyword argument.
 """
 function add_velocity_random_noise!(model::Oceananigans.AbstractModel,
-                                    noise_magnitude::Number, location::Number,
-                                    horizontal::Bool=false)
+                                    noise_magnitude::Number, location::Number;
+                                    horizontal = false)
 
-    add_noise(x, y, z) = round(z; digits = 3) == location ? noise_magnitude * randn() : 0
+    add_noise(x, y, z) = round(z; digits = 4) == location ? noise_magnitude * randn() : 0
 
     horizontal == true ? set!(model, u = add_noise, v = add_noise) :
                          set!(model, u = add_noise, v = add_noise, w = add_noise)
@@ -324,7 +324,7 @@ function add_velocity_random_noise!(model::Oceananigans.AbstractModel,
 
 end
 function add_velocity_random_noise!(model::Oceananigans.AbstractModel,
-                                    noise_magnitude::Number, horizontal::Bool=false)
+                                    noise_magnitude::Number; horizontal = false)
 
     add_noise(x, y, z) = noise_magnitude * randn()
 

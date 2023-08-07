@@ -1,7 +1,7 @@
 name = "DirectNumericalCabbelingShenanigans"
 uuid = "40aaee9f-3595-48be-b36c-f1067009652f"
 authors = ["Josef Bisits <jbisits@gmail.com>"]
-version = "0.2.2"
+version = "0.2.3"
 
 [deps]
 CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"

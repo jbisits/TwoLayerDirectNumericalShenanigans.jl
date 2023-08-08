@@ -35,7 +35,8 @@ Keyword arguments:
 - `colormap` for the animated `field_timeseries`
 """
 function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                          field_dimensions::Tuple{Symbol, Symbol}; colormap = :thermal)
+                          field_dimensions::Tuple{Symbol, Symbol}; colormap = :thermal,
+                          aspect_ratio = 1)
 
     x, y, z = nodes(field_timeseries[1])
     plot_dims = field_dimensions == (:x, :z) ? (x, z) :
@@ -47,6 +48,8 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     title = @lift @sprintf("t=%1.2f", t[$n])
     fig, ax, hm = heatmap(plot_dims[1], plot_dims[2], field_tₙ;
                           colormap, colorrange = c_limits)
+    ax.aspect = aspect_ratio
+    ax.xticklabelrotation = π / 4
     ax.xlabel = string(field_dimensions[1])
     ax.ylabel = string(field_dimensions[2])
     Colorbar(fig[1, 2], hm, label = field_name)

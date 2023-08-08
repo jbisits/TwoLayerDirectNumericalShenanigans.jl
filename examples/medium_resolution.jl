@@ -18,7 +18,7 @@ cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
-profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50)
+profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation = true)
 DNCS.OutputUtilities.visualise_initial_conditions(model)

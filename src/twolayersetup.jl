@@ -208,7 +208,7 @@ struct Erf{T} <: ContinuousProfileFunction
     "Location of the interface between the two layers."
     interface_location :: T
     "Time at which to evaluate the error function which is solution to 1D evolution of S or T."
-    time{T} :: T
+    time :: T
 end
 Erf(interface_location, time) = Erf(interface_location, time)
 """

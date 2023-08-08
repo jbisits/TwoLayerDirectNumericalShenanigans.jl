@@ -421,7 +421,7 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
                                    cfl = 0.75,
                                    diffusive_cfl = 0.75,
                                    max_change = 1.2,
-                                   max_Δt = 1e-2)
+                                   max_Δt = 1e-1)
 
     simulation = Simulation(model; Δt, stop_time)
 

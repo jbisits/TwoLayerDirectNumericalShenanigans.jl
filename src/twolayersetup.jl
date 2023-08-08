@@ -286,13 +286,14 @@ upper layer. This is what creates the instability to cause mixing.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number, t::Number=10;
+                                           profile_function::Erf;
                                            salinity_perturbation = false,
                                            salinity_perturbation_width = 100)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     S₀ = initial_conditions.S₀ˡ
     ΔS = initial_conditions.ΔS₀
+    interface_location, t = profile_function.interface_location, profile_function.time
     initial_S_profile(x, y, z) = salinity_perturbation == true ?
                                  tracer_solution(z, S₀, ΔS, t, κₛ, interface_location) +
                                     perturb_salintiy(z, interface_location,
@@ -309,14 +310,14 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number,
-                                           tanh_IC::Symbol,
-                                           interface_width::Number=50;
+                                           profile_function::HyperbolicTangent;
                                            salinity_perturbation = false,
                                            salinity_perturbation_width = 100)
 
     S₀ = initial_conditions.S₀ˡ
     ΔS = initial_conditions.ΔS₀
+    interface_location = profile_function.interface_location
+    interface_width = profile_function.interface_transition_width
     initial_S_profile(x, y, z) = salinity_perturbation == true ?
                                  tanh_initial_condition(z, S₀, ΔS, interface_location,
                                                         interface_width) +

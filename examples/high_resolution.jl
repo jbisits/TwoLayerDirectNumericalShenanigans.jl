@@ -2,7 +2,7 @@
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 
-architecture = CPU()
+architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-6, T = 1e-5))
 
 ## Setup the model
@@ -17,7 +17,8 @@ cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
-set_two_layer_initial_conditions!(model, initial_conditions, INTERFACE_LOCATION, :tanh;
+profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50)
+set_two_layer_initial_conditions!(model, initial_conditions, profile_function;
                                   salinity_perturbation = true)
 add_velocity_random_noise!(model, 1e-2, INTERFACE_LOCATION)
 

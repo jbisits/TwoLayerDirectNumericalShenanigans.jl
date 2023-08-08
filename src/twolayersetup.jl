@@ -212,6 +212,11 @@ struct Erf{T} <: ContinuousProfileFunction
 end
 Erf(interface_location, time) = Erf(interface_location, time)
 """
+    abstract type SalinityPerturbation
+Abstract super type for the salinity perturbation added to the upper layer.
+"""
+abstract type SalinityPerturbation end
+"""
     const T₀ˡ = 0.5
 Lower layer initial temperature across all two layer experiments.
 """

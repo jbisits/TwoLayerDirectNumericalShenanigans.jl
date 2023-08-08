@@ -21,6 +21,7 @@ export
     CabbelingTwoLayerInitialConditions,
     UnstableTwoLayerInitialConditions,
     IsohalineTwoLayerInitialConditions,
+    HyperbolicTangent, Erf,
     set_two_layer_initial_conditions!,
     add_velocity_random_noise!,
     S₀ˡ, T₀ˡ,
@@ -33,7 +34,7 @@ export
 
 """
     abstract type UpperLayerInitialConditions
-Abstract super type for initial conditions.
+Abstract super type for initial temperature and salinity in the upper layer.
 """
 abstract type UpperLayerInitialConditions end
 """
@@ -157,7 +158,7 @@ TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialCondition
     UnstableTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
-                                      """
+"""
     struct IsohalineTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are gravitationally unstable.
 """
@@ -179,6 +180,37 @@ TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditio
     IsohalineTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
+"""
+    abstract type ContinuousProfileFunction end
+Abstract super type for the continuous function that sets the continuous profile for
+temperature and salinity.
+"""
+abstract type ContinuousProfileFunction end
+"""
+    struct HyperbolicTangent
+Container for a hyperbolic tangent profile. The `interface_transition_width` sets the width
+of the transition between the upper and lower layer.
+"""
+struct HyperbolicTangent{T} <: ContinuousProfileFunction
+    "Location of the interface between the two layers."
+    interface_location :: T
+    "Scale the transition between the upper and lower layer salinity and temperature."
+    interface_transition_width :: T
+end
+HyperbolicTangent(interface_location, interface_transition_width) =
+    HyperbolicTangent(interface_location, interface_transition_width)
+"""
+    struct Erf
+Container for a profile that is an error function. The `time` is the time which to evaluate
+`tracer_solution`.
+"""
+struct Erf{T} <: ContinuousProfileFunction
+    "Location of the interface between the two layers."
+    interface_location :: T
+    "Time at which to evaluate the error function which is solution to 1D evolution of S or T."
+    time{T} :: T
+end
+Erf(interface_location, time) = Erf(interface_location, time)
 """
     const T₀ˡ = 0.5
 Lower layer initial temperature across all two layer experiments.

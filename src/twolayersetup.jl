@@ -573,7 +573,7 @@ direction.
 function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
 
     if z == salinity_perturbation.depth
-        abs(salinity_perturbation.scale * randn())
+        salinity_perturbation.scale * randn()
     else
         0
     end

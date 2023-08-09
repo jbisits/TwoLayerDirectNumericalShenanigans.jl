@@ -19,8 +19,10 @@ unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
+profile_function = Erf(INTERFACE_LOCATION, 100.0)
+salinity_perturbation = GaussianProfile(INTERFACE_LOCATION, INTERFACE_LOCATION / 2, 30.0)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
-                                  salinity_perturbation = true)
+                                  salinity_perturbation)
 DNCS.OutputUtilities.visualise_initial_conditions(model)
 DNCS.OutputUtilities.visualise_initial_density(model, 0)
 

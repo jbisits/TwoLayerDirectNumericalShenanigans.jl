@@ -23,6 +23,7 @@ export
     IsohalineTwoLayerInitialConditions,
     HyperbolicTangent, Erf,
     GaussianProfile,
+    GaussianBlob,
     set_two_layer_initial_conditions!,
     add_velocity_random_noise!,
     S₀ˡ, T₀ˡ,
@@ -230,6 +231,18 @@ struct GaussianProfile{T} <: SalinityPerturbation
     σ :: T
 end
 """
+    struct GaussianBlob
+Container for a horizontal Gaussian blob salinity perturbation at `depth` in the upper layer.
+"""
+struct GaussianBlob{T} <: SalinityPerturbation
+    "Depth at which to set the horizontal Gaussian blob of salinity"
+    depth :: T
+    "Centre of the blob."
+    μ :: Vector{T}
+    "Width of the blob."
+    σ :: T
+end
+"""
     const T₀ˡ = 0.5
 Lower layer initial temperature across all two layer experiments.
 """
@@ -315,7 +328,28 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                 perturb_salintiy(z, salinity_perturbation)
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                          initial_conditions::TwoLayerInitialConditions,
+                                          profile_function::Erf,
+                                          salinity_perturbation::GaussianBlob)
+
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
+                                 perturb_salinity(x, y, z, salinity_perturbation)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -352,7 +386,27 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                 perturb_salintiy(z, salinity_perturbation)
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianBlob)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
+                                 perturb_salinity(x, y, z, salinity_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -429,16 +483,32 @@ tanh_initial_condition(z, Cˡ::Number, ΔC::Number, profile_function::Hyperbolic
     Cˡ + 0.5 * ΔC * (1  + tanh(profile_function.interface_transition_width *
                                (z - profile_function.interface_location)))
 """
-    function perturb_salintiy(z, salinity_perturbation::GaussianProfile)
+    function perturb_salinity(z, salinity_perturbation::GaussianProfile)
 Perturb salinity by setting a vertical Gaussian profile in the upper layer centred at `μ`
 with width `σ`.
 """
-function perturb_salintiy(z, salinity_perturbation::GaussianProfile)
+function perturb_salinity(z, salinity_perturbation::GaussianProfile)
 
     μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
 
     if z > salinity_perturbation.interface_location
         exp(-(z - μ)^2 / 2*(σ)^2) / sqrt(2*π*σ^2)
+    else
+        0
+    end
+
+end
+"""
+    function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
+Perturb salinity by setting a horizontal Gaussian blob in the upper layer centred at `μ`
+with width `σ` at depth `depth`.
+"""
+function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
+
+    μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
+
+    if z == salinity_perturbation.depth
+        exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
     else
         0
     end

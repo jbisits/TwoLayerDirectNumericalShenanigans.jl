@@ -194,13 +194,14 @@ function visualise_initial_conditions(model::Oceananigans.AbstractModel, xslice:
 
 end
 """
-    function visualise_initial_density(model::Oceananigans.AbstractModel,
-                                       pressure::Union{Number, Vector{Number}})
-Compute and plot the initial density against depth at `pressure` (either reference pressure
-or in-situ pressure).
+    function visualise_initial_density(model::Oceananigans.AbstractModel,xslice::Integer,
+                                       yslice::Integer, pressure::Union{Number, Vector{Number}})
+Compute and plot the initial density at `pressure` (either reference pressure or in-situ
+pressure). The arguments `xslice` and `yslice` are used to choose where in the domain the
+figures are from.
 """
-function visualise_initial_density(model::Oceananigans.AbstractModel, yslice::Integer,
-                                   pressure::Union{Number, Vector{Number}})
+function visualise_initial_density(model::Oceananigans.AbstractModel, xslice::Integer,
+                                   yslice::Integer, pressure::Union{Number, Vector{Number}})
 
     x = xnodes(model.grid, Center(), Center(), Center())
     z = znodes(model.grid, Center(), Center(), Center())
@@ -216,7 +217,7 @@ function visualise_initial_density(model::Oceananigans.AbstractModel, yslice::In
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     Colorbar(fig[2, 1], hm, label = "ρ (kgm⁻³)", vertical = false, flipaxis = false)
-    lines!(ax[2], ρ[1, :], z)
+    lines!(ax[2], ρ[xslice, :], z)
     ax[2].title = "Initial density profile"
     ax[2].xlabel = "ρ (kgm⁻³)"
     ax[2].ylabel = "z (m)"
@@ -230,7 +231,7 @@ end
 """
 function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                             snapshot::Int64)
-Plot a `snapshot` of the `field_timeseries`  with `field_name`.
+Plot a `snapshot` of the `field_timeseries`  with `field_name` at `xslice`, `yslice`.
 """
 function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                             xslice::Int64, yslice::Int64, snapshot::Int64; colormap = :thermal)

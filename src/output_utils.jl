@@ -50,7 +50,6 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     ax = [Axis(fig[1, i]) for i ∈ 1:2]
 
     hm = heatmap!(ax[1], x, z, field_tₙ; colormap, colorrange = c_limits)
-    ax[1].title = title
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     ax[1].aspect = aspect_ratio
@@ -60,7 +59,6 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     Colorbar(fig[2, 1], hm, label = field_name, vertical = false, flipaxis = false)
 
     lines!(ax[2], profile_tₙ, z)
-    ax[2].title = title
     ax[2].xlabel = field_name
     ax[2].ylabel = "z"
     ax[2].aspect = aspect_ratio

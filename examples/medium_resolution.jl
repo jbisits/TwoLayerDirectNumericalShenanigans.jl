@@ -14,19 +14,13 @@ model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
 T₀ᵘ = -1.5
 S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.59)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
-cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
-unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
-isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
-profile_function = Erf(INTERFACE_LOCATION, 100.0)
-salinity_perturbation = GaussianProfile(INTERFACE_LOCATION, INTERFACE_LOCATION / 2, 30.0)
 salinity_perturbation = GaussianBlob(znodes(model.grid, Center(), Center(), Center())[end-1], [0.0, 0.0], 1.0)
-salinity_perturbation = RandomPerturbations(znodes(model.grid, Center(), Center(), Center())[end-1], 0.01)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
 DNCS.OutputUtilities.visualise_initial_conditions(model, 1, 1)
-DNCS.OutputUtilities.visualise_initial_density(model, 1, 0)
+DNCS.OutputUtilities.visualise_initial_density(model, 1, 1, 0)
 
 ## build the simulation
 Δt = 1e-4

@@ -24,6 +24,7 @@ export
     HyperbolicTangent, Erf,
     GaussianProfile,
     GaussianBlob,
+    RandomPerturbations,
     set_two_layer_initial_conditions!,
     add_velocity_random_noise!,
     S₀ˡ, T₀ˡ,
@@ -199,8 +200,6 @@ struct HyperbolicTangent{T} <: ContinuousProfileFunction
     "Scale the transition between the upper and lower layer salinity and temperature."
     interface_transition_width :: T
 end
-HyperbolicTangent(interface_location, interface_transition_width) =
-    HyperbolicTangent(interface_location, interface_transition_width)
 """
     struct Erf
 Container for a profile that is an error function. The `time` is the time which to evaluate
@@ -212,7 +211,6 @@ struct Erf{T} <: ContinuousProfileFunction
     "Time at which to evaluate the error function which is solution to 1D evolution of S or T."
     time :: T
 end
-Erf(interface_location, time) = Erf(interface_location, time)
 """
     abstract type SalinityPerturbation
 Abstract super type for the salinity perturbation added to the upper layer.
@@ -235,12 +233,22 @@ end
 Container for a horizontal Gaussian blob salinity perturbation at `depth` in the upper layer.
 """
 struct GaussianBlob{T} <: SalinityPerturbation
-    "Depth at which to set the horizontal Gaussian blob of salinity"
+    "Depth at which to set the horizontal Gaussian blob of salinity."
     depth :: T
     "Centre of the blob."
     μ :: Vector{T}
     "Width of the blob."
     σ :: T
+end
+"""
+    struct RandomPerturbations
+Container for adding `scale`d random noise to the salinity at `depth`.
+"""
+struct RandomPerturbations{T} <: SalinityPerturbation
+    "Depth at which to set random salinity perturbations."
+    depth :: T
+    "Scale for the random noise."
+    scale :: T
 end
 """
     const T₀ˡ = 0.5
@@ -360,6 +368,27 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::RandomPerturbations)
+
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent)
 
     S₀ = initial_conditions.S₀ˡ
@@ -407,6 +436,26 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
                                  perturb_salinity(x, y, z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::RandomPerturbations)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -501,7 +550,8 @@ end
 """
     function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
 Perturb salinity by setting a horizontal Gaussian blob in the upper layer centred at `μ`
-with width `σ` at depth `depth`.
+with width `σ` at depth `depth`. **Note** the `depth` needs to be an exact match to a
+depth at that the `Center` in the `z` direction.
 """
 function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
 
@@ -509,6 +559,21 @@ function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
 
     if z == salinity_perturbation.depth
         exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
+    else
+        0
+    end
+
+end
+"""
+    function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
+Perturb salinity by adding `scale`d random noise to the salinity at `depth`.
+**Note** the `depth` needs to be an exact match to a depth at that the `Center` in the `z`
+direction.
+"""
+function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
+
+    if z == salinity_perturbation.depth
+        abs(salinity_perturbation.scale * randn())
     else
         0
     end

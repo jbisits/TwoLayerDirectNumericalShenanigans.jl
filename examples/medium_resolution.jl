@@ -25,8 +25,8 @@ salinity_perturbation = GaussianBlob(znodes(model.grid, Center(), Center(), Cent
 salinity_perturbation = RandomPerturbations(znodes(model.grid, Center(), Center(), Center())[end-1], 0.01)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
-DNCS.OutputUtilities.visualise_initial_conditions(model)
-DNCS.OutputUtilities.visualise_initial_density(model, 0)
+DNCS.OutputUtilities.visualise_initial_conditions(model, 1, 1)
+DNCS.OutputUtilities.visualise_initial_density(model, 1, 0)
 
 ## build the simulation
 Δt = 1e-4

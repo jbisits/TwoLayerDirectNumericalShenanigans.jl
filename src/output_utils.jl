@@ -62,7 +62,7 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     ax[2].xlabel = field_name
     ax[2].ylabel = "z"
     ax[2].aspect = aspect_ratio
-    ax[2].xaxisposition = top
+    ax[2].xaxisposition = :top
 
     linkyaxes!(ax[1], ax[2])
 

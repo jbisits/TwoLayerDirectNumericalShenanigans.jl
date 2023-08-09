@@ -21,6 +21,10 @@ export
     CabbelingTwoLayerInitialConditions,
     UnstableTwoLayerInitialConditions,
     IsohalineTwoLayerInitialConditions,
+    HyperbolicTangent, Erf,
+    GaussianProfile,
+    GaussianBlob,
+    RandomPerturbations,
     set_two_layer_initial_conditions!,
     add_velocity_random_noise!,
     S₀ˡ, T₀ˡ,
@@ -33,7 +37,7 @@ export
 
 """
     abstract type UpperLayerInitialConditions
-Abstract super type for initial conditions.
+Abstract super type for initial temperature and salinity in the upper layer.
 """
 abstract type UpperLayerInitialConditions end
 """
@@ -157,7 +161,7 @@ TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialCondition
     UnstableTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
-                                      """
+"""
     struct IsohalineTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are gravitationally unstable.
 """
@@ -179,6 +183,73 @@ TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditio
     IsohalineTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                       initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
+"""
+    abstract type ContinuousProfileFunction end
+Abstract super type for the continuous function that sets the continuous profile for
+temperature and salinity.
+"""
+abstract type ContinuousProfileFunction end
+"""
+    struct HyperbolicTangent
+Container for a hyperbolic tangent profile. The `interface_transition_width` sets the width
+of the transition between the upper and lower layer.
+"""
+struct HyperbolicTangent{T} <: ContinuousProfileFunction
+    "Location of the interface between the two layers."
+    interface_location :: T
+    "Scale the transition between the upper and lower layer salinity and temperature."
+    interface_transition_width :: T
+end
+"""
+    struct Erf
+Container for a profile that is an error function. The `time` is the time which to evaluate
+`erf_tracer_solution`.
+"""
+struct Erf{T} <: ContinuousProfileFunction
+    "Location of the interface between the two layers."
+    interface_location :: T
+    "Time at which to evaluate the error function which is solution to 1D evolution of S or T."
+    time :: T
+end
+"""
+    abstract type SalinityPerturbation
+Abstract super type for the salinity perturbation added to the upper layer.
+"""
+abstract type SalinityPerturbation end
+"""
+    struct GaussianProfile
+Container for a Gaussian profile salinity perturbation in the upper layer.
+"""
+struct GaussianProfile{T} <: SalinityPerturbation
+    "Location of interface betweenn upper and lower layers."
+    interface_location :: T
+    "Center of Gaussin profile in the upper layer."
+    μ :: T
+    "With of Gaussian profile in the upper layer."
+    σ :: T
+end
+"""
+    struct GaussianBlob
+Container for a horizontal Gaussian blob salinity perturbation at `depth` in the upper layer.
+"""
+struct GaussianBlob{T} <: SalinityPerturbation
+    "Depth at which to set the horizontal Gaussian blob of salinity."
+    depth :: T
+    "Centre of the blob."
+    μ :: Vector{T}
+    "Width of the blob."
+    σ :: T
+end
+"""
+    struct RandomPerturbations
+Container for adding `scale`d random noise to the salinity at `depth`.
+"""
+struct RandomPerturbations{T} <: SalinityPerturbation
+    "Depth at which to set random salinity perturbations."
+    depth :: T
+    "Scale for the random noise."
+    scale :: T
+end
 """
     const T₀ˡ = 0.5
 Lower layer initial temperature across all two layer experiments.
@@ -218,57 +289,35 @@ const INTERFACE_LOCATION = -0.375
 """
     function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
                                               initial_conditions::TwoLayerInitialConditions,
-                                              interface_location::Number, t::Number;
-                                              salinity_perturbation = false,
-                                              salinity_perturbation_width = 100)
-Set initial conditions for a two layer model that are the solution to the heat equation for
-the salinity and temperature tracers (in terms of error functions) at some time `t`.
+                                              profile_function::ContinuousProfileFunction)
+    function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
+                                              initial_conditions::TwoLayerInitialConditions,
+                                              profile_function::ContinuousProfileFunction,
+                                              salinity_perturbation::SalinityPerturbaion)
 
-    function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                               initial_conditions::TwoLayerInitialConditions,
-                                               interface_location::Number,
-                                               interface_width::Number,
-                                               tanh_IC::Symbol;
-                                               salinity_perturbation = false,
-                                               salinity_perturbation_width = 100)
-Set initial conditions for a two layer model that are hyperbolic tangent functions.
+Set initial conditions for a two layer model that are smooth depending on the
+`profile_funciton` with or without a `salinity_perturbation` in the upper layer.
 
 ## Function arguments:
 
 - `model`: to set the initial salinity and temperature in;
 - `initial_conditions`: the values for the initial conditions in an appropriate container;
-- `interface_location`: location of the interface of the two layers (i.e. where the step
-change takes place);
-- `t` the time at which to evaluate the solution (i.e. how long the tracer has been
-diffusing for) if using tracer solution initial condition or `interface_width` for how wide
-the `tanh` interface should be if using the `tanh` initial conditions.
-- `tanh_IC` an input `Symbol` (can be anything) to dispatch on when using
-`tanh_initial_condition`.
-
-## Keyword arguments:
-
-- `salinity_perturbation`: whether or not to peturb the salinity in the upper layer to form an
-instability;
-- `salinity_perturbation_width`: width of the Gaussian for the salinity perturbation in the
-upper layer. This is what creates the instability to cause mixing.
+- `profile_function`: the smooth funtion used to set the profile to avoid discontinuities;
+- `salinity_perturbation`: perturbation for the salinity in the upper layer to help kick off
+instability.
 """
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number, t::Number=10;
-                                           salinity_perturbation = false,
-                                           salinity_perturbation_width = 100)
+                                           profile_function::Erf)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     S₀ = initial_conditions.S₀ˡ
     ΔS = initial_conditions.ΔS₀
-    initial_S_profile(x, y, z) = salinity_perturbation == true ?
-                                 tracer_solution(z, S₀, ΔS, t, κₛ, interface_location) +
-                                    perturb_salintiy(z, interface_location,
-                                                     salinity_perturbation_width) :
-                                 tracer_solution(z, S₀, ΔS, t, κₛ, interface_location)
     T₀ = initial_conditions.T₀ˡ
     ΔT = initial_conditions.ΔT₀
-    initial_T_profile(x, y, z) = tracer_solution(z, T₀, ΔT, t, κₜ, interface_location)
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function)
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
     set!(model, S = initial_S_profile, T = initial_T_profile)
 
@@ -277,29 +326,142 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           interface_location::Number,
-                                           tanh_IC::Symbol,
-                                           interface_width::Number=50;
-                                           salinity_perturbation = false,
-                                           salinity_perturbation_width = 100)
+                                           profile_function::Erf,
+                                           salinity_perturbation::GaussianProfile)
 
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     S₀ = initial_conditions.S₀ˡ
     ΔS = initial_conditions.ΔS₀
-    initial_S_profile(x, y, z) = salinity_perturbation == true ?
-                                 tanh_initial_condition(z, S₀, ΔS, interface_location,
-                                                        interface_width) +
-                                 perturb_salintiy(z, interface_location,
-                                                  salinity_perturbation_width) :
-                                 tanh_initial_condition(z, S₀, ΔS, interface_location,
-                                                        interface_width)
     T₀ = initial_conditions.T₀ˡ
     ΔT = initial_conditions.ΔT₀
-    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, interface_location,
-                                                        interface_width)
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
     set!(model, S = initial_S_profile, T = initial_T_profile)
 
-return nothing
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                          initial_conditions::TwoLayerInitialConditions,
+                                          profile_function::Erf,
+                                          salinity_perturbation::GaussianBlob)
+
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
+                                 perturb_salinity(x, y, z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::RandomPerturbations)
+
+    κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function)
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianProfile)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianBlob)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
+                                 perturb_salinity(x, y, z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::RandomPerturbations)
+
+    S₀ = initial_conditions.S₀ˡ
+    ΔS = initial_conditions.ΔS₀
+    T₀ = initial_conditions.T₀ˡ
+    ΔT = initial_conditions.ΔT₀
+
+    initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
+                                 perturb_salinity(z, salinity_perturbation)
+
+    initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
 
 end
 """
@@ -336,7 +498,7 @@ function add_velocity_random_noise!(model::Oceananigans.AbstractModel,
 end
 
 """
-    function tracer_solution(z, C::Number, ΔC::Number, t::Number, interface_location)
+    function erf_tracer_solution(z, C::Number, ΔC::Number, profile_function::Erf)
 Solution to the heat equation for a tracer concentration field `C` subject to initial
 conditions that are a Heaviside (or modified Heaviside) step function aat time `t`.
 
@@ -346,13 +508,14 @@ conditions that are a Heaviside (or modified Heaviside) step function aat time `
 - `C` tracer value in deeper part of the step;
 - `ΔC` difference in tracer between the steps;
 - `κ` the diffusivity of the tracer;
-- `t` time at which to evaluate the solution;
-- `interface_location` where the step change takes place e.g. `z - interface_location < 0 ? 0 : 1`.
+- `profile_function::Erf` container with the `interface_location` and time `t` at which to
+evaluate the error function solution
 
 Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
 """
-tracer_solution(z, Cₗ::Number, ΔC::Number, κ::Number, t::Number, interface_location) =
-    Cₗ + 0.5 * ΔC * (1 + erf((z - interface_location) / sqrt(4 * κ * t)))
+erf_tracer_solution(z, Cₗ::Number, ΔC::Number, κ::Number, profile_function::Erf) =
+    Cₗ + 0.5 * ΔC * (1 + erf((z - profile_function.interface_location) /
+                              sqrt(4 * κ * profile_function.time)))
 """
     tanh_initial_condition(z, Cᵤ::Number, ΔC::Number, interface_location)
 Set a hyperbolic tangent initial condition for a tracer `C` over the vertical domain `z`.
@@ -362,22 +525,59 @@ Set a hyperbolic tangent initial condition for a tracer `C` over the vertical do
 - `z` for the Oceananigans model grid to evaluate the function at;
 - `Cˡ` tracer value in the lower layer;
 - `ΔC` difference in tracer between upper layer and lower layer;
-- `interface_location`;
-- `interface_width`.
+- `profile_function::HyperbolicTangent` container with `interface_location` and the
+`interface_transition_width`.
 """
-tanh_initial_condition(z, Cˡ::Number, ΔC::Number, interface_location, interface_width) =
-    Cˡ + 0.5 * ΔC * (1  + tanh(interface_width * (z - interface_location)))
+tanh_initial_condition(z, Cˡ::Number, ΔC::Number, profile_function::HyperbolicTangent) =
+    Cˡ + 0.5 * ΔC * (1  + tanh(profile_function.interface_transition_width *
+                               (z - profile_function.interface_location)))
 """
-    function perturb_salintiy(z, interface_location)
-Where and what value to add to perturb the salinity initial condition.
+    function perturb_salinity(z, salinity_perturbation::GaussianProfile)
+Perturb salinity by setting a vertical Gaussian profile in the upper layer centred at `μ`
+with width `σ`.
 """
-function perturb_salintiy(z, interface_location, salinity_perturbation_width)
-    if z > interface_location
-        exp(-((z - interface_location) + (interface_location / 2))^2 /
-              2*(salinity_perturbation_width)^2) / sqrt(2*π*salinity_perturbation_width^2)
+function perturb_salinity(z, salinity_perturbation::GaussianProfile)
+
+    μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
+
+    if z > salinity_perturbation.interface_location
+        exp(-(z - μ)^2 / 2*(σ)^2) / sqrt(2*π*σ^2)
     else
         0
     end
+
+end
+"""
+    function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
+Perturb salinity by setting a horizontal Gaussian blob in the upper layer centred at `μ`
+with width `σ` at depth `depth`. **Note** the `depth` needs to be an exact match to a
+depth at that the `Center` in the `z` direction.
+"""
+function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
+
+    μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
+
+    if z == salinity_perturbation.depth
+        exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
+    else
+        0
+    end
+
+end
+"""
+    function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
+Perturb salinity by adding `scale`d random noise to the salinity at `depth`.
+**Note** the `depth` needs to be an exact match to a depth at that the `Center` in the `z`
+direction.
+"""
+function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
+
+    if z == salinity_perturbation.depth
+        salinity_perturbation.scale * randn()
+    else
+        0
+    end
+
 end
 """
     function non_dimensional_numbers(model::Oceananigans.AbstractModel,

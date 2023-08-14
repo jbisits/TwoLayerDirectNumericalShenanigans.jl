@@ -16,7 +16,8 @@ S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.59)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
-salinity_perturbation = GaussianBlob(znodes(model.grid, Center(), Center(), Center())[end-1], [0.0, 0.0], 1.0)
+depth_level = znodes(model.grid, Center(), Center(), Center())[end-200]
+salinity_perturbation = GaussianBlob(depth_level, [0.0, 0.0], 2.0)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
 DNCS.OutputUtilities.visualise_initial_conditions(model, 1, 1)

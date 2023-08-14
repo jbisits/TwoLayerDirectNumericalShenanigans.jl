@@ -227,7 +227,11 @@ struct GaussianProfile{T} <: SalinityPerturbation
     μ :: T
     "With of Gaussian profile in the upper layer."
     σ :: T
+    "Scale the Gausssian profile, defaults to 1 i.e. it is a pdf."
+    scale :: T
 end
+GaussianProfile(interface_location, μ, σ; scale = 1.0) =
+    GaussianProfile(interface_location, μ, σ, scale)
 """
     struct GaussianBlob
 Container for a horizontal Gaussian blob salinity perturbation at `depth` in the upper layer.
@@ -239,7 +243,11 @@ struct GaussianBlob{T} <: SalinityPerturbation
     μ :: Vector{T}
     "Width of the blob."
     σ :: T
+    "Scale the Gausssian blob, defaults to 1 i.e. it is a pdf."
+    scale :: T
 end
+GaussianBlob(interface_location, μ, σ; scale = 1.0) =
+    GaussianBlob(interface_location, μ, σ, scale)
 """
     struct RandomPerturbations
 Container for adding `scale`d random noise to the salinity at `depth`.
@@ -538,10 +546,11 @@ with width `σ`.
 """
 function perturb_salinity(z, salinity_perturbation::GaussianProfile)
 
-    μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
+    μ, σ, scale = salinity_perturbation.μ, salinity_perturbation.σ,
+                  salinity_perturbation.scale
 
     if z > salinity_perturbation.interface_location
-        exp(-(z - μ)^2 / 2*(σ)^2) / sqrt(2*π*σ^2)
+        scale * exp(-(z - μ)^2 / 2*(σ)^2) / sqrt(2*π*σ^2)
     else
         0
     end
@@ -555,10 +564,11 @@ depth at that the `Center` in the `z` direction.
 """
 function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
 
-    μ, σ = salinity_perturbation.μ, salinity_perturbation.σ
+    μ, σ, scale = salinity_perturbation.μ, salinity_perturbation.σ,
+                  salinity_perturbation.scale
 
     if z == salinity_perturbation.depth
-        exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
+        scale * exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
     else
         0
     end

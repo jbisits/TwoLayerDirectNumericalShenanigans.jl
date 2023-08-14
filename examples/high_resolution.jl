@@ -16,7 +16,7 @@ stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 unstable = UnstableUpperLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ)
 isohaline = IsohalineUpperLayerInitialConditions(T₀ᵘ)
-initial_conditions = TwoLayerInitialConditions(stable)
+initial_conditions = TwoLayerInitialConditions(unstable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function;
                                   salinity_perturbation = true)

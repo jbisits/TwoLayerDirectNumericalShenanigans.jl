@@ -35,7 +35,7 @@ Keyword arguments:
 """
 function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                           xslice::Int64, yslice::Int64; colormap = :thermal,
-                          aspect_ratio = 1)
+                          aspect_ratio = 1, z_extrema = (1:10, 990:100))
 
     x, y, z = nodes(field_timeseries[1])
 
@@ -43,7 +43,7 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     n = Observable(1)
     field_tₙ = @lift interior(field_timeseries[$n], :, yslice, :)
     profile_tₙ = @lift interior(field_timeseries[$n], xslice, yslice, :)
-    c_limits = extrema(interior(field_timeseries, :, :, vcat(1:10, 990:1000), 1))
+    c_limits = extrema(interior(field_timeseries, :, :, vcat(z_extrema...), 1))
     title = @lift @sprintf("t=%1.2f", t[$n])
 
     fig = Figure(size = (1000, 600))

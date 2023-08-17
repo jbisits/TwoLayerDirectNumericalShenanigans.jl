@@ -51,7 +51,6 @@ struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) = StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct CabbelingUpperLayerInitialConditions
 Container for initial salinity and temperature conditions that are unstable to cabbeling
@@ -63,8 +62,6 @@ struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct UnstableUpperLayerInitialConditions
 Container for initial salinity and temperature conditions that are unstable relative to `S₀ˡ`
@@ -76,8 +73,6 @@ struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct IsohalineUpperLayerInitialConditions
 Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.

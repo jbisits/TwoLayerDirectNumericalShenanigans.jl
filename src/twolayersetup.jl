@@ -51,7 +51,6 @@ struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) = StableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct CabbelingUpperLayerInitialConditions
 Container for initial salinity and temperature conditions that are unstable to cabbeling
@@ -63,8 +62,6 @@ struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    CabbelingUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct UnstableUpperLayerInitialConditions
 Container for initial salinity and temperature conditions that are unstable relative to `S₀ˡ`
@@ -76,8 +73,6 @@ struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
-UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ) =
-    UnstableUpperLayerInitialConditions(S₀ᵘ, T₀ᵘ)
 """
     struct IsohalineUpperLayerInitialConditions
 Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
@@ -277,7 +272,7 @@ const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = 1)
     const HIGH_RESOLUTION
 Resolution (high) at which to run the DNS.
 """
-const HIGH_RESOLUTION = (Nx = 20, Ny = 20, Nz = 4000)
+const HIGH_RESOLUTION = (Nx = 50, Ny = 50, Nz = 1400)
 """
     const SO_DIFFUSIVITIES
 Diffusivity estimates for the Southern Ocean.

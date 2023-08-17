@@ -26,16 +26,19 @@ Animate a time series that is saved in memory.
 Function arguments:
 
 - `field_timeseries` to be animated;
-- `field_name` the name of the variable in the `field_timeseries`
+- `field_name` the name of the variable in the `field_timeseries`;
 - the `xslice` and `yslice` for the `x-z` heatmap and vertical profile.
 
 Keyword arguments:
 
-- `colormap` for the animated `field_timeseries`
+- `colormap` for the animated `field_timeseries`;
+- `aspect_ration` for the animation;
+- `z_extrema` where to look for the extreme z values while avoiding any random noise, pass
+two ranges or two values for where to look for the `extrema`.
 """
 function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                           xslice::Int64, yslice::Int64; colormap = :thermal,
-                          aspect_ratio = 1)
+                          aspect_ratio = 1, z_extrema::Tuple=(1:10, 990:1000))
 
     x, y, z = nodes(field_timeseries[1])
 
@@ -43,13 +46,16 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     n = Observable(1)
     field_tₙ = @lift interior(field_timeseries[$n], :, yslice, :)
     profile_tₙ = @lift interior(field_timeseries[$n], xslice, yslice, :)
-    c_limits = extrema(interior(field_timeseries, :, :, :, 1))
-    title = @lift @sprintf("t=%1.2f", t[$n])
+    c_limits = extrema(interior(field_timeseries, :, :, vcat(z_extrema...), 1))
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
+    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
 
-    hm = heatmap!(ax[1], x, z, field_tₙ; colormap, colorrange = c_limits)
+    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange = c_limits,
+                                         colormap = cgrad(colormap)[2:end-1],
+                                          lowclip = cgrad(colormap)[1],
+                                         highclip = cgrad(colormap)[end])
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     ax[1].aspect = aspect_ratio

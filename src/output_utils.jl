@@ -47,10 +47,10 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     field_tₙ = @lift interior(field_timeseries[$n], :, yslice, :)
     profile_tₙ = @lift interior(field_timeseries[$n], xslice, yslice, :)
     c_limits = extrema(interior(field_timeseries, :, :, vcat(z_extrema...), 1))
-    title = @lift @sprintf("t=%1.2f", t[$n])
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
+    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
 
     hm = heatmap!(ax[1], x, z, field_tₙ; colorrange = c_limits,
                                          colormap = cgrad(colormap)[2:end-1],

@@ -277,7 +277,7 @@ const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = 1)
     const HIGH_RESOLUTION
 Resolution (high) at which to run the DNS.
 """
-const HIGH_RESOLUTION = (Nx = 20, Ny = 20, Nz = 4000)
+const HIGH_RESOLUTION = (Nx = 50, Ny = 50, Nz = 1400)
 """
     const SO_DIFFUSIVITIES
 Diffusivity estimates for the Southern Ocean.

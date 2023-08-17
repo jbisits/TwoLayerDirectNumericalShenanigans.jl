@@ -49,7 +49,10 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     fig = Figure(size = (1000, 600))
     ax = [Axis(fig[1, i]) for i ∈ 1:2]
 
-    hm = heatmap!(ax[1], x, z, field_tₙ; colormap, colorrange = c_limits)
+    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange = c_limits,
+                                         colormap = cgrad(colormap)[2:end-1],
+                                          lowclip = cgrad(colormap)[1],
+                                         highclip = cgrad(colormap)[end])
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     ax[1].aspect = aspect_ratio

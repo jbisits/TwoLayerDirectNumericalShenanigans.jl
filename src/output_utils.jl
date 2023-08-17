@@ -26,16 +26,19 @@ Animate a time series that is saved in memory.
 Function arguments:
 
 - `field_timeseries` to be animated;
-- `field_name` the name of the variable in the `field_timeseries`
+- `field_name` the name of the variable in the `field_timeseries`;
 - the `xslice` and `yslice` for the `x-z` heatmap and vertical profile.
 
 Keyword arguments:
 
-- `colormap` for the animated `field_timeseries`
+- `colormap` for the animated `field_timeseries`;
+- `aspect_ration` for the animation;
+- `z_extrema` where to look for the extreme z values while avoiding any random noise, pass
+two ranges or two values for where to look for the `extrema`.
 """
 function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                           xslice::Int64, yslice::Int64; colormap = :thermal,
-                          aspect_ratio = 1, z_extrema = (1:10, 990:100))
+                          aspect_ratio = 1, z_extrema::Tuple=(1:10, 990:1000))
 
     x, y, z = nodes(field_timeseries[1])
 

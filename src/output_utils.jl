@@ -43,7 +43,7 @@ function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Abstrac
     n = Observable(1)
     field_tₙ = @lift interior(field_timeseries[$n], :, yslice, :)
     profile_tₙ = @lift interior(field_timeseries[$n], xslice, yslice, :)
-    c_limits = extrema(interior(field_timeseries, :, :, :, 1))
+    c_limits = extrema(interior(field_timeseries, :, :, vcat(1:10, 990:1000), 1))
     title = @lift @sprintf("t=%1.2f", t[$n])
 
     fig = Figure(size = (1000, 600))

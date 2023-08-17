@@ -4,10 +4,9 @@ using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
-resolution = (Nx = 10, Ny = 10, Nz = 1000)
 
 ## Setup the model
-model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+model = DNS(architecture, DOMAIN_EXTENT, HIGH_RESOLUTION, diffusivities;
             reference_density = REFERENCE_DENSITY)
 
 ## set initial conditions, currently there are four options available in this submodule
@@ -21,6 +20,7 @@ depth_idx = findfirst(z .> 2 * INTERFACE_LOCATION / 3)
 salinity_perturbation = GaussianBlob(z[depth_idx], [0.0, 0.0], 1.5)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
+
 DNCS.OutputUtilities.visualise_initial_conditions(model, 1, 1)
 DNCS.OutputUtilities.visualise_initial_density(model, 1, 1, 0)
 

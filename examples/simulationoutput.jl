@@ -4,7 +4,7 @@ using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.OutputUtilities
 
 ## Load in saved output
-sim_path = joinpath(SIMULATION_PATH, "stable_medres_5min.jld2")
+sim_path = joinpath(SIMULATION_PATH, "saved_output.jld2")
 T_ts = FieldTimeSeries(sim_path, "T")
 S_ts = FieldTimeSeries(sim_path, "S")
 

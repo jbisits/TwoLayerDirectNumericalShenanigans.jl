@@ -5,8 +5,8 @@ using DirectNumericalCabbelingShenanigans.OutputUtilities
 
 ## Load in saved output
 sim_path = joinpath(SIMULATION_PATH, "saved_output.jld2")
-T_ts = FieldTimeSeries(sim_path, "T")
-S_ts = FieldTimeSeries(sim_path, "S")
+T_ts = FieldTimeSeries(sim_path, "T", backend = OnDisk())
+S_ts = FieldTimeSeries(sim_path, "S", backend = OnDisk())
 
 ## Initial snapshots
 visualise_snapshot(T_ts, "Θ (°C)", 1, 1, 1)

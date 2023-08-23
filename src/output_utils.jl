@@ -16,7 +16,8 @@ export
     visualise_initial_stepchange,
     visualise_initial_density,
     visualise_snapshot,
-    compute_density
+    compute_density,
+    compute_density!
 
 """
     function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
@@ -271,7 +272,11 @@ passed to specify a reference pressure at which to compute the density variable.
 function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
                          reference_pressure = 0)
 
-    ρ_ts = deepcopy(S_timeseries)
+    ρ_ts = FieldTimeSeries{Center, Center, Center}(S_timeseries.grid, S_timeseries.times,
+                                                  indices = S_timeseries.indices,
+                                                  boundary_conditions =
+                                                    S_timeseries.boundary_conditions)
+
     t = S_timeseries.times
     for i ∈ eachindex(t)
         Sᵢ, Θᵢ = S_timeseries[i], T_timeseries[i]
@@ -281,5 +286,35 @@ function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeS
     return ρ_ts
 
 end
+"""
+    function compute_density!(filepath::String; reference_pressure = 0)
+Compute a density variable at `reference_pressure` and append it to saved output. **Note**
+this only needs to be done once! After that the group will exist and will not be able to be
+overwritten but a different group can be made by passing a different `density_string`.
+This allows calling `FieldTimeSeries` on the `density_variable`
+"""
+function compute_density!(filepath::String; reference_pressure = 0, density_string = "ρ")
 
+    file = jldopen(filepath, "a+")
+    file_keys = keys(file["timeseries"]["S"])
+    JLD2.Group(file, "timeseries/"*density_string)
+    for (i, key) ∈ enumerate(file_keys)
+        if i == 1
+            for k ∈ keys(file["timeseries/S/"*key])
+                file["timeseries/"*density_string*"/"*key*"/"*k] =
+                    file["timeseries/S/"*key*"/"*k]
+            end
+            file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
+                reference_pressure
+        else
+            Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
+            file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+        end
+    end
+
+    close(file)
+
+    return nothing
+
+end
 end # module

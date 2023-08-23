@@ -271,7 +271,10 @@ passed to specify a reference pressure at which to compute the density variable.
 function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
                          reference_pressure = 0)
 
-    ρ_ts = deepcopy(S_timeseries)
+    ρ_ts = FieldTimeSeries{Center, Center, Center}(S_timeseries.grid, S_timeseries.times,
+                                                  indices = S_timeseries.indices,
+                                                  boundary_conditions =
+                                                    S_timeseries.boundary_conditions)
     t = S_timeseries.times
     for i ∈ eachindex(t)
         Sᵢ, Θᵢ = S_timeseries[i], T_timeseries[i]

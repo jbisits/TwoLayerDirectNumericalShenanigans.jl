@@ -10,6 +10,7 @@ module TwoLayerDNS
 using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
 using SpecialFunctions: erf
+using Oceanostics: KineticEnergyDissipationRate
 
 export
     StableUpperLayerInitialConditions,
@@ -682,7 +683,8 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output
-    outputs = (S = model.tracers.S, T = model.tracers.T)
+    ϵ = KineticEnergyDissipationRate(model)
+    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ)
     filename = form_filename(initial_conditions)
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,

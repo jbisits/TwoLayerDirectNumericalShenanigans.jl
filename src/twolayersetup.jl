@@ -10,6 +10,7 @@ module TwoLayerDNS
 using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
 using SpecialFunctions: erf
+using Oceanostics: KineticEnergyDissipationRate
 
 export
     StableUpperLayerInitialConditions,
@@ -78,13 +79,15 @@ end
 Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
 """
 struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity in the upper layer"
-    S₀ᵘ :: T
+    "Initial salinity over the domain"
+    S   :: T
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
 end
 IsohalineUpperLayerInitialConditions(T₀ᵘ) =
     IsohalineUpperLayerInitialConditions(S₀ˡ, T₀ᵘ)
+IsohalineUpperLayerInitialConditions(S, T₀ᵘ) =
+    IsohalineUpperLayerInitialConditions(S, T₀ᵘ)
 """
     abstract type TwoLayerInitialConditions
 Abstract supertype for two layer model initial conditions.
@@ -175,9 +178,9 @@ struct IsohalineTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     ΔT₀ :: T
 end
 TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditions) =
-    IsohalineTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
-                                      initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T₀ᵘ,
-                                      T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
+    IsohalineTwoLayerInitialConditions(initial_conditions.S, initial_conditions.S,
+                                       0.0, initial_conditions.T₀ᵘ, T₀ˡ,
+                                       initial_conditions.T₀ᵘ -T₀ˡ)
 """
     abstract type ContinuousProfileFunction end
 Abstract super type for the continuous function that sets the continuous profile for
@@ -680,7 +683,8 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output
-    outputs = (S = model.tracers.S, T = model.tracers.T)
+    ϵ = KineticEnergyDissipationRate(model)
+    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
     filename = form_filename(initial_conditions)
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,

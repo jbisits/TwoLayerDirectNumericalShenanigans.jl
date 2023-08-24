@@ -1,4 +1,4 @@
-# Medium resolution two layer simulation
+# A two layer DNS experiment example
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 

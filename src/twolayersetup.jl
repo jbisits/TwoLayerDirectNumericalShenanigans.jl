@@ -684,7 +684,7 @@ function DNCS.DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Numbe
 
     # save output
     ϵ = KineticEnergyDissipationRate(model)
-    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ)
+    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
     filename = form_filename(initial_conditions)
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,

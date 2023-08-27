@@ -17,6 +17,7 @@ export
     CabbelingUpperLayerInitialConditions,
     UnstableUpperLayerInitialConditions,
     IsohalineUpperLayerInitialConditions,
+    IsothermalUpperLayerInitialConditions,
     TwoLayerInitialConditions,
     StableTwoLayerInitialConditions,
     CabbelingTwoLayerInitialConditions,
@@ -79,7 +80,7 @@ end
 Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
 """
 struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity over the domain"
+    "Initial (uniform) salinity over the domain"
     S   :: T
     "Initial temperature in the upper layer"
     T₀ᵘ :: T
@@ -88,6 +89,18 @@ IsohalineUpperLayerInitialConditions(T₀ᵘ) =
     IsohalineUpperLayerInitialConditions(S₀ˡ, T₀ᵘ)
 IsohalineUpperLayerInitialConditions(S, T₀ᵘ) =
     IsohalineUpperLayerInitialConditions(S, T₀ᵘ)
+    """
+    struct IsohalineUpperLayerInitialConditions
+Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
+"""
+struct IsothermalUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial (uniform) temperature over the domain"
+    T   :: T
+end
+IsothermalUpperLayerInitialConditions(S₀ᵘ) = IsothermalUpperLayerInitialConditions(S₀ᵘ, T₀ˡ)
+IsothermalUpperLayerInitialConditions(S₀ᵘ, T) = IsothermalUpperLayerInitialConditions(S₀ᵘ, T)
 """
     abstract type TwoLayerInitialConditions
 Abstract supertype for two layer model initial conditions.
@@ -161,7 +174,8 @@ TwoLayerInitialConditions(initial_conditions::UnstableUpperLayerInitialCondition
                                       T₀ˡ, initial_conditions.T₀ᵘ -T₀ˡ)
 """
     struct IsohalineTwoLayerInitialConditions
-Container for initial salinity and temperature conditions that are gravitationally unstable.
+Container for initial salinity and temperature conditions where salinity is uniform over
+domain.
 """
 struct IsohalineTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     "Initial salinity in the upper layer"
@@ -181,6 +195,29 @@ TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditio
     IsohalineTwoLayerInitialConditions(initial_conditions.S, initial_conditions.S,
                                        0.0, initial_conditions.T₀ᵘ, T₀ˡ,
                                        initial_conditions.T₀ᵘ -T₀ˡ)
+                                       """
+    struct IsothermalTwoLayerInitialConditions
+Container for initial salinity and temperature conditions where temperature is uniform over
+the domain.
+"""
+struct IsothermalTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial salinity in the lower layer"
+    S₀ˡ :: T
+    "Initial difference in salinity between the layers"
+    ΔS₀ :: T
+    "Initial temperature in the upper layer"
+    T₀ᵘ :: T
+    "Initial temperature in the lower layer"
+    T₀ˡ :: T
+    "Initial temperature difference between the layers"
+    ΔT₀ :: T
+end
+TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditions) =
+    IsothermalTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
+                                        initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T,
+                                        initial_conditions.T, 0.0)
 """
     abstract type ContinuousProfileFunction end
 Abstract super type for the continuous function that sets the continuous profile for

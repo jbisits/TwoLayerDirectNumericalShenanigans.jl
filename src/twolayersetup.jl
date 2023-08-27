@@ -214,7 +214,7 @@ struct IsothermalTwoLayerInitialConditions{T} <: TwoLayerInitialConditions
     "Initial temperature difference between the layers"
     ΔT₀ :: T
 end
-TwoLayerInitialConditions(initial_conditions::IsohalineUpperLayerInitialConditions) =
+TwoLayerInitialConditions(initial_conditions::IsothermalUpperLayerInitialConditions) =
     IsothermalTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                         initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T,
                                         initial_conditions.T, 0.0)

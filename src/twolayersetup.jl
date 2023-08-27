@@ -748,7 +748,8 @@ function form_filename(initial_conditions::TwoLayerInitialConditions)
     savefile = ic_type <: StableTwoLayerInitialConditions ? "stable" :
                             ic_type <: CabbelingTwoLayerInitialConditions ?
                                 "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
-                                              "unstable" : "isohaline"
+                                              "unstable" : ic_type <: IsohalineTwoLayerInitialConditions ?
+                                                            "isohaline" : "isothermal"
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)

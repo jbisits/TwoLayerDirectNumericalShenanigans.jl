@@ -253,12 +253,12 @@ abstract type ContinuousProfileFunction end
 function Base.show(io::IO, cpf::ContinuousProfileFunction)
     if cpf isa HyperbolicTangent
         println(io, "$(typeof(cpf))")
-        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)")
-        print(io,   " ┗━━ interface_transition scale: $(cpf.interface_transition_width)")
+        println(io, " ┣━━━━━━━━━━ interface_location: z = $(cpf.interface_location)m ")
+        print(io,   " ┗━━ interface_transition_scale: $(cpf.interface_transition_width)")
     elseif cpf isa Erf
         println(io, "$(typeof(cpf))")
-        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)")
-        print(io,   " ┗━━ time_evolved: t = $(cpf.time)")
+        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)m")
+        print(io,   " ┗━━━━━━━━ time_evolved: t = $(cpf.time)s")
     end
 end
 """
@@ -288,6 +288,26 @@ end
 Abstract super type for the salinity perturbation added to the upper layer.
 """
 abstract type SalinityPerturbation end
+"`show` for `SalinityPerturbation`"
+function Base.show(io::IO, sp::SalinityPerturbation)
+    if sp isa GaussianProfile
+        println(io, "$(typeof(sp))")
+        println(io, " ┣━━ interface_location: z = $(sp.interface_location)m")
+        println(io, " ┣━━ centre_of_Gaussian: z = $(sp.μ)m")
+        println(io, " ┣━━━ width_of_Gaussian: $(sp.σ)")
+        print(io,   " ┗━━━━━━━━━━━━━━━ scale: $(sp.scale)")
+    elseif sp isa GaussianBlob
+        println(io, "$(typeof(sp))")
+        println(io, " ┣━━━━━━ depth_location: z = $(round(sp.depth; digits = 3))m")
+        println(io, " ┣━━ centre_of_Gaussian: $(sp.μ)")
+        println(io, " ┣━━━ width_of_Gaussian: $(sp.σ)")
+        print(io,   " ┗━━━━━━━━━━━━━━━ scale: $(sp.scale)")
+    elseif sp isa RandomPerturbations
+        println(io, "$(typeof(sp))")
+        println(io, " ┣━━ noise_location: z = $(round(sp.depth; digits = 3))m")
+        print(io,   " ┗━━━━━ noise_scale: $(sp.scale)")
+    end
+end
 """
     struct GaussianProfile
 Container for a Gaussian profile salinity perturbation in the upper layer.

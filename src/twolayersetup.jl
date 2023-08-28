@@ -36,8 +36,84 @@ export
     SO_DIFFUSIVITIES,
     REFERENCE_DENSITY,
     INTERFACE_LOCATION,
-    non_dimensional_numbers
+    non_dimensional_numbers,
+    compute_density,
+    compute_density!
 
+"""
+    abstract type UpperLayerInitialConditions
+Abstract super type for initial temperature and salinity in the upper layer.
+"""
+abstract type UpperLayerInitialConditions end
+"`show` for `UpperLayerInitialConditions`"
+function Base.show(io::IO, ulic::UpperLayerInitialConditions)
+    if ulic isa IsothermalUpperLayerInitialConditions
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   " ┗━━ T = $(ulic.T)")
+    elseif ulic isa IsohalineUpperLayerInitialConditions
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S)")
+        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
+    else
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
+    end
+end
+"""
+    struct StableUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are stable relative to `S₀ˡ`
+and `T₀ˡ`.
+"""
+struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial temperature in the upper layer"
+    T₀ᵘ :: T
+end
+"""
+    struct CabbelingUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are unstable to cabbeling
+relative to `S₀ˡ` and `T₀ˡ`.
+"""
+struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial temperature in the upper layer"
+    T₀ᵘ :: T
+end
+"""
+    struct UnstableUpperLayerInitialConditions
+Container for initial salinity and temperature conditions that are unstable relative to `S₀ˡ`
+and `T₀ˡ`.
+"""
+struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial temperature in the upper layer"
+    T₀ᵘ :: T
+end
+"""
+    struct IsohalineUpperLayerInitialConditions
+Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
+"""
+struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial (uniform) salinity over the domain"
+    S   :: T
+    "Initial temperature in the upper layer"
+    T₀ᵘ :: T
+end
+"""
+    struct IsohalineUpperLayerInitialConditions
+Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
+"""
+struct IsothermalUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
+    "Initial salinity in the upper layer"
+    S₀ᵘ :: T
+    "Initial (uniform) temperature over the domain"
+    T   :: T
+end
 """
     abstract type TwoLayerInitialConditions
 Abstract supertype for two layer model initial conditions. Keyword arguments for the
@@ -169,80 +245,6 @@ TwoLayerInitialConditions(initial_conditions::IsothermalUpperLayerInitialConditi
     IsothermalTwoLayerInitialConditions(initial_conditions.S₀ᵘ, S₀ˡ,
                                         initial_conditions.S₀ᵘ - S₀ˡ, initial_conditions.T,
                                         initial_conditions.T, 0.0)
-    """
-    abstract type UpperLayerInitialConditions
-Abstract super type for initial temperature and salinity in the upper layer.
-"""
-abstract type UpperLayerInitialConditions end
-"`show` for `UpperLayerInitialConditions`"
-function Base.show(io::IO, ulic::UpperLayerInitialConditions)
-    if ulic isa IsothermalUpperLayerInitialConditions
-        println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
-        print(io,   " ┗━━ T = $(ulic.T)")
-    elseif ulic isa IsohalineUpperLayerInitialConditions
-        println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S)")
-        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
-    else
-        println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
-        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
-    end
-end
-"""
-    struct StableUpperLayerInitialConditions
-Container for initial salinity and temperature conditions that are stable relative to `S₀ˡ`
-and `T₀ˡ`.
-"""
-struct StableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity in the upper layer"
-    S₀ᵘ :: T
-    "Initial temperature in the upper layer"
-    T₀ᵘ :: T
-end
-"""
-    struct CabbelingUpperLayerInitialConditions
-Container for initial salinity and temperature conditions that are unstable to cabbeling
-relative to `S₀ˡ` and `T₀ˡ`.
-"""
-struct CabbelingUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity in the upper layer"
-    S₀ᵘ :: T
-    "Initial temperature in the upper layer"
-    T₀ᵘ :: T
-end
-"""
-    struct UnstableUpperLayerInitialConditions
-Container for initial salinity and temperature conditions that are unstable relative to `S₀ˡ`
-and `T₀ˡ`.
-"""
-struct UnstableUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity in the upper layer"
-    S₀ᵘ :: T
-    "Initial temperature in the upper layer"
-    T₀ᵘ :: T
-end
-"""
-    struct IsohalineUpperLayerInitialConditions
-Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
-"""
-struct IsohalineUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial (uniform) salinity over the domain"
-    S   :: T
-    "Initial temperature in the upper layer"
-    T₀ᵘ :: T
-end
-"""
-    struct IsohalineUpperLayerInitialConditions
-Container for isohaline initial salinity at (`S₀ˡ`) and initial temperature conditions `T₀ˡ`.
-"""
-struct IsothermalUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
-    "Initial salinity in the upper layer"
-    S₀ᵘ :: T
-    "Initial (uniform) temperature over the domain"
-    T   :: T
-end
 """
     abstract type ContinuousProfileFunction end
 Abstract super type for the continuous function that sets the continuous profile for
@@ -804,6 +806,61 @@ function form_filename(initial_conditions::TwoLayerInitialConditions)
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
 
     return filename
+
+end
+"""
+    function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
+                             reference_pressure = 0)
+Return a density `FieldTimeSeries` calculated from the salinity and temperature
+`FieldTimeSeries` DNS simulation output. The keyword argument `reference_pressure` can be
+passed to specify a reference pressure at which to compute the density variable.
+"""
+function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
+                         reference_pressure = 0)
+
+    ρ_ts = FieldTimeSeries{Center, Center, Center}(S_timeseries.grid, S_timeseries.times,
+                                                  indices = S_timeseries.indices,
+                                                  boundary_conditions =
+                                                    S_timeseries.boundary_conditions)
+
+    t = S_timeseries.times
+    for i ∈ eachindex(t)
+        Sᵢ, Θᵢ = S_timeseries[i], T_timeseries[i]
+        ρ_ts[i] .= @at (Center, Center, Center) gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+    end
+
+    return ρ_ts
+
+end
+"""
+    function compute_density!(filepath::String; reference_pressure = 0)
+Compute a density variable at `reference_pressure` and append it to saved output. **Note**
+this only needs to be done once! After that the group will exist and will not be able to be
+overwritten but a different group can be made by passing a different `density_string`.
+This allows calling `FieldTimeSeries` on the `density_variable`
+"""
+function compute_density!(filepath::String; reference_pressure = 0, density_string = "ρ")
+
+    file = jldopen(filepath, "a+")
+    file_keys = keys(file["timeseries"]["S"])
+    JLD2.Group(file, "timeseries/"*density_string)
+    for (i, key) ∈ enumerate(file_keys)
+        if i == 1
+            for k ∈ keys(file["timeseries/S/"*key])
+                file["timeseries/"*density_string*"/"*key*"/"*k] =
+                    file["timeseries/S/"*key*"/"*k]
+            end
+            file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
+                reference_pressure
+        else
+            Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
+            file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+        end
+    end
+
+    close(file)
+
+    return nothing
 
 end
 

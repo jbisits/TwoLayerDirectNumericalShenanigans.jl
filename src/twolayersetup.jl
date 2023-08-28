@@ -11,6 +11,7 @@ using DirectNumericalCabbelingShenanigans, JLD2, GibbsSeaWater
 using DirectNumericalCabbelingShenanigans: simulation_progress
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
+import Base: show
 
 export
     StableUpperLayerInitialConditions,
@@ -19,6 +20,11 @@ export
     IsohalineUpperLayerInitialConditions,
     IsothermalUpperLayerInitialConditions,
     TwoLayerInitialConditions,
+    StableTwoLayerInitialConditions,
+    CabbelingTwoLayerInitialConditions,
+    UnstableTwoLayerInitialConditions,
+    IsohalineTwoLayerInitialConditions,
+    IsothermalTwoLayerInitialConditions,
     HyperbolicTangent, Erf,
     GaussianProfile,
     GaussianBlob,
@@ -40,6 +46,12 @@ and temperature of the lower layer but have default values `S₀ˡ = 34.7`gkg⁻
 `T₀ˡ = 0.5`°C.
 """
 abstract type TwoLayerInitialConditions end
+"`show` for `TwoLayerInitialConditions`"
+function Base.show(io::IO, tlic::TwoLayerInitialConditions)
+    println(io, "$(typeof(tlic))")
+    println(io, " ┣━━ upper_layer: S = $(tlic.S₀ᵘ), T = $(tlic.T₀ᵘ)")
+    print(io,   " ┗━━ lower_layer: S = $(tlic.S₀ˡ), T = $(tlic.T₀ˡ)")
+end
 """
     struct StableTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are stable.
@@ -162,6 +174,22 @@ TwoLayerInitialConditions(initial_conditions::IsothermalUpperLayerInitialConditi
 Abstract super type for initial temperature and salinity in the upper layer.
 """
 abstract type UpperLayerInitialConditions end
+"`show` for `UpperLayerInitialConditions`"
+function Base.show(io::IO, ulic::UpperLayerInitialConditions)
+    if ulic isa IsothermalUpperLayerInitialConditions
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   " ┗━━ T = $(ulic.T)")
+    elseif ulic isa IsohalineUpperLayerInitialConditions
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S)")
+        print(io,   " ┗━━ T = $(ulic.T₀ˡ)")
+    else
+        println(io, "$(typeof(ulic))")
+        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   " ┗━━ T = $(ulic.T₀ˡ)")
+    end
+end
 """
     struct StableUpperLayerInitialConditions
 Container for initial salinity and temperature conditions that are stable relative to `S₀ˡ`

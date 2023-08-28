@@ -1,3 +1,5 @@
+using Pkg
+Pkg.add(url="https://github.com/jbisits/DirectNumericalCabbelingShenanigans.jl.git")
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 using Test
 

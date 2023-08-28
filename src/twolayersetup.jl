@@ -183,11 +183,11 @@ function Base.show(io::IO, ulic::UpperLayerInitialConditions)
     elseif ulic isa IsohalineUpperLayerInitialConditions
         println(io, "$(typeof(ulic))")
         println(io, " ┣━━ S = $(ulic.S)")
-        print(io,   " ┗━━ T = $(ulic.T₀ˡ)")
+        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
     else
         println(io, "$(typeof(ulic))")
         println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
-        print(io,   " ┗━━ T = $(ulic.T₀ˡ)")
+        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
     end
 end
 """
@@ -249,6 +249,18 @@ Abstract super type for the continuous function that sets the continuous profile
 temperature and salinity.
 """
 abstract type ContinuousProfileFunction end
+"`show` for `ContinuousProfileFunction`"
+function Base.show(io::IO, cpf::ContinuousProfileFunction)
+    if cpf isa HyperbolicTangent
+        println(io, "$(typeof(cpf))")
+        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)")
+        print(io,   " ┗━━ interface_transition scale: $(cpf.interface_transition_width)")
+    elseif cpf isa Erf
+        println(io, "$(typeof(cpf))")
+        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)")
+        print(io,   " ┗━━ time_evolved: t = $(cpf.time)")
+    end
+end
 """
     struct HyperbolicTangent
 Container for a hyperbolic tangent profile. The `interface_transition_width` sets the width

@@ -20,8 +20,13 @@ is used
 
 ## Keyword arguments:
 
-- `reference_density = nothing` for use in the equation of state, defaults to 1020kgm⁻³ but
-any value can be passed in;
+- `linear_eos`, set a linear equation of state for the DNS, default is `false`.
+- `α`, set thermal expansion coefficient for use with `linear_eos`, default value is the
+same as set in [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.BuoyancyModels.LinearEquationOfState).
+- `β`, set haline contraction coefficient for use with `linear_eos`, default value is the
+same as set in [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.BuoyancyModels.LinearEquationOfState).
+- `reference_density = nothing` for use in the full non-linear equation of state,
+defaults to 1020kgm⁻³ but any value can be passed in;
 - `zgrid_stretching = true` stretch the grid in the `z` dimension at the bottom of domain at
 the rate `stretching`, if `false` uniform grid spacing is used;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
@@ -29,6 +34,9 @@ the rate `stretching`, if `false` uniform grid spacing is used;
 """
 function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
              diffusivities::NamedTuple;
+             linear_eos = false,
+             α = 1.67e-4,
+             β = 7.80e-4,
              reference_density = nothing,
              zgrid_stretching = true,
              refinement = 1.2,
@@ -45,8 +53,11 @@ function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                            y = (-Ly/2, Ly/2),
                            z = zgrid)
 
-    eos = isnothing(reference_density) ? SeawaterPolynomials.TEOS10EquationOfState() :
-                            SeawaterPolynomials.TEOS10EquationOfState(; reference_density)
+    eos = linear_eos == true ? LinearEquationOfState(thermal_expansion = α,
+                                                    haline_contraction = β) :
+                                                    isnothing(reference_density) ?
+                                                            TEOS10EquationOfState() :
+                                                            TEOS10EquationOfState(; reference_density)
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
     tracers = (:S, :T)
 

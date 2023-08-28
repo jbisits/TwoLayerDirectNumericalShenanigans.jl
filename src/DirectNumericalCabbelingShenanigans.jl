@@ -1,6 +1,7 @@
 module DirectNumericalCabbelingShenanigans
 
-using Oceananigans, SeawaterPolynomials, Printf, Reexport
+using Oceananigans, Printf, Reexport
+using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 
 @reexport using Oceananigans, Reexport

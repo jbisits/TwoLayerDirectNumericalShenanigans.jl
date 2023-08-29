@@ -1,4 +1,3 @@
-include("../src/DirectNumericalCabbelingShenanigans.jl")
 using DirectNumericalCabbelingShenanigans
 using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 using Test

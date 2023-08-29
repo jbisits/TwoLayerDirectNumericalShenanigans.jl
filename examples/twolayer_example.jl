@@ -21,8 +21,9 @@ salinity_perturbation = GaussianBlob(z[depth_idx], [0.0, 0.0], 1.5)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
 
-DNCS.OutputUtilities.visualise_initial_conditions(model, 1, 1)
-DNCS.OutputUtilities.visualise_initial_density(model, 1, 1, 0)
+using CairoMakie
+visualise_initial_conditions(model, 1, 1)
+visualise_initial_density(model, 1, 1, 0)
 
 ## build the simulation
 Δt = 1e-4

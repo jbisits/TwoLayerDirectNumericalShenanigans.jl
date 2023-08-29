@@ -1,7 +1,7 @@
 ## Example script for viewing output
 using Oceananigans.Fields
 using DirectNumericalCabbelingShenanigans
-using DirectNumericalCabbelingShenanigans.OutputUtilities
+using CairoMakie
 
 ## Load in saved output
 sim_path = joinpath(SIMULATION_PATH, "saved_output.jld2")

@@ -153,3 +153,10 @@ simulation_progress(sim) = @printf("i: % 6d, sim time: % 1.3f, wall time: % 10s,
                                     iteration(sim), time(sim), prettytime(sim.run_wall_time),
                                     sim.Δt, AdvectiveCFL(sim.Δt)(sim.model),
                                     DiffusiveCFL(sim.Δt)(sim.model))
+"Plotting functions in DNCSMakieRasterExt"
+function animate_2D_field end
+function visualise_initial_conditions end
+function visualise_initial_stepchange end
+function initial_tracer_heaviside end
+function visualise_initial_density end
+function visualise_snapshot end

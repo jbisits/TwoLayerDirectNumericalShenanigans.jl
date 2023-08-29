@@ -14,6 +14,12 @@ Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
+[weakdeps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+
+[extensions]
+DNCSMakieExt = "CairoMakie"
+
 [compat]
 CairoMakie = "0.10"
 GibbsSeaWater = "0.1"

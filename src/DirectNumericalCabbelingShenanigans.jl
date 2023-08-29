@@ -31,7 +31,7 @@ export
 
 export set_two_layer_initial_conditions!, add_velocity_random_noise!
 
-export HyperbolicTangent, Erf
+export ContinuousProfileFunction, HyperbolicTangent, Erf
 
 export GaussianProfile, GaussianBlob, RandomPerturbations
 

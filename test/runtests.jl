@@ -1,5 +1,4 @@
 using DirectNumericalCabbelingShenanigans
-using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 using Test
 
 include("twolayercontainers.jl")

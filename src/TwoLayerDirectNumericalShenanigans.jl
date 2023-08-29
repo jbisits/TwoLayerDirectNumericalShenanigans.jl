@@ -13,7 +13,7 @@ import Base: show
 abstract type AbstractTwoLayerDNS end
 "Abstract super type for the salinity perturbation added to the upper layer."
 abstract type SalinityPerturbation end
-"Abstract super type for noise added to field."
+"Abstract super type for random noise added to field."
 abstract type AbstractNoise end
 "Abstract super type for the continuous function that sets the continuous profile for
 temperature and salinity."

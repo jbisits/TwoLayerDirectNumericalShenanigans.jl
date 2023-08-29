@@ -1,7 +1,7 @@
 name = "TwoLayerDirectNumericalShenanigans"
 uuid = "40aaee9f-3595-48be-b36c-f1067009652f"
 authors = ["Josef Bisits <jbisits@gmail.com>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 GibbsSeaWater = "9a22fb26-0b63-4589-b28e-8f9d0b5c3d05"

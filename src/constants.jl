@@ -30,5 +30,5 @@ Path to where the simulations are saved by default. If the folder does not exist
 created when initialising a `Simulation` with `DNS_simulation_setup`.
 """
 const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
-"Alias for DirectNumericalCabbelingShenanigans"
+"Alias for DirectNumericalCabbelingShenanigans."
 const DNCS = DirectNumericalCabbelingShenanigans # alias

@@ -47,9 +47,6 @@ export
     visualise_initial_density,
     visualise_snapshot
 
-const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
-const DNCS = DirectNumericalCabbelingShenanigans # alias
-
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")
 include("salinityperturbations.jl")

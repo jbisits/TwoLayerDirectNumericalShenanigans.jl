@@ -1,5 +1,7 @@
-# abstract type TwoLayerDNS end
-
+"""
+    struct TwoLayerDNS
+Container for all the elements of a `TwoLayerDNS`.
+"""
 struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
                    TLIC <: TwoLayerInitialConditions, SP <: SalinityPerturbation}
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"

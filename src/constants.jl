@@ -24,3 +24,11 @@ const REFERENCE_DENSITY = gsw_rho(34.7, -1.5, 0)
 Location of the interface (in the vertical) between the upper and lower layers.
 """
 const INTERFACE_LOCATION = -0.375
+"""
+    const SIMULATION_PATH
+Path to where the simulations are saved by default. If the folder does not exist it will be
+created when initialising a `Simulation` with `DNS_simulation_setup`.
+"""
+const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
+"Alias for DirectNumericalCabbelingShenanigans"
+const DNCS = DirectNumericalCabbelingShenanigans # alias

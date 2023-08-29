@@ -1,9 +1,15 @@
 """
+    abstract type AbstractTwoLayerDNS
+Super type for `TwoLayerDNS`.
+"""
+abstract type AbstractTwoLayerDNS end
+"""
     struct TwoLayerDNS
 Container for all the elements of a `TwoLayerDNS` with a `SalinityPerturbation`.
 """
 struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
-                   TLIC <: TwoLayerInitialConditions, SP <: Union{SalinityPerturbation, Nothing}}
+                   TLIC <: TwoLayerInitialConditions,
+                   SP <: Union{SalinityPerturbation, Nothing}} <: AbstractTwoLayerDNS
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
     model :: NHM
     "Continuous profile function"
@@ -21,7 +27,7 @@ function Base.show(io::IO, tldns::TwoLayerDNS)
     print(io,   " ┗━ salinity_perturbation: $(typeof(tldns.salinity_perturbation))")
 end
 TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing) =
-    TwoLayerDNS(model, profile_function, initial_condition, nothing)
+    TwoLayerDNS(model, profile_function, initial_condition, salinity_perturbation)
 """
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)

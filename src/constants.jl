@@ -31,4 +31,4 @@ created when initialising a `Simulation` with `DNS_simulation_setup`.
 """
 const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
 "Alias for DirectNumericalCabbelingShenanigans."
-const DNCS = DirectNumericalCabbelingShenanigans # alias
+const TLDNS = TwoLayerDirectNumericalShenanigans # alias

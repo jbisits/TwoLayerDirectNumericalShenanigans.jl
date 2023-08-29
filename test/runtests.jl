@@ -1,5 +1,4 @@
-using DirectNumericalCabbelingShenanigans
-using Test
+using DirectNumericalCabbelingShenanigans, Test
 
 include("twolayercontainers.jl")
 

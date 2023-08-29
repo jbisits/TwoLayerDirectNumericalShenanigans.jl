@@ -59,6 +59,5 @@ include("set_initialconditions.jl")
 include("makiefunctions.jl")
 include("constants.jl")
 include("output_utils.jl")
-#include("twolayersetup.jl")
 
 end

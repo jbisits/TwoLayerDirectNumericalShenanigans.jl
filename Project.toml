@@ -21,6 +21,7 @@ CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DNCSMakieExt = "CairoMakie"
 
 [compat]
+CairoMakie = "0.10"
 GibbsSeaWater = "0.1"
 JLD2 = "0.4"
 Oceananigans = "0.82, 0.83, 0.84, 0.85, 0.86, 0.87"

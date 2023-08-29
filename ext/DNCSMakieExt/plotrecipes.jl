@@ -16,7 +16,7 @@ Keyword arguments:
 - `z_extrema` where to look for the extreme z values while avoiding any random noise, pass
 two ranges or two values for where to look for the `extrema`.
 """
-function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
+function DNCS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                           xslice::Int64, yslice::Int64; colormap = :thermal,
                           colorrange = nothing, highclip = nothing, lowclip = nothing,
                           aspect_ratio = 1)
@@ -70,7 +70,7 @@ end
 Plot an initial step change of the `tracers` in a `model`. This function assumes there are two
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.
 """
-function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
+function DNCS.visualise_initial_stepchange(model::Oceananigans.AbstractModel,
                                       initial_conditions::TwoLayerInitialConditions,
                                       interface_location::Number)
 
@@ -129,7 +129,7 @@ Heaviside function is calculated from the `extrema` of the depth array `z`.
 - `interface_location` where the step takes place e.g. `z - interface_location < 0 ? 0 : 1`.
 Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
 """
-initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location) =
+DNCS.initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location) =
                                                     z - interface_location < 0 ? C : C + ΔC
 """
     function visualise_initial_conditions(model::Oceanangians.AbstractModelmodel, xslice::Integer,
@@ -138,7 +138,7 @@ Plot the initial state of the `tracers` in a `model`. This function assumes ther
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields at
 `xslice` and `yslice`.
 """
-function visualise_initial_conditions(model::Oceananigans.AbstractModel, xslice::Integer,
+function DNCS.visualise_initial_conditions(model::Oceananigans.AbstractModel, xslice::Integer,
                                       yslice::Integer)
 
     x, y, z = nodes(model.grid, (Center(), Center(), Center()))
@@ -184,7 +184,7 @@ Compute and plot the initial density at `pressure` (either reference pressure or
 pressure). The arguments `xslice` and `yslice` are used to choose where in the domain the
 figures are from.
 """
-function visualise_initial_density(model::Oceananigans.AbstractModel, xslice::Integer,
+function DNCS.visualise_initial_density(model::Oceananigans.AbstractModel, xslice::Integer,
                                    yslice::Integer, pressure::Union{Number, Vector{Number}})
 
     x = xnodes(model.grid, Center(), Center(), Center())
@@ -217,7 +217,7 @@ function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::Abstr
                             snapshot::Int64)
 Plot a `snapshot` of the `field_timeseries`  with `field_name` at `xslice`, `yslice`.
 """
-function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
+function DNCS.visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
                             xslice::Int64, yslice::Int64, snapshot::Int64; colormap = :thermal)
 
     x, y, z = nodes(field_timeseries[1])

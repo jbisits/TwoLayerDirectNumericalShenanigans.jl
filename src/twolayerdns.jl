@@ -1,4 +1,34 @@
 """
+    abstract type AbstractTwoLayerDNS
+Super type for `TwoLayerDNS`.
+"""
+abstract type AbstractTwoLayerDNS end
+"""
+    struct TwoLayerDNS
+Container for all the elements of a `TwoLayerDNS` with a `SalinityPerturbation`.
+"""
+struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
+                   TLIC <: TwoLayerInitialConditions,
+                   SP <: Union{SalinityPerturbation, Nothing}} <: AbstractTwoLayerDNS
+    "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
+    model :: NHM
+    "Continuous profile function"
+    profile_function :: CPF
+    "The two layer initial conditions"
+    initial_conditions :: TLIC
+    "Perturbation to the salinity"
+    salinity_perturbation :: SP
+end
+function Base.show(io::IO, tldns::TwoLayerDNS)
+    println(io, "TwoLayerDirectNumericalSimulation")
+    println(io, " ┣━━━━━━━━━━━━━━━━━ model: $(summary(tldns.model))")
+    println(io, " ┣━━━━━━ profile_function: $(typeof(tldns.profile_function))")
+    println(io, " ┣━━━━ initial_conditions: $(typeof(tldns.initial_conditions))")
+    print(io,   " ┗━ salinity_perturbation: $(typeof(tldns.salinity_perturbation))")
+end
+TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing) =
+    TwoLayerDNS(model, profile_function, initial_condition, salinity_perturbation)
+"""
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)
 Setup a Direct Numerical Simulation on `architecture` (`CPU()` or `GPU()`) over the
@@ -92,8 +122,12 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
 
 end
 """
-    function DNS_simulation_setup(model::Oceananigans.AbstractModel)
-Setup the simulation for `DNS` model.
+    function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number, stop_time::Number,
+                                  save_schedule::Number;  cfl = 0.75, diffusive_cfl = 0.75,
+                                  max_change = 1.2, max_Δt = 1e-1)
+Setup a DNS from `initial_conditions` that are of type `TwoLayerInitialConditions`.
+Important non-dimensional numnbers that are part of this experiment are computed and saved
+to the simulation output file.
 
 ## Function arguments:
 
@@ -112,14 +146,14 @@ the course of a simulation;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep.
 """
-function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                              stop_time::Number, savefile::AbstractString,
-                              save_schedule::Number;
+function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
+                              stop_time::Number, save_schedule::Number;
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
-                              max_Δt = 1e-2)
+                              max_Δt = 1e-1)
 
+    model, initial_conditions = dns.model, dns.initial_conditions
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
@@ -127,21 +161,43 @@ function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
     # save output
-    outputs = (S = model.tracers.S, T = model.tracers.T)
+    ϵ = KineticEnergyDissipationRate(model)
+    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
+    filename = form_filename(initial_conditions)
+    simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
+                                                    filename = filename,
+                                                    schedule = TimeInterval(save_schedule),
+                                                    overwrite_existing = true)
+    jldopen(filename, "a+") do file
+        file["Non_dimensional_numbers"] = non_dimensional_numbers(dns)
+    end
+
+    # progress reporting
+    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
+
+    return simulation
+
+end
+"""
+    function form_filename(initial_conditions::TwoLayerInitialConditions)
+Create a directory based on the temperature of the upper layer and a file for the saved
+output based on the type of initial condition (i.e. stable, cabbeling or unstable).
+"""
+function form_filename(initial_conditions::TwoLayerInitialConditions)
+
+    ic_type = typeof(initial_conditions)
+    savefile = ic_type <: StableTwoLayerInitialConditions ? "stable" :
+                            ic_type <: CabbelingTwoLayerInitialConditions ?
+                                "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
+                                              "unstable" : ic_type <: IsohalineTwoLayerInitialConditions ?
+                                                            "isohaline" : "isothermal"
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)
     end
     filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
-    simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
-                                                    filename = filename,
-                                                    schedule = TimeInterval(save_schedule),
-                                                    overwrite_existing = true)
 
-    # progress reporting
-    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(50))
-
-    return simulation
+    return filename
 
 end
 """
@@ -153,10 +209,3 @@ simulation_progress(sim) = @printf("i: % 6d, sim time: % 1.3f, wall time: % 10s,
                                     iteration(sim), time(sim), prettytime(sim.run_wall_time),
                                     sim.Δt, AdvectiveCFL(sim.Δt)(sim.model),
                                     DiffusiveCFL(sim.Δt)(sim.model))
-"Plotting functions in DNCSMakieRasterExt"
-function animate_2D_field end
-function visualise_initial_conditions end
-function visualise_initial_stepchange end
-function initial_tracer_heaviside end
-function visualise_initial_density end
-function visualise_snapshot end

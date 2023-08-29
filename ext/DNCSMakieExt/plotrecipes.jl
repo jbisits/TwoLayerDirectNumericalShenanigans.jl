@@ -17,9 +17,9 @@ Keyword arguments:
 two ranges or two values for where to look for the `extrema`.
 """
 function DNCS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                          xslice::Int64, yslice::Int64; colormap = :thermal,
-                          colorrange = nothing, highclip = nothing, lowclip = nothing,
-                          aspect_ratio = 1)
+                               xslice::Int64, yslice::Int64; colormap = :thermal,
+                               colorrange = nothing, highclip = nothing, lowclip = nothing,
+                               aspect_ratio = 1)
 
     x, y, z = nodes(field_timeseries[1])
 
@@ -64,16 +64,13 @@ function DNCS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::Ab
 
 end
 """
-    function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
-                                          initial_conditions::TwoLayereInitialConditions,
-                                          interface_location::Number)
+    function visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)
 Plot an initial step change of the `tracers` in a `model`. This function assumes there are two
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.
 """
-function DNCS.visualise_initial_stepchange(model::Oceananigans.AbstractModel,
-                                      initial_conditions::TwoLayerInitialConditions,
-                                      interface_location::Number)
+function DNCS.visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)
 
+    model, initial_conditions = dns.model, dns.initial_conditions
     x, y, z = nodes(model.grid, (Center(), Center(), Center()))
     S₀ˡ, ΔS₀ = initial_conditions.S₀ˡ, initial_conditions.ΔS₀
     T₀ˡ, ΔT₀ = initial_conditions.T₀ˡ, initial_conditions.ΔT₀
@@ -132,14 +129,14 @@ Default behaviour puts the `interface_location` in the centre of the depth range
 DNCS.initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location) =
                                                     z - interface_location < 0 ? C : C + ΔC
 """
-    function visualise_initial_conditions(model::Oceanangians.AbstractModelmodel, xslice::Integer,
-                                          yslice::Integer)
+    function visualise_initial_conditions(dns::TwoLayerDNS, xslice::Integer, yslice::Integer)
 Plot the initial state of the `tracers` in a `model`. This function assumes there are two
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields at
 `xslice` and `yslice`.
 """
-function DNCS.visualise_initial_conditions(model::Oceananigans.AbstractModel, xslice::Integer,
-                                      yslice::Integer)
+function DNCS.visualise_initial_conditions(dns::TwoLayerDNS, xslice::Integer, yslice::Integer)
+
+    model = dns.model
 
     x, y, z = nodes(model.grid, (Center(), Center(), Center()))
     S = model.tracers.S
@@ -178,14 +175,16 @@ function DNCS.visualise_initial_conditions(model::Oceananigans.AbstractModel, xs
 
 end
 """
-    function visualise_initial_density(model::Oceananigans.AbstractModel,xslice::Integer,
-                                       yslice::Integer, pressure::Union{Number, Vector{Number}})
+    function visualise_initial_density(dns::TwoLayerDNS, xslice::Integer,  yslice::Integer,
+                                       pressure::Union{Number, Vector{Number}})
 Compute and plot the initial density at `pressure` (either reference pressure or in-situ
 pressure). The arguments `xslice` and `yslice` are used to choose where in the domain the
 figures are from.
 """
-function DNCS.visualise_initial_density(model::Oceananigans.AbstractModel, xslice::Integer,
-                                   yslice::Integer, pressure::Union{Number, Vector{Number}})
+function DNCS.visualise_initial_density(dns::TwoLayerDNS, xslice::Integer,  yslice::Integer,
+                                        pressure::Union{Number, Vector{Number}})
+
+    model = dns.model
 
     x = xnodes(model.grid, Center(), Center(), Center())
     z = znodes(model.grid, Center(), Center(), Center())
@@ -218,7 +217,8 @@ function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::Abstr
 Plot a `snapshot` of the `field_timeseries`  with `field_name` at `xslice`, `yslice`.
 """
 function DNCS.visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                            xslice::Int64, yslice::Int64, snapshot::Int64; colormap = :thermal)
+                                 xslice::Int64, yslice::Int64, snapshot::Int64;
+                                 colormap = :thermal)
 
     x, y, z = nodes(field_timeseries[1])
     t = round(field_timeseries.times[snapshot]; digits = 3)

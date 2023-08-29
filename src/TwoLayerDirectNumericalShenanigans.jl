@@ -1,4 +1,4 @@
-module DirectNumericalCabbelingShenanigans
+module TwoLayerDirectNumericalShenanigans
 
 using Oceananigans, Printf, Reexport, JLD2, GibbsSeaWater
 using SeawaterPolynomials: TEOS10EquationOfState

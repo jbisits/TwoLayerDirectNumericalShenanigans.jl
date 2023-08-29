@@ -1,6 +1,6 @@
 ## Example script for viewing output
 using Oceananigans.Fields
-using DirectNumericalCabbelingShenanigans
+using TwoLayerDirectNumericalShenanigans
 using CairoMakie
 
 ## Load in saved output

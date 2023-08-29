@@ -106,3 +106,31 @@ function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
     return minimum(minimum_η_t)
 
 end
+"""
+    function non_dimensional_numbers(model::Oceananigans.AbstractModel,
+                                     initial_conditions::TwoLayerInitialConditions)
+Compute non-dimensional numbers related to the DNS experiments. The non-dimensional numbers
+are:
+
+- Prandtl number: ``Pr = ν / κₜ``
+- Schmidt number: ``Sc = ν / κₛ``
+- Lewis number:   ``Le = κₜ / κₛ``
+- Raleigh number (density): ``Ra_{d} = Ra_{t} / Ra_{s} = (αΔT / βΔS) * (1 / Le)``.
+
+These numbers are then saved into the simulation output file.
+"""
+function non_dimensional_numbers(model::Oceananigans.AbstractModel,
+                                 initial_conditions::TwoLayerInitialConditions)
+
+    ν = model.closure.ν
+    κₛ, κₜ = model.closure.κ
+    Pr = ν / κₜ
+    Sc = ν / κₛ
+    Le = κₜ / κₛ
+    α = gsw_alpha(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
+    β = gsw_beta(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
+    Ra = ((α * initial_conditions.ΔT₀ )/ (β * initial_conditions.ΔS₀)) * (1 / Le)
+
+    return Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+
+end

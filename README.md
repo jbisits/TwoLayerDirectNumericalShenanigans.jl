@@ -1,6 +1,6 @@
-# DirectNumericalCabbelingShenanigans.jl
+# TwoLayerDirectNumericalShenanigans.jl
 
-[![Build Status](https://github.com/jbisits/DirectNumericalShenanigans.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jbisits/DirectNumericalShenanigans.jl/actions/workflows/CI.yml?query=branch%3Amain)
+[![Build Status](https://github.com/jbisits/TwoLayerDirectNumericalShenanigans.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jbisits/TwoLayerDirectNumericalShenanigans.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
 A Julia package (unregistered) to explore the cabbeling instability using Direct Numerical Simulation experiments built with [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
 
@@ -8,7 +8,7 @@ To add the package (assuming julia is already installed):
 
 ```julia
 julia> using Pkg
-julia> Pkg.add(url="https://github.com/jbisits/DirectNumericalCabbelingShenanigans.jl.git")
+julia> Pkg.add(url="https://github.com/jbisits/TwoLayerDirectNumericalShenanigans.jl")
 ```
 
 To then use the package

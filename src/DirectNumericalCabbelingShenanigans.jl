@@ -10,6 +10,7 @@ import Base: show
 @reexport using Oceananigans, Reexport
 
 export
+    TwoLayerDNS,
     SIMULATION_PATH,
     DNCS,
     DNS,
@@ -33,7 +34,7 @@ export set_two_layer_initial_conditions!, add_velocity_random_noise!
 
 export ContinuousProfileFunction, HyperbolicTangent, Erf
 
-export GaussianProfile, GaussianBlob, RandomPerturbations
+export SalinityPerturbation, GaussianProfile, GaussianBlob, RandomPerturbations
 
 export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
        INTERFACE_LOCATION
@@ -52,6 +53,7 @@ const DNCS = DirectNumericalCabbelingShenanigans # alias
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")
 include("salinityperturbations.jl")
+include("twolayerdns.jl")
 include("dns.jl")
 include("set_initialconditions.jl")
 include("makiefunctions.jl")

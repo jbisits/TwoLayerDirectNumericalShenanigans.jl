@@ -1,3 +1,5 @@
+"Abstract super type for initial temperature and salinity in the upper layer."
+abstract type UpperLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `UpperLayerInitialConditions`"
 function Base.show(io::IO, ulic::UpperLayerInitialConditions)
     if ulic isa IsothermalUpperLayerInitialConditions
@@ -67,6 +69,8 @@ struct IsothermalUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial (uniform) temperature over the domain"
     T   :: T
 end
+"Abstract super type for two layer initial conditions for the dns."
+abstract type TwoLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `TwoLayerInitialConditions`"
 function Base.show(io::IO, tlic::TwoLayerInitialConditions)
     println(io, "$(typeof(tlic))")

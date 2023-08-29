@@ -2,15 +2,15 @@
     function set_two_layer_initial_conditions(dns::TwoLayerDNS)
 
 Set initial conditions for a `TwoLayerDNS` that are smooth according to the
-`profile_funciton` with or without a `salinity_perturbation` in the upper layer.
+`profile_funciton` with or without a `tracer_perturbation` in the upper layer.
 """
 function set_two_layer_initial_conditions!(dns::TwoLayerDNS)
 
-    model, initial_conditions, profile_function, salinity_perturbation, initial_noise =
-        dns.model, dns.initial_conditions, dns.profile_function, dns.salinity_perturbation, dns.initial_noise
+    model, initial_conditions, profile_function, tracer_perturbation, initial_noise =
+        dns.model, dns.initial_conditions, dns.profile_function, dns.tracer_perturbation, dns.initial_noise
 
     set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
-                                      salinity_perturbation, initial_noise)
+                                      tracer_perturbation, initial_noise)
 
     return nothing
 
@@ -19,7 +19,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::Nothing,
+                                           tracer_perturbation::Nothing,
                                            initial_noise::Nothing)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -39,7 +39,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::Nothing)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -49,7 +49,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                    perturb_salinity(z, salinity_perturbation)
+                                    perturb_tracer(z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -61,7 +61,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::SalinityNoise)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -71,8 +71,8 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                    perturb_salinity(z, salinity_perturbation) +
-                                    perturb_salinity(z, initial_noise)
+                                    perturb_tracer(z, tracer_perturbation) +
+                                    perturb_tracer(z, initial_noise)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -84,7 +84,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::VelocityNoise)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -94,7 +94,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                 perturb_salinity(z, salinity_perturbation)
+                                 perturb_tracer(z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -108,7 +108,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::GaussianBlob,
+                                           tracer_perturbation::SalinityGaussianBlob,
                                            initial_noise::Nothing)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -118,7 +118,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                    perturb_salinity(x, y, z, salinity_perturbation)
+                                    perturb_tracer(x, y, z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -130,7 +130,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::Erf,
-                                           salinity_perturbation::Nothing,
+                                           tracer_perturbation::Nothing,
                                            initial_noise::SalinityNoise)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
@@ -140,7 +140,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = erf_tracer_solution(z, S₀, ΔS, κₛ, profile_function) +
-                                    perturb_salinity(z, initial_noise)
+                                    perturb_tracer(z, initial_noise)
 
     initial_T_profile(x, y, z) = erf_tracer_solution(z, T₀, ΔT, κₜ, profile_function)
 
@@ -150,10 +150,10 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-    initial_conditions::TwoLayerInitialConditions,
-    profile_function::Erf,
-    salinity_perturbation::Nothing,
-    initial_noise::VelocityNoise)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::VelocityNoise)
 
     κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
     S₀ = initial_conditions.S₀ˡ
@@ -175,7 +175,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::Nothing,
+                                           tracer_perturbation::Nothing,
                                            initial_noise::Nothing)
 
     S₀ = initial_conditions.S₀ˡ
@@ -194,7 +194,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::Nothing)
 
     S₀ = initial_conditions.S₀ˡ
@@ -203,7 +203,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                    perturb_salinity(z, salinity_perturbation)
+                                    perturb_tracer(z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -215,7 +215,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::SalinityNoise)
 
     S₀ = initial_conditions.S₀ˡ
@@ -224,8 +224,8 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                    perturb_salinity(z, salinity_perturbation) +
-                                    perturb_salinity(z, initial_noise)
+                                    perturb_tracer(z, tracer_perturbation) +
+                                    perturb_tracer(z, initial_noise)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -237,7 +237,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::GaussianProfile,
+                                           tracer_perturbation::SalinityGaussianProfile,
                                            initial_noise::VelocityNoise)
 
     S₀ = initial_conditions.S₀ˡ
@@ -246,7 +246,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                 perturb_salinity(z, salinity_perturbation)
+                                 perturb_tracer(z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -260,7 +260,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::GaussianBlob,
+                                           tracer_perturbation::SalinityGaussianBlob,
                                            initial_noise::Nothing)
 
     S₀ = initial_conditions.S₀ˡ
@@ -269,7 +269,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                    perturb_salinity(x, y, z, salinity_perturbation)
+                                    perturb_tracer(x, y, z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -281,7 +281,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
                                            profile_function::HyperbolicTangent,
-                                           salinity_perturbation::Nothing,
+                                           tracer_perturbation::Nothing,
                                            initial_noise::SalinityNoise)
 
     S₀ = initial_conditions.S₀ˡ
@@ -290,7 +290,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-                                    perturb_salinity(z, initial_noise)
+                                    perturb_tracer(z, initial_noise)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -302,7 +302,7 @@ end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                           initial_conditions::TwoLayerInitialConditions,
                                           profile_function::HyperbolicTangent,
-                                          salinity_perturbation::Nothing,
+                                          tracer_perturbation::Nothing,
                                           initial_noise::VelocityNoise)
 
     S₀ = initial_conditions.S₀ˡ

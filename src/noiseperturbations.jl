@@ -1,23 +1,35 @@
+"Tracer Noise type"
+abstract type TracerNoise <: AbstractNoise end
 """
     struct SalinityNoise
 Container for adding `scale`d random noise to the salinity field at `depth`.
 """
-struct SalinityNoise{T} <: AbstractNoise
+struct SalinityNoise{T} <: TracerNoise
     "Depth at which to set random salinity perturbations."
     depth :: T
     "Scale for the random noise."
     scale :: T
 end
 """
-    function perturb_salinity(z, salinity_perturbation::SalinityNoise)
-Perturb salinity by adding `scale`d random noise to the salinity at `depth`.
+    struct TemperatuerNoise
+Container for adding `scale`d random noise to the salinity field at `depth`.
+"""
+struct TemperatureNoise{T} <: TracerNoise
+    "Depth at which to set random salinity perturbations."
+    depth :: T
+    "Scale for the random noise."
+    scale :: T
+end
+"""
+    function perturb_salinity(z, tracer_perturbation::TracerNoise)
+Perturb tracer by adding `scale`d random noise to the salinity at `depth`.
 **Note** the `depth` needs to be an exact match to a depth at that the `Center` in the `z`
 direction.
 """
-function perturb_salinity(z, salinity_perturbation::SalinityNoise)
+function perturb_tracer(z, tracer_perturbation::TracerNoise)
 
-    if z == salinity_perturbation.depth
-        salinity_perturbation.scale * randn()
+    if z == tracer_perturbation.depth
+        tracer_perturbation.scale * randn()
     else
         0
     end

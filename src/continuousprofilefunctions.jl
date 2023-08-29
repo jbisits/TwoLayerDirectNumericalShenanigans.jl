@@ -1,5 +1,5 @@
-"`show` for `ContinuousProfileFunction`"
-function Base.show(io::IO, cpf::ContinuousProfileFunction)
+"`show` for `AbstractContinuousProfileFunction`"
+function Base.show(io::IO, cpf::AbstractContinuousProfileFunction)
     if cpf isa HyperbolicTangent
         println(io, "$(typeof(cpf))")
         println(io, " ┣━━━━━━━━━━ interface_location: z = $(cpf.interface_location)m ")
@@ -15,7 +15,7 @@ end
 Container for a hyperbolic tangent profile. The `interface_transition_width` sets the width
 of the transition between the upper and lower layer.
 """
-struct HyperbolicTangent{T} <: ContinuousProfileFunction
+struct HyperbolicTangent{T} <: AbstractContinuousProfileFunction
     "Location of the interface between the two layers."
     interface_location :: T
     "Scale the transition between the upper and lower layer salinity and temperature."
@@ -26,7 +26,7 @@ end
 Container for a profile that is an error function. The `time` is the time which to evaluate
 `erf_tracer_solution`.
 """
-struct Erf{T} <: ContinuousProfileFunction
+struct Erf{T} <: AbstractContinuousProfileFunction
     "Location of the interface between the two layers."
     interface_location :: T
     "Time at which to evaluate the error function which is solution to 1D evolution of S or T."

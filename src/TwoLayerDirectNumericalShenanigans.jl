@@ -11,17 +11,15 @@ import Base: show
 
 "Abstract type for `TwoLayerDNS`."
 abstract type AbstractTwoLayerDNS end
-"Abstract super type for the salinity perturbation added to the upper layer."
-abstract type SalinityPerturbation end
-"Abstract super type for random noise added to field."
+"Abstract super type for a perturbation added to a tracer (`S` or `T`)."
+abstract type AbstractTracerPerturbation end
+"Abstract super type for random noise added to tracer or velocity field."
 abstract type AbstractNoise end
 "Abstract super type for the continuous function that sets the continuous profile for
 temperature and salinity."
-abstract type ContinuousProfileFunction end
-"Abstract super type for initial temperature and salinity in the upper layer."
-abstract type UpperLayerInitialConditions end
-"Abstract supertype for two layer model initial conditions."
-abstract type TwoLayerInitialConditions end
+abstract type AbstractContinuousProfileFunction end
+"Abstract supertype for dns initial conditions."
+abstract type AbstractInitialConditions end
 
 export TwoLayerDNS, DNS, DNS_simulation_setup
 
@@ -38,11 +36,11 @@ export
     IsohalineTwoLayerInitialConditions,
     IsothermalTwoLayerInitialConditions
 
-export set_two_layer_initial_conditions!, add_velocity_random_noise!
+export set_two_layer_initial_conditions!
 
-export ContinuousProfileFunction, HyperbolicTangent, Erf
+export AbstractContinuousProfileFunction, HyperbolicTangent, Erf
 
-export SalinityPerturbation, GaussianProfile, GaussianBlob
+export AbstractTracerPerturbation, SalinityGaussianProfile, SalinityGaussianBlob
 
 export AbstractNoise, SalinityNoise, VelocityNoise
 
@@ -56,7 +54,7 @@ export animate_2D_field, visualise_initial_conditions, visualise_initial_density
 
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")
-include("salinityperturbations.jl")
+include("tracerperturbations.jl")
 include("twolayerdns.jl")
 include("noiseperturbations.jl")
 include("set_initialconditions.jl")

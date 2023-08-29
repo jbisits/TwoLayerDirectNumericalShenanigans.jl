@@ -1,6 +1,5 @@
 # A two layer DNS experiment example
 using DirectNumericalCabbelingShenanigans
-using DirectNumericalCabbelingShenanigans.TwoLayerDNS
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
@@ -21,9 +20,9 @@ salinity_perturbation = GaussianBlob(z[depth_idx], [0.0, 0.0], 1.5)
 set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                   salinity_perturbation)
 
-using CairoMakie
-visualise_initial_conditions(model, 1, 1)
-visualise_initial_density(model, 1, 1, 0)
+# using CairoMakie - need to have a different environment activated with CairoMakie as dep
+# visualise_initial_conditions(model, 1, 1)
+# visualise_initial_density(model, 1, 1, 0)
 
 ## build the simulation
 Δt = 1e-4

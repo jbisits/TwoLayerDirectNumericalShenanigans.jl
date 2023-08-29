@@ -1,26 +1,27 @@
 """
-    function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
-                                                initial_conditions::TwoLayerInitialConditions,
-                                                profile_function::ContinuousProfileFunction)
-    function set_two_layer_initial_conditions(model::Oceananigans.AbstractModel,
-                                                initial_conditions::TwoLayerInitialConditions,
-                                                profile_function::ContinuousProfileFunction,
-                                                salinity_perturbation::SalinityPerturbaion)
+    function set_two_layer_initial_conditions(dns::TwoLayerDNS)
 
-Set initial conditions for a two layer model that are smooth depending on the
+Set initial conditions for a `TwoLayerDNS` that are smooth according to the
 `profile_funciton` with or without a `salinity_perturbation` in the upper layer.
-
-## Function arguments:
-
-- `model`: to set the initial salinity and temperature in;
-- `initial_conditions`: the values for the initial conditions in an appropriate container;
-- `profile_function`: the smooth funtion used to set the profile to avoid discontinuities;
-- `salinity_perturbation`: perturbation for the salinity in the upper layer to help kick off
-instability.
 """
+function set_two_layer_initial_conditions!(dns::TwoLayerDNS)
+
+    model, initial_conditions, profile_function, salinity_perturbation =
+        dns.model, dns.initial_conditions, dns.profile_function, dns.salinity_perturbation
+
+    isnothing(salinity_perturbation) ? set_two_layer_initial_conditions!(model,
+                                                                         initial_conditions,
+                                                                         profile_function) :
+                                       set_two_layer_initial_conditions!(model,
+                                                                         initial_conditions,
+                                                                         profile_function,
+                                                                         salinity_perturbation)
+    return nothing
+
+end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::Erf)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf)
 
 κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
 S₀ = initial_conditions.S₀ˡ
@@ -37,9 +38,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::Erf,
-                                        salinity_perturbation::GaussianProfile)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::GaussianProfile)
 
 κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
 S₀ = initial_conditions.S₀ˡ
@@ -58,10 +59,10 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::Erf,
-                                        salinity_perturbation::GaussianProfile,
-                                        salinity_noise::RandomPerturbations)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::GaussianProfile,
+                                           salinity_noise::RandomPerturbations)
 
 κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
 S₀ = initial_conditions.S₀ˡ
@@ -81,9 +82,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::Erf,
-                                        salinity_perturbation::GaussianBlob)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::GaussianBlob)
 
 κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
 S₀ = initial_conditions.S₀ˡ
@@ -102,9 +103,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::Erf,
-                                        salinity_perturbation::RandomPerturbations)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::Erf,
+                                           salinity_perturbation::RandomPerturbations)
 
 κₛ, κₜ = model.closure.κ.S, model.closure.κ.T
 S₀ = initial_conditions.S₀ˡ
@@ -123,8 +124,8 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::HyperbolicTangent)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent)
 
 S₀ = initial_conditions.S₀ˡ
 ΔS = initial_conditions.ΔS₀
@@ -140,9 +141,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::HyperbolicTangent,
-                                        salinity_perturbation::GaussianProfile)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianProfile)
 
 S₀ = initial_conditions.S₀ˡ
 ΔS = initial_conditions.ΔS₀
@@ -160,10 +161,10 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::HyperbolicTangent,
-                                        salinity_perturbation::GaussianProfile,
-                                        salinity_noise::RandomPerturbations)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianProfile,
+                                           salinity_noise::RandomPerturbations)
 
 S₀ = initial_conditions.S₀ˡ
 ΔS = initial_conditions.ΔS₀
@@ -182,9 +183,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::HyperbolicTangent,
-                                        salinity_perturbation::GaussianBlob)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::GaussianBlob)
 
 S₀ = initial_conditions.S₀ˡ
 ΔS = initial_conditions.ΔS₀
@@ -202,9 +203,9 @@ return nothing
 
 end
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
-                                        initial_conditions::TwoLayerInitialConditions,
-                                        profile_function::HyperbolicTangent,
-                                        salinity_perturbation::RandomPerturbations)
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::HyperbolicTangent,
+                                           salinity_perturbation::RandomPerturbations)
 
 S₀ = initial_conditions.S₀ˡ
 ΔS = initial_conditions.ΔS₀

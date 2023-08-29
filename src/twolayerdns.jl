@@ -3,7 +3,7 @@
 Container for all the elements of a `TwoLayerDNS` with a `SalinityPerturbation`.
 """
 struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
-                   TLIC <: TwoLayerInitialConditions, SP <: SalinityPerturbation}
+                   TLIC <: TwoLayerInitialConditions, SP <: Union{SalinityPerturbation, Nothing}}
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
     model :: NHM
     "Continuous profile function"
@@ -20,6 +20,8 @@ function Base.show(io::IO, tldns::TwoLayerDNS)
     println(io, " ┣━━━━ initial_conditions: $(typeof(tldns.initial_conditions))")
     print(io,   " ┗━ salinity_perturbation: $(typeof(tldns.salinity_perturbation))")
 end
+TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing) =
+    TwoLayerDNS(model, profile_function, initial_condition, nothing)
 """
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)
@@ -114,9 +116,9 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
 
 end
 """
-    function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                                  stop_time::Number,
-                                  initial_conditions::TwoLayerInitialConditions)
+    function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number, stop_time::Number,
+                                  save_schedule::Number;  cfl = 0.75, diffusive_cfl = 0.75,
+                                  max_change = 1.2, max_Δt = 1e-1)
 Setup a DNS from `initial_conditions` that are of type `TwoLayerInitialConditions`.
 Important non-dimensional numnbers that are part of this experiment are computed and saved
 to the simulation output file.
@@ -138,14 +140,14 @@ the course of a simulation;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep.
 """
-function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
-                              stop_time::Number, save_schedule::Number,
-                              initial_conditions::TwoLayerInitialConditions;
+function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
+                              stop_time::Number, save_schedule::Number;
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
                               max_Δt = 1e-1)
 
+    model, initial_conditions = dns.model, dns.initial_conditions
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
@@ -161,7 +163,7 @@ function DNS_simulation_setup(model::Oceananigans.AbstractModel, Δt::Number,
                                                     schedule = TimeInterval(save_schedule),
                                                     overwrite_existing = true)
     jldopen(filename, "a+") do file
-        file["Non_dimensional_numbers"] = non_dimensional_numbers(model, initial_conditions)
+        file["Non_dimensional_numbers"] = non_dimensional_numbers(dns)
     end
 
     # progress reporting

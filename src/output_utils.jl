@@ -119,9 +119,9 @@ are:
 
 These numbers are then saved into the simulation output file.
 """
-function non_dimensional_numbers(model::Oceananigans.AbstractModel,
-                                 initial_conditions::TwoLayerInitialConditions)
+function non_dimensional_numbers(dns::TwoLayerDNS)
 
+    model, initial_conditions = dns.model, dns.initial_conditions
     ν = model.closure.ν
     κₛ, κₜ = model.closure.κ
     Pr = ν / κₜ

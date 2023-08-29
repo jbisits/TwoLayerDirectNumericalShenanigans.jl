@@ -1,15 +1,11 @@
 """
-    abstract type AbstractTwoLayerDNS
-Super type for `TwoLayerDNS`.
-"""
-abstract type AbstractTwoLayerDNS end
-"""
     struct TwoLayerDNS
 Container for all the elements of a `TwoLayerDNS` with a `SalinityPerturbation`.
 """
 struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
                    TLIC <: TwoLayerInitialConditions,
-                   SP <: Union{SalinityPerturbation, Nothing}} <: AbstractTwoLayerDNS
+                   SP <: Union{SalinityPerturbation, Nothing},
+                   AN <: Union{AbstractNoise, Nothing}} <: AbstractTwoLayerDNS
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
     model :: NHM
     "Continuous profile function"
@@ -18,16 +14,20 @@ struct TwoLayerDNS{NHM <: NonhydrostaticModel, CPF <: ContinuousProfileFunction,
     initial_conditions :: TLIC
     "Perturbation to the salinity"
     salinity_perturbation :: SP
+    "Initial noise to create instability"
+    initial_noise :: AN
 end
 function Base.show(io::IO, tldns::TwoLayerDNS)
     println(io, "TwoLayerDirectNumericalSimulation")
     println(io, " ┣━━━━━━━━━━━━━━━━━ model: $(summary(tldns.model))")
     println(io, " ┣━━━━━━ profile_function: $(typeof(tldns.profile_function))")
     println(io, " ┣━━━━ initial_conditions: $(typeof(tldns.initial_conditions))")
-    print(io,   " ┗━ salinity_perturbation: $(typeof(tldns.salinity_perturbation))")
+    println(io, " ┣━ salinity_perturbation: $(typeof(tldns.salinity_perturbation))")
+    print(io,   " ┗━━━━━━━━━ initial_noise: $(typeof(tldns.initial_noise))")
 end
-TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing) =
-    TwoLayerDNS(model, profile_function, initial_condition, salinity_perturbation)
+TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing,
+            initial_noise = nothing) =
+    TwoLayerDNS(model, profile_function, initial_condition, salinity_perturbation, initial_noise)
 """
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)

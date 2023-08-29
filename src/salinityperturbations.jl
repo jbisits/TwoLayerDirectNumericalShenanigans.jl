@@ -1,8 +1,3 @@
-"""
-    abstract type SalinityPerturbation
-Abstract super type for the salinity perturbation added to the upper layer.
-"""
-abstract type SalinityPerturbation end
 "`show` for `SalinityPerturbation`"
 function Base.show(io::IO, sp::SalinityPerturbation)
     if sp isa GaussianProfile
@@ -56,16 +51,6 @@ end
 GaussianBlob(interface_location, μ, σ; scale = 1.0) =
     GaussianBlob(interface_location, μ, σ, scale)
 """
-    struct RandomPerturbations
-Container for adding `scale`d random noise to the salinity at `depth`.
-"""
-struct RandomPerturbations{T} <: SalinityPerturbation
-    "Depth at which to set random salinity perturbations."
-    depth :: T
-    "Scale for the random noise."
-    scale :: T
-end
-"""
     function perturb_salinity(z, salinity_perturbation::GaussianProfile)
 Perturb salinity by setting a vertical Gaussian profile in the upper layer centred at `μ`
 with width `σ`.
@@ -95,21 +80,6 @@ function perturb_salinity(x, y, z, salinity_perturbation::GaussianBlob)
 
     if z == salinity_perturbation.depth
         scale * exp(- ((x - μ[1])^2 + (y - μ[2])^2) / 2*σ^2) / (2*π*σ^2)
-    else
-        0
-    end
-
-end
-"""
-    function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
-Perturb salinity by adding `scale`d random noise to the salinity at `depth`.
-**Note** the `depth` needs to be an exact match to a depth at that the `Center` in the `z`
-direction.
-"""
-function perturb_salinity(z, salinity_perturbation::RandomPerturbations)
-
-    if z == salinity_perturbation.depth
-        salinity_perturbation.scale * randn()
     else
         0
     end

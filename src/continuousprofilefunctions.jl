@@ -1,9 +1,3 @@
-"""
-    abstract type ContinuousProfileFunction end
-Abstract super type for the continuous function that sets the continuous profile for
-temperature and salinity.
-"""
-abstract type ContinuousProfileFunction end
 "`show` for `ContinuousProfileFunction`"
 function Base.show(io::IO, cpf::ContinuousProfileFunction)
     if cpf isa HyperbolicTangent

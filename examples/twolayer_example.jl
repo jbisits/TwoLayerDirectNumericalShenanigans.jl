@@ -17,8 +17,9 @@ profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 z = znodes(model.grid, Center(), Center(), Center())
 depth_idx = findfirst(z .> 2 * INTERFACE_LOCATION / 3)
 salinity_perturbation = GaussianBlob(z[depth_idx], [0.0, 0.0], 1.5)
+initial_noise = SalinityNoise(z[depth_idx], 2.0)
 
-dns = TwoLayerDNS(model, profile_function, initial_conditions, salinity_perturbation)
+dns = TwoLayerDNS(model, profile_function, initial_conditions; initial_noise)
 
 set_two_layer_initial_conditions!(dns)
 # using CairoMakie - need to have a different environment activated with CairoMakie as dep

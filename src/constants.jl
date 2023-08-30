@@ -5,9 +5,11 @@ Domain extent on which the two layer simulations are run.
 const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = 1)
 """
     const HIGH_RESOLUTION
-Resolution (high) at which to run the DNS.
+Resolution at which to run the DNS sufficient to resolve turbulence on all scales, i.e.
+`dx`, `dy`, `dz` < `η_min` where `η_min` is smallest Kolmogorov scale in length and time for
+the run of a simulation.
 """
-const HIGH_RESOLUTION = (Nx = 50, Ny = 50, Nz = 1400)
+const HIGH_RESOLUTION = (Nx = 124, Ny = 124, Nz = 1400)
 """
     const SO_DIFFUSIVITIES
 Diffusivity estimates for the Southern Ocean.

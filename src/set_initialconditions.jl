@@ -1,12 +1,12 @@
 """
     function find_depth(model::Oceananigans.AbstractModel)
-Find first instance of `depth` in the `z` direction of the model grid
+Find first instance of `depth` in the `z` direction of the model grid. If the exact depth
+is not found the first instance that is larger (i.e. deeper) than `depth` is returned.
 """
 function find_depth(model::Oceananigans.AbstractModel, depth::Number)
 
     z = znodes(model.grid, Center(), Center(), Center())
-    depth_idx = !isnothing(findfirst(z .== depth)) ? findfirst(z .== depth) :
-                                                     findfirst(z .== depth)
+    depth_idx = findfirst(z .≥ depth)
 
     found_depth = model.architecture isa CPU ? z[depth_idx] : @allowscalar z[depth_idx]
 

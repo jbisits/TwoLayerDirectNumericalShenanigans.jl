@@ -51,7 +51,7 @@ end
     @test isequal(isothermal_twolayer_alt.ΔT₀, 0)
 end
 
-include("initialconditions.jl")
+include("initialconditions_test.jl")
 @testset "Tracer Gaussian profile" begin
 
     for tb ∈ tracer_profile_perturbations

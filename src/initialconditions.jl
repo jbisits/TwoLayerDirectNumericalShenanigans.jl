@@ -1,8 +1,5 @@
-"""
-    abstract type UpperLayerInitialConditions
-Abstract super type for initial temperature and salinity in the upper layer.
-"""
-abstract type UpperLayerInitialConditions end
+"Abstract super type for initial temperature and salinity in the upper layer."
+abstract type UpperLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `UpperLayerInitialConditions`"
 function Base.show(io::IO, ulic::UpperLayerInitialConditions)
     if ulic isa IsothermalUpperLayerInitialConditions
@@ -72,14 +69,8 @@ struct IsothermalUpperLayerInitialConditions{T} <: UpperLayerInitialConditions
     "Initial (uniform) temperature over the domain"
     T   :: T
 end
-"""
-    abstract type TwoLayerInitialConditions
-Abstract supertype for two layer model initial conditions. Keyword arguments for the
-`TwoLayerInitialConditions` constructor `S₀ˡ` and `T₀ˡ` can be specified for the salinity
-and temperature of the lower layer but have default values `S₀ˡ = 34.7`gkg⁻¹ and
-`T₀ˡ = 0.5`°C.
-"""
-abstract type TwoLayerInitialConditions end
+"Abstract super type for two layer initial conditions for the dns."
+abstract type TwoLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `TwoLayerInitialConditions`"
 function Base.show(io::IO, tlic::TwoLayerInitialConditions)
     println(io, "$(typeof(tlic))")

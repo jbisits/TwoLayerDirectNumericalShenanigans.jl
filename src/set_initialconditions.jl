@@ -1,4 +1,18 @@
 """
+    function find_depth(model::Oceananigans.AbstractModel)
+Find first instance of `depth` in the `z` direction of the model grid
+"""
+function find_depth(model::Oceananigans.AbstractModel, depth::Number)
+
+    z = znodes(model.grid, Center(), Center(), Center())
+    depth_idx = !isnothing(findfirst(z .== depth)) ? findfirst(z .== depth) :
+                                                     findfirst(z .== depth)
+
+    found_depth = model.architecture isa CPU ? z[depth_idx] : @allowscalar z[depth_idx]
+
+    return found_depth
+end
+"""
     function set_two_layer_initial_conditions(dns::TwoLayerDNS)
 
 Set initial conditions for a `TwoLayerDNS` that are smooth according to the

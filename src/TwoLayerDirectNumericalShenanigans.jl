@@ -5,6 +5,7 @@ using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
+using CUDA: @allowscalar
 import Base: show
 
 @reexport using Oceananigans, Reexport
@@ -36,7 +37,7 @@ export
     IsohalineTwoLayerInitialConditions,
     IsothermalTwoLayerInitialConditions
 
-export set_two_layer_initial_conditions!
+export set_two_layer_initial_conditions!, find_depth
 
 export AbstractContinuousProfileFunction, HyperbolicTangent, Erf
 

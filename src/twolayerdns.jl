@@ -70,8 +70,8 @@ function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
              β = 7.80e-4,
              reference_density = nothing,
              zgrid_stretching = true,
-             refinement = 1.2,
-             stretching = 100)
+             refinement = 1.05,
+             stretching = 40)
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
@@ -85,10 +85,11 @@ function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                            z = zgrid)
 
     eos = linear_eos == true ? LinearEquationOfState(thermal_expansion = α,
-                                                    haline_contraction = β) :
-                                                    isnothing(reference_density) ?
+                                                     haline_contraction = β) :
+                                                     isnothing(reference_density) ?
                                                             TEOS10EquationOfState() :
-                                                            TEOS10EquationOfState(; reference_density)
+                                                            TEOS10EquationOfState(;
+                                                                reference_density)
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
     tracers = (:S, :T)
 

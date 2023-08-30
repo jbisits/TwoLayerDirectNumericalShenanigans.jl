@@ -91,7 +91,7 @@ TemperatureGaussianBlob(interface_location, μ, σ; scale = 1.0) =
 Perturb salinity by setting a vertical Gaussian profile in the upper layer centred at `μ`
 with width `σ`.
 """
-function perturb_tracer(z, tracer_perturbation::SalinityGaussianProfile)
+function perturb_tracer(z, tracer_perturbation::AbstractTracerPerturbation)
 
     μ, σ, scale = tracer_perturbation.μ, tracer_perturbation.σ,
                   tracer_perturbation.scale
@@ -109,7 +109,7 @@ Perturb salinity by setting a horizontal Gaussian blob in the upper layer centre
 with width `σ` at depth `depth`. **Note** the `depth` needs to be an exact match to a
 depth at that the `Center` in the `z` direction.
 """
-function perturb_tracer(x, y, z, tracer_perturbation::SalinityGaussianBlob)
+function perturb_tracer(x, y, z, tracer_perturbation::AbstractTracerPerturbation)
 
     μ, σ, scale = tracer_perturbation.μ, tracer_perturbation.σ,
                   tracer_perturbation.scale

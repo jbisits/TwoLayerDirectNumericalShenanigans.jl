@@ -40,9 +40,10 @@ export set_two_layer_initial_conditions!
 
 export AbstractContinuousProfileFunction, HyperbolicTangent, Erf
 
-export AbstractTracerPerturbation, SalinityGaussianProfile, SalinityGaussianBlob
+export AbstractTracerPerturbation, SalinityGaussianProfile, SalinityGaussianBlob,
+       TemperatureGaussianProfile, TemperatureGaussianBlob
 
-export AbstractNoise, SalinityNoise, VelocityNoise
+export AbstractNoise, SalinityNoise, TemperatureNoise, VelocityNoise
 
 export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
        INTERFACE_LOCATION, SIMULATION_PATH, TLDNS

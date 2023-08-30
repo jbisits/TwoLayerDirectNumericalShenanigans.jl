@@ -1,4 +1,5 @@
 using TwoLayerDirectNumericalShenanigans, Test
+using TwoLayerDirectNumericalShenanigans: perturb_tracer
 
 include("twolayercontainers.jl")
 
@@ -48,4 +49,51 @@ end
     @test isequal(isothermal_twolayer_alt.T₀ᵘ, T₀ˡ_alt)
     @test isequal(isothermal_twolayer_alt.T₀ˡ, T₀ˡ_alt)
     @test isequal(isothermal_twolayer_alt.ΔT₀, 0)
+end
+
+include("initialconditions.jl")
+@testset "Tracer Gaussian profile" begin
+
+    for tb ∈ tracer_profile_perturbations
+
+        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                    reference_density = REFERENCE_DENSITY)
+        dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
+        set_two_layer_initial_conditions!(dns)
+
+        if dns.tracer_perturbation isa SalinityGaussianProfile
+            @test isequal((true, trues(length(z))), tracer_profile(dns))
+        elseif dns.tracer_perturbation isa TemperatureGaussianProfile
+            @test isequal((trues(length(z)), true), tracer_profile(dns))
+        end
+    end
+
+end
+@testset "Tracer Gaussian blob" begin
+
+    for tb ∈ tracer_blob_perturbations
+
+        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                    reference_density = REFERENCE_DENSITY)
+        dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
+        set_two_layer_initial_conditions!(dns)
+
+        @test isequal((true, true), tracer_blob(dns))
+
+    end
+
+end
+@testset "Tracer noise" begin
+
+    for tn ∈ tracer_noise_perturbations
+
+        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                    reference_density = REFERENCE_DENSITY)
+        dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tn)
+        set_two_layer_initial_conditions!(dns)
+
+        @test isequal((true, true), tracer_noise(dns))
+
+    end
+
 end

@@ -26,9 +26,9 @@ function Base.show(io::IO, tldns::TwoLayerDNS)
     println(io, " ┣━━ tracer_perturbation: $(typeof(tldns.tracer_perturbation))")
     print(io,   " ┗━━━━━━━━ initial_noise: $(typeof(tldns.initial_noise))")
 end
-TwoLayerDNS(model, profile_function, initial_condition; salinity_perturbation = nothing,
+TwoLayerDNS(model, profile_function, initial_condition; tracer_perturbation = nothing,
             initial_noise = nothing) =
-    TwoLayerDNS(model, profile_function, initial_condition, salinity_perturbation, initial_noise)
+    TwoLayerDNS(model, profile_function, initial_condition, tracer_perturbation, initial_noise)
 """
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)

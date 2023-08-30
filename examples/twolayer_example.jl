@@ -16,10 +16,10 @@ initial_conditions = TwoLayerInitialConditions(stable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 z = znodes(model.grid, Center(), Center(), Center())
 depth_idx = findfirst(z .> 2 * INTERFACE_LOCATION / 3)
-salinity_perturbation = SalinityGaussianProfile(z[depth_idx], 0.0, 1.5)
+tracer_perturbation = SalinityGaussianProfile(z[depth_idx], 0.0, 1.5)
 initial_noise = SalinityNoise(z[depth_idx], 2.0)
 
-dns = TwoLayerDNS(model, profile_function, initial_conditions; salinity_perturbation, initial_noise)
+dns = TwoLayerDNS(model, profile_function, initial_conditions; tracer_perturbation, initial_noise)
 
 set_two_layer_initial_conditions!(dns)
 # using CairoMakie - need to have a different environment activated with CairoMakie as dep
@@ -28,7 +28,7 @@ set_two_layer_initial_conditions!(dns)
 
 ## build the simulation
 Δt = 1e-4
-stop_time = 1
+stop_time = 60
 save_schedule = 0.5 # seconds
 simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule)
 

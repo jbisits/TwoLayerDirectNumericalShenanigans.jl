@@ -164,7 +164,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # save output
     ϵ = KineticEnergyDissipationRate(model)
     outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
-    filename = form_filename(initial_conditions)
+    filename = form_filename(dns, stop_time)
     simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
                                                     filename = filename,
                                                     schedule = TimeInterval(save_schedule),
@@ -180,23 +180,31 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
 end
 """
-    function form_filename(initial_conditions::TwoLayerInitialConditions)
-Create a directory based on the temperature of the upper layer and a file for the saved
-output based on the type of initial condition (i.e. stable, cabbeling or unstable).
+    function form_filename(dns::TwoLayerDNS, stop_time::Number)
+Create a filename for saved output based on the `profile_function`,`initial_conditions`,
+`tracer_perturbation` and length of the simulation.
 """
-function form_filename(initial_conditions::TwoLayerInitialConditions)
+function form_filename(dns::TwoLayerDNS, stop_time::Number)
 
-    ic_type = typeof(initial_conditions)
-    savefile = ic_type <: StableTwoLayerInitialConditions ? "stable" :
+    pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" : "erf"
+    ic_type = typeof(dns.initial_conditions)
+    ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :
                             ic_type <: CabbelingTwoLayerInitialConditions ?
                                 "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
                                               "unstable" : ic_type <: IsohalineTwoLayerInitialConditions ?
                                                             "isohaline" : "isothermal"
+
+    tp_string = lowercase(string(typeof(dns.tracer_perturbation)))
+    tp_find = isnothing(findfirst('{', tp_string)) ? length(tp_string) :
+                                                     findfirst('{', tp_string) - 1
+    stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
+                                         string(round(stop_time / 60; digits = 2))
+    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min.jld2"
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)
     end
-    filename = joinpath(SIMULATION_PATH, savefile * ".jld2")
+    filename = joinpath(SIMULATION_PATH, savefile)
 
     return filename
 

@@ -9,7 +9,7 @@ function find_depth(model::Oceananigans.AbstractModel, depth::Number)
     depth_idx = findfirst(z .≥ depth)
 
     found_depth = model.architecture isa CPU ? z[depth_idx] :
-                                               begin @allowscalar z[depth_idx] end
+                                               @allowscalar z[depth_idx]
 
     return found_depth
 end

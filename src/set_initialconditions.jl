@@ -8,7 +8,7 @@ function find_depth(model::Oceananigans.AbstractModel, depth::Number)
     z = znodes(model.grid, Center(), Center(), Center())
     depth_idx = findfirst(z .≥ depth)
 
-    found_depth = model.architecture isa CPU ? z[depth_idx] : @allowscalar z[depth_idx]
+    found_depth = model.architecture isa CPU ? z[depth_idx] : CUDA.@allowscalar z[depth_idx]
 
     return found_depth
 end

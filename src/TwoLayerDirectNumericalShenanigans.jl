@@ -5,7 +5,7 @@ using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
-using CUDA: @allowscalar
+using CUDA: allowscalar
 import Base: show, iterate
 
 @reexport using Oceananigans, Reexport

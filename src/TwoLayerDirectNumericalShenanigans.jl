@@ -6,7 +6,7 @@ using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
 using CUDA: @allowscalar
-import Base: show
+import Base: show, iterate
 
 @reexport using Oceananigans, Reexport
 

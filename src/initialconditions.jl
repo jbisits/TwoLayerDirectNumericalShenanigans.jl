@@ -1,19 +1,23 @@
+"Iterate for `AbstractInitialConditions`"
+Base.iterate(ics::AbstractInitialConditions, state = 1) =
+    state > length(fieldnames(typeof(ics))) ? nothing :
+                                            (getfield(ics, state), state + 1)
 "Abstract super type for initial temperature and salinity in the upper layer."
 abstract type UpperLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `UpperLayerInitialConditions`"
 function Base.show(io::IO, ulic::UpperLayerInitialConditions)
     if ulic isa IsothermalUpperLayerInitialConditions
         println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
-        print(io,   " ┗━━ T = $(ulic.T)")
+        println(io, "┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   "┗━━ T = $(ulic.T)")
     elseif ulic isa IsohalineUpperLayerInitialConditions
         println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S)")
-        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
+        println(io, "┣━━ S = $(ulic.S)")
+        print(io,   "┗━━ T = $(ulic.T₀ᵘ)")
     else
         println(io, "$(typeof(ulic))")
-        println(io, " ┣━━ S = $(ulic.S₀ᵘ)")
-        print(io,   " ┗━━ T = $(ulic.T₀ᵘ)")
+        println(io, "┣━━ S = $(ulic.S₀ᵘ)")
+        print(io,   "┗━━ T = $(ulic.T₀ᵘ)")
     end
 end
 """
@@ -74,8 +78,8 @@ abstract type TwoLayerInitialConditions <: AbstractInitialConditions end
 "`show` for `TwoLayerInitialConditions`"
 function Base.show(io::IO, tlic::TwoLayerInitialConditions)
     println(io, "$(typeof(tlic))")
-    println(io, " ┣━━ upper_layer: S = $(tlic.S₀ᵘ), T = $(tlic.T₀ᵘ)")
-    print(io,   " ┗━━ lower_layer: S = $(tlic.S₀ˡ), T = $(tlic.T₀ˡ)")
+    println(io, "┣━━ upper_layer: S = $(tlic.S₀ᵘ), T = $(tlic.T₀ᵘ)")
+    print(io,   "┗━━ lower_layer: S = $(tlic.S₀ˡ), T = $(tlic.T₀ˡ)")
 end
 """
     struct StableTwoLayerInitialConditions

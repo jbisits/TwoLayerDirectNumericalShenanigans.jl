@@ -2,14 +2,18 @@
 function Base.show(io::IO, cpf::AbstractContinuousProfileFunction)
     if cpf isa HyperbolicTangent
         println(io, "$(typeof(cpf))")
-        println(io, " ┣━━━━━━━━━━ interface_location: z = $(cpf.interface_location)m ")
-        print(io,   " ┗━━ interface_transition_scale: $(cpf.interface_transition_width)")
+        println(io, "┣━━━━━━━━━━ interface_location: z = $(cpf.interface_location)m ")
+        print(io,   "┗━━ interface_transition_scale: $(cpf.interface_transition_width)")
     elseif cpf isa Erf
         println(io, "$(typeof(cpf))")
-        println(io, " ┣━━ interface_location: z = $(cpf.interface_location)m")
-        print(io,   " ┗━━━━━━━━ time_evolved: t = $(cpf.time)s")
+        println(io, "┣━━ interface_location: z = $(cpf.interface_location)m")
+        print(io,   "┗━━━━━━━━ time_evolved: t = $(cpf.time)s")
     end
 end
+"`iterate` for `AbstractInitialConditions`"
+Base.iterate(pf::AbstractContinuousProfileFunction, state = 1) =
+    state > length(fieldnames(typeof(pf))) ? nothing :
+                                            (getfield(pf, state), state + 1)
 """
     struct HyperbolicTangent
 Container for a hyperbolic tangent profile. The `interface_transition_width` sets the width

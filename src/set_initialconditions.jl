@@ -10,7 +10,7 @@ function find_depth(model::Oceananigans.AbstractModel, depth::Number)
                                                 depth_idx = findfirst(z .≥ depth)
                                                 z[depth_idx]
                                                end :
-                                               allowscalar() do
+                                                allowscalar() do
                                                 z = znodes(model.grid, Center(), Center(), Center())
                                                 depth_idx = findfirst(z .≥ depth)
                                                 z[depth_idx]

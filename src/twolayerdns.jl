@@ -20,15 +20,18 @@ struct TwoLayerDNS{NHM <: NonhydrostaticModel,
 end
 function Base.show(io::IO, tldns::TwoLayerDNS)
     println(io, "TwoLayerDirectNumericalSimulation")
-    println(io, " ┣━━━━━━━━━━━━━━━━ model: $(summary(tldns.model))")
-    println(io, " ┣━━━━━ profile_function: $(typeof(tldns.profile_function))")
-    println(io, " ┣━━━ initial_conditions: $(typeof(tldns.initial_conditions))")
-    println(io, " ┣━━ tracer_perturbation: $(typeof(tldns.tracer_perturbation))")
-    print(io,   " ┗━━━━━━━━ initial_noise: $(typeof(tldns.initial_noise))")
+    println(io, "┣━━━━━━━━━━━━━━━━ model: $(summary(tldns.model))")
+    println(io, "┣━━━━━ profile_function: $(typeof(tldns.profile_function))")
+    println(io, "┣━━━ initial_conditions: $(typeof(tldns.initial_conditions))")
+    println(io, "┣━━ tracer_perturbation: $(typeof(tldns.tracer_perturbation))")
+    print(io,   "┗━━━━━━━━ initial_noise: $(typeof(tldns.initial_noise))")
 end
 TwoLayerDNS(model, profile_function, initial_condition; tracer_perturbation = nothing,
             initial_noise = nothing) =
     TwoLayerDNS(model, profile_function, initial_condition, tracer_perturbation, initial_noise)
+Base.iterate(tldns::TwoLayerDNS, state = 1) =
+    state > length(fieldnames(TwoLayerDNS)) ? nothing :
+                                            (getfield(tldns, state), state + 1)
 """
     function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
                  diffusivities::NamedTuple)

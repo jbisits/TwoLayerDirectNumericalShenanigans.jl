@@ -15,7 +15,7 @@ stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 tracer_perturbation_depth = find_depth(model, INTERFACE_LOCATION / 2)
-tracer_perturbation = SalinityGaussianProfile(depth, 0.0, 1.5)
+tracer_perturbation = SalinityGaussianProfile(tracer_perturbation_depth, 0.0, 1.5)
 noise_depth = find_depth(model, INTERFACE_LOCATION)
 initial_noise = SalinityNoise(noise_depth, 2.0)
 

@@ -2,22 +2,34 @@
 function Base.show(io::IO, tp::AbstractTracerPerturbation)
     if tp isa SalinityGaussianProfile
         println(io, "$(typeof(tp))")
-        println(io, " ┣━━ interface_location: z = $(tp.interface_location)m")
-        println(io, " ┣━━ centre_of_Gaussian: z = $(tp.μ)m")
-        println(io, " ┣━━━ width_of_Gaussian: $(tp.σ)")
-        print(io,   " ┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
+        println(io, "┣━━ interface_location: z = $(tp.interface_location)m")
+        println(io, "┣━━━ width_of_Gaussian: $(tp.σ)")
+        println(io, "┣━━ centre_of_Gaussian: z = $(tp.μ)m")
+        print(io,   "┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
+    elseif tp isa TemperatureGaussianProfile
+            println(io, "$(typeof(tp))")
+            println(io, "┣━━ interface_location: z = $(tp.interface_location)m")
+            println(io, "┣━━ centre_of_Gaussian: z = $(tp.μ)m")
+            println(io, "┣━━━ width_of_Gaussian: $(tp.σ)")
+            print(io,   "┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
     elseif tp isa SalinityGaussianBlob
         println(io, "$(typeof(tp))")
-        println(io, " ┣━━━━━━ depth_location: z = $(round(tp.depth; digits = 3))m")
-        println(io, " ┣━━ centre_of_Gaussian: $(tp.μ)")
-        println(io, " ┣━━━ width_of_Gaussian: $(tp.σ)")
-        print(io,   " ┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
-    elseif tp isa SalinityNoise
+        println(io, "┣━━━━━━ depth_location: z = $(round(tp.depth; digits = 3))m")
+        println(io, "┣━━ centre_of_Gaussian: $(tp.μ)")
+        println(io, "┣━━━ width_of_Gaussian: $(tp.σ)")
+        print(io,   "┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
+    elseif tp isa TemperatureGaussianBlob
         println(io, "$(typeof(tp))")
-        println(io, " ┣━━ noise_location: z = $(round(tp.depth; digits = 3))m")
-        print(io,   " ┗━━━━━ noise_scale: $(tp.scale)")
+        println(io, "┣━━━━━━ depth_location: z = $(round(tp.depth; digits = 3))m")
+        println(io, "┣━━ centre_of_Gaussian: $(tp.μ)")
+        println(io, "┣━━━ width_of_Gaussian: $(tp.σ)")
+        print(io,   "┗━━━━━━━━━━━━━━━ scale: $(tp.scale)")
     end
 end
+"`iterate` for `AbstractTracerPerturbation`"
+Base.iterate(tp::AbstractTracerPerturbation, state = 1) =
+    state > length(fieldnames(typeof(tp))) ? nothing :
+                                            (getfield(tp, state), state + 1)
 "Abstract type for salinity perturbation"
 abstract type SalinityPerturbation <: AbstractTracerPerturbation end
 """

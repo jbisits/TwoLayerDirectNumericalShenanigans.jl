@@ -1,3 +1,13 @@
+"`show` for `AbstractNoise`"
+function Base.show(io::IO, noise::AbstractNoise)
+    println(io, "$(typeof(noise))")
+    println(io, "┣━━━ noise_depth: z = $(noise.depth)m ")
+    print(io,   "┗━━━ noise_scale: $(noise.scale)")
+end
+"`iterate` for `AbstractNoise`"
+Base.iterate(noise::AbstractNoise, state = 1) =
+    state > length(fieldnames(typeof(noise))) ? nothing :
+                                            (getfield(noise, state), state + 1)
 "Tracer Noise type"
 abstract type TracerNoise <: AbstractNoise end
 """

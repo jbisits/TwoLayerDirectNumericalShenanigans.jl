@@ -111,17 +111,17 @@ end
 Append the minimum Kolmogorov and Batchelor scales (in space and time) from a `TwoLayerDNS`
 simulation with output saved on `file`. The Kolmogorov scale is defined by
 ```math
-    \eta = \left(\frac{ν³}{ϵ}\right)^\frac{1}{4}\right)
+    η = \\left(\\frac{ν³}{ϵ}\\right)^\\frac{1}{4}
 ```
 and the Batchelor scale is
 ```math
-λ_{B} = \frac{\eta}{sqrt{Sc}}
+    λ_{B} = \\frac{η}{√Sc}
 ```
 where ``Sc`` is the Schmidt number.
 """
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
-    ϵ_ts = FieldTimeSeries(sim_path, "ϵ", backend = OnDisk())
+    ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
     min_η = minimum_η(ϵ_ts)
     Sc = load(file, "Non_dimensional_numbers")["Sc"]
 

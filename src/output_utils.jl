@@ -122,8 +122,9 @@ where ``Sc`` is the Schmidt number.
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
     ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
-    min_η = minimum_η(ϵ_ts)
     Sc = load(file, "Non_dimensional_numbers")["Sc"]
+    ν = load(file, "closure/ν")
+    min_η = minimum_η(ϵ_ts; ν)
 
     jldopen(file, "a+") do f
         f["minimum_kolmogorov_scale"] = min_η

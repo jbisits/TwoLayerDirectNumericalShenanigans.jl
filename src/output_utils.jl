@@ -29,26 +29,46 @@ this only needs to be done once! After that the group will exist and will not be
 overwritten but a different group can be made by passing a different `density_string`.
 This allows calling `FieldTimeSeries` on the `density_variable`
 """
-function compute_density!(filepath::String; reference_pressure = 0, density_string = "ρ")
+function compute_density!(filepath::AbstractString; density_string ="ρ", reference_pressure = 0)
 
-    file = jldopen(filepath, "a+")
-    file_keys = keys(file["timeseries"]["S"])
-    JLD2.Group(file, "timeseries/"*density_string)
-    for (i, key) ∈ enumerate(file_keys)
-        if i == 1
-            for k ∈ keys(file["timeseries/S/"*key])
-                file["timeseries/"*density_string*"/"*key*"/"*k] =
-                    file["timeseries/S/"*key*"/"*k]
-            end
-            file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
-                reference_pressure
-        else
-            Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
-            file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+    find_file_type = findlast('.', filepath)
+    file_type = filepath[find_file_type:end]
+    if isequal(file_type, ".nc")
+
+        TS_stack = RasterStack(filepath,  name = (:S, :T))
+        rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
+        S_rs = set(TS_stack.S, rename_dims...)
+        T_rs = set(TS_stack.T, rename_dims...)
+        σ = get_σₚ(S_rs, T_rs, reference_pressure)
+
+        NCDataset(filepath, "a") do ds
+            defVar(ds, "Potential density", σ.data, ("xC", "yC", "zC", "Ti"),
+                    attrib = Dict("units" => "kgm⁻³",
+                                  "comments" => "computed at reference pressues p = $reference_pressure"))
         end
-    end
 
-    close(file)
+    elseif isequal(file_type, "jld2")
+
+        file = jldopen(filepath, "a+")
+        file_keys = keys(file["timeseries"]["S"])
+        JLD2.Group(file, "timeseries/"*density_string)
+        for (i, key) ∈ enumerate(file_keys)
+            if i == 1
+                for k ∈ keys(file["timeseries/S/"*key])
+                    file["timeseries/"*density_string*"/"*key*"/"*k] =
+                        file["timeseries/S/"*key*"/"*k]
+                end
+                file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
+                    reference_pressure
+            else
+                Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
+                file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+            end
+        end
+
+        close(file)
+
+    end
 
     return nothing
 
@@ -121,24 +141,41 @@ where ``Sc`` is the Schmidt number.
 """
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
-    ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
-    Sc = load(file, "Non_dimensional_numbers")["Sc"]
-    ν = load(file, "closure/ν")
-    min_η = minimum_η(ϵ_ts; ν)
+    find_file_type = file[findlast('.', file):end]
+    if isequal(find_file_type, ".nc")
 
-    jldopen(file, "a+") do f
-        f["minimum_kolmogorov_scale"] = min_η
-        f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
+        ϵ = Raster(file, name = :ϵ)
+        max_ϵ = maximum(ϵ) # maximum ϵ in space and time will give minimum η
+        ds = NCDataset(file, "a")
+        ν_str = ds.attrib["ν"]
+        ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
+        Sc = ds.attrib["Sc"]
+        η_min = η(ν, max_ϵ)
+        ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
+        ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
+        close(ds)
+
+    elseif isequal(find_file_type, ".jld2")
+
+        ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
+        Sc = load(file, "Non_dimensional_numbers")["Sc"]
+        ν = load(file, "closure/ν")
+        min_η = minimum_η(ϵ_ts; ν)
+
+        jldopen(file, "a+") do f
+            f["minimum_kolmogorov_scale"] = min_η
+            f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
+        end
+
     end
 
     return nothing
 
 end
 """
-    function non_dimensional_numbers(model::Oceananigans.AbstractModel,
-                                     initial_conditions::TwoLayerInitialConditions)
-Compute non-dimensional numbers related to the DNS experiments. The non-dimensional numbers
-are:
+    function non_dimensional_numbers(simulation::Simulation, dns::TwoLayerDNS)
+Compute and append non-dimensional numbers related to the DNS experiments.
+The non-dimensional numbers are:
 
 - Prandtl number: ``Pr = ν / κₜ``
 - Schmidt number: ``Sc = ν / κₛ``
@@ -147,7 +184,7 @@ are:
 
 These numbers are then saved into the simulation output file.
 """
-function non_dimensional_numbers(dns::TwoLayerDNS)
+function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
     model, initial_conditions = dns.model, dns.initial_conditions
     ν = model.closure.ν
@@ -159,6 +196,29 @@ function non_dimensional_numbers(dns::TwoLayerDNS)
     β = gsw_beta(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
     Ra = ((α * initial_conditions.ΔT₀ )/ (β * initial_conditions.ΔS₀)) * (1 / Le)
 
-    return Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+    nd_nums = Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+
+    if simulation.output_writers[:outputs] isa NetCDFOutputWriter
+
+        ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
+        ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
+        ds.attrib["ν"]  = "$(model.closure.ν)m²s⁻¹"
+        ds.attrib["κₛ"] = "$(model.closure.κ.S)m²s⁻¹"
+        ds.attrib["κₜ"] = "$(model.closure.κ.T)m²s⁻¹"
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
+        end
+        close(ds)
+
+    else
+
+        jldopen(simulation.output_writers[:outputs].filepath, "a+") do file
+            file["Non_dimensional_numbers"] = nd_nums
+        end
+
+    end
+
+    return nothing
 
 end

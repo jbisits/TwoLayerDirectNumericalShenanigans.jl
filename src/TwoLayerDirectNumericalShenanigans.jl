@@ -1,10 +1,11 @@
 module TwoLayerDirectNumericalShenanigans
 
-using Oceananigans, Printf, Reexport, JLD2, GibbsSeaWater
+using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
 using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
+using OceanRasterConversions: get_σₚ
 using CUDA: allowscalar
 import Base: show, iterate
 
@@ -49,7 +50,7 @@ export AbstractNoise, SalinityNoise, TemperatureNoise, VelocityNoise
 export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
        INTERFACE_LOCATION, SIMULATION_PATH, TLDNS
 
-export compute_density, compute_density!, non_dimensional_numbers
+export compute_density, compute_density!
 
 export animate_2D_field, visualise_initial_conditions, visualise_initial_density,
        visualise_snapshot

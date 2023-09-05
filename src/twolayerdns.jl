@@ -142,7 +142,9 @@ the course of a simulation;
 - `stop_time` length of simulation time (in seconds) to run the model for;
 - `savefile` name of the file to save the data to,
 - `save_schedule` number (representing time in seconds) at which to save model output, e.g.,
-`save_schedule = 1` saves output every second.
+`save_schedule = 1` saves output every second;
+- `output_writer` a `Symbol` (either `:netcdf` or `:jld2`) choosing whether to save data in
+`NetCDF` format (`.nc`) ot `JLD2` format ('.jld2).
 
 ## Keyword arguments:
 
@@ -152,7 +154,8 @@ the course of a simulation;
 - `max_Δt` the maximum timestep.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
-                              stop_time::Number, save_schedule::Number;
+                              stop_time::Number, save_schedule::Number,
+                              output_writer::Symbol=:netcdf;
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
@@ -168,14 +171,18 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # save output
     ϵ = KineticEnergyDissipationRate(model)
     outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
-    filename = form_filename(dns, stop_time)
-    simulation.output_writers[:outputs] = JLD2OutputWriter(model, outputs,
-                                                    filename = filename,
-                                                    schedule = TimeInterval(save_schedule),
-                                                    overwrite_existing = true)
-    jldopen(filename, "a+") do file
-        file["Non_dimensional_numbers"] = non_dimensional_numbers(dns)
-    end
+    filename = form_filename(dns, stop_time, output_writer)
+    simulation.output_writers[:outputs] = output_writer == :netcdf ?
+                                            NetCDFOutputWriter(model, outputs,
+                                                            filename = filename,
+                                                            schedule = TimeInterval(save_schedule),
+                                                            overwrite_existing = true) :
+                                            JLD2OutputWriter(model, outputs,
+                                                            filename = filename,
+                                                            schedule = TimeInterval(save_schedule),
+                                                            overwrite_existing = true)
+
+    non_dimensional_numbers!(simulation, dns)
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
@@ -184,11 +191,11 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
 end
 """
-    function form_filename(dns::TwoLayerDNS, stop_time::Number)
+    function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
 Create a filename for saved output based on the `profile_function`,`initial_conditions`,
 `tracer_perturbation` and length of the simulation.
 """
-function form_filename(dns::TwoLayerDNS, stop_time::Number)
+function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
 
     pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" : "erf"
     ic_type = typeof(dns.initial_conditions)
@@ -203,7 +210,9 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number)
                                                      findfirst('{', tp_string) - 1
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
-    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min.jld2"
+    filetype = output_writer == :netcdf ? ".nc" : ".jld2"
+    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" * filetype
+
     # make a simulation directory if one is not present
     if !isdir(SIMULATION_PATH)
         mkdir(SIMULATION_PATH)

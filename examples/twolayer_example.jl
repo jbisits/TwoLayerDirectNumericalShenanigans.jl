@@ -3,12 +3,13 @@ using TwoLayerDirectNumericalShenanigans
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
+resolution = (Nx = 10, Ny = 10, Nz = 100)
 
 ## Setup the model
-model = DNS(architecture, DOMAIN_EXTENT, HIGH_RESOLUTION, diffusivities;
+model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
             reference_density = REFERENCE_DENSITY)
 
-## set initial conditions, currently there are four options available in this submodule
+## set initial conditions
 T₀ᵘ = -1.5
 S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.59)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ)
@@ -22,9 +23,6 @@ initial_noise = SalinityNoise(noise_depth, 2.0)
 dns = TwoLayerDNS(model, profile_function, initial_conditions; tracer_perturbation, initial_noise)
 
 set_two_layer_initial_conditions!(dns)
-# using CairoMakie - need to have a different environment activated with CairoMakie as dep
-# visualise_initial_conditions(dns, 1, 1)
-# visualise_initial_density(dns, 1, 1, 0)
 
 ## build the simulation
 Δt = 1e-4

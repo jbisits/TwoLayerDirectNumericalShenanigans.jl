@@ -63,6 +63,51 @@ function TLDNS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::A
     return nothing
 
 end
+function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colormap = :thermal,
+                                colorrange = nothing, highclip = nothing, lowclip = nothing,
+                                aspect_ratio = 1)
+
+    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, Ti)
+    field_name = rs.name
+
+    n = Observable(1)
+    field_tₙ = @lift rs[:, yslice, :, $n]
+    profile_tₙ = @lift rs[xslice, yslice, :, $n]
+    colorrange = isnothing(colorrange) ? extrema(rs) : colorrange
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+    fig = Figure(size = (1000, 600))
+    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange, colormap, lowclip, highclip)
+
+    ax[1].xlabel = "x (m)"
+    ax[1].ylabel = "z (m)"
+    ax[1].aspect = aspect_ratio
+    ax[1].xticklabelrotation = π / 4
+    ax[1].xlabel = "x"
+    ax[1].ylabel = "y"
+    Colorbar(fig[2, 1], hm, label = field_name, vertical = false, flipaxis = false)
+
+    lines!(ax[2], profile_tₙ, z)
+    ax[2].xlabel = field_name
+    ax[2].ylabel = "z"
+    ax[2].aspect = aspect_ratio
+    ax[2].xaxisposition = :top
+
+    linkyaxes!(ax[1], ax[2])
+
+    frames = eachindex(t)
+    record(fig, joinpath(pwd(), field_name * ".mp4"),
+        frames, framerate=8) do i
+        msg = string("Plotting frame ", i, " of ", frames[end])
+        print(msg * " \r")
+        n[] = i
+    end
+
+    return nothing
+
+end
 """
     function visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)
 Plot an initial step change of the `tracers` in a `model`. This function assumes there are two

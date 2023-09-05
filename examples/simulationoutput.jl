@@ -1,10 +1,16 @@
 ## Example script for viewing output
-using Oceananigans.Fields
 using TwoLayerDirectNumericalShenanigans
 using CairoMakie
 
-## Load in saved output
-sim_path = joinpath(SIMULATION_PATH, "saved_output.jld2")
+## Load in saved output if `.nc`
+using NCDatasets
+ds = NCDataset(joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.nc"))
+# extract variables
+close(ds)
+
+## Load in saved output if `.jld2`
+using Oceananigans.Fields
+sim_path = joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.jld2")
 T_ts = FieldTimeSeries(sim_path, "T", backend = OnDisk())
 S_ts = FieldTimeSeries(sim_path, "S", backend = OnDisk())
 

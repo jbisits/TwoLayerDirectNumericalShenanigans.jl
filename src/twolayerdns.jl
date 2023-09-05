@@ -181,9 +181,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),
                                                             overwrite_existing = true)
-    # jldopen(filename, "a+") do file
-    #     file["Non_dimensional_numbers"] = non_dimensional_numbers(dns)
-    # end
+
+    non_dimensional_numbers!(simulation, dns)
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))

@@ -135,10 +135,9 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
 end
 """
-    function non_dimensional_numbers(model::Oceananigans.AbstractModel,
-                                     initial_conditions::TwoLayerInitialConditions)
-Compute non-dimensional numbers related to the DNS experiments. The non-dimensional numbers
-are:
+    function non_dimensional_numbers(simulation::Simulation, dns::TwoLayerDNS)
+Compute and append non-dimensional numbers related to the DNS experiments.
+The non-dimensional numbers are:
 
 - Prandtl number: ``Pr = ν / κₜ``
 - Schmidt number: ``Sc = ν / κₛ``
@@ -147,7 +146,7 @@ are:
 
 These numbers are then saved into the simulation output file.
 """
-function non_dimensional_numbers(dns::TwoLayerDNS)
+function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
     model, initial_conditions = dns.model, dns.initial_conditions
     ν = model.closure.ν
@@ -159,6 +158,24 @@ function non_dimensional_numbers(dns::TwoLayerDNS)
     β = gsw_beta(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
     Ra = ((α * initial_conditions.ΔT₀ )/ (β * initial_conditions.ΔS₀)) * (1 / Le)
 
-    return Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+    nd_nums = Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+
+    if simulation.output_writers[:outputs] isa NetCDFOutputWriter
+
+        ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
+        end
+        close(ds)
+
+    else
+
+        jldopen(simulation.output_writers[:outputs].filepath, "a+") do file
+            file["Non_dimensional_numbers"] = nd_nums
+        end
+
+    end
+
+    return nothing
 
 end

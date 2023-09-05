@@ -1,6 +1,6 @@
 module TwoLayerDirectNumericalShenanigans
 
-using Oceananigans, Printf, Reexport, JLD2, GibbsSeaWater
+using Oceananigans, Printf, Reexport, JLD2, NCDatasets, GibbsSeaWater
 using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 using SpecialFunctions: erf

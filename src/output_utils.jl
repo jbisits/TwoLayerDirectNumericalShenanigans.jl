@@ -107,6 +107,34 @@ function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
 
 end
 """
+    function kolmogorov_and_batchelor_scale!(file::AbstractString)
+Append the minimum Kolmogorov and Batchelor scales (in space and time) from a `TwoLayerDNS`
+simulation with output saved on `file`. The Kolmogorov scale is defined by
+```math
+    η = \\left(\\frac{ν³}{ϵ}\\right)^\\frac{1}{4}
+```
+and the Batchelor scale is
+```math
+    λ_{B} = \\frac{η}{√Sc}
+```
+where ``Sc`` is the Schmidt number.
+"""
+function kolmogorov_and_batchelor_scale!(file::AbstractString)
+
+    ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
+    Sc = load(file, "Non_dimensional_numbers")["Sc"]
+    ν = load(file, "closure/ν")
+    min_η = minimum_η(ϵ_ts; ν)
+
+    jldopen(file, "a+") do f
+        f["minimum_kolmogorov_scale"] = min_η
+        f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
+    end
+
+    return nothing
+
+end
+"""
     function non_dimensional_numbers(model::Oceananigans.AbstractModel,
                                      initial_conditions::TwoLayerInitialConditions)
 Compute non-dimensional numbers related to the DNS experiments. The non-dimensional numbers

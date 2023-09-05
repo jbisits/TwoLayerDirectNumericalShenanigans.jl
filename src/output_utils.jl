@@ -163,6 +163,11 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
     if simulation.output_writers[:outputs] isa NetCDFOutputWriter
 
         ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
+        ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
+        ds.attrib["ν"]  = "$(model.closure.ν)m²s⁻¹"
+        ds.attrib["κₛ"] = "$(model.closure.κ.S)m²s⁻¹"
+        ds.attrib["κₜ"] = "$(model.closure.κ.T)m²s⁻¹"
         for key ∈ keys(nd_nums)
             ds.attrib[key] = nd_nums[key]
         end

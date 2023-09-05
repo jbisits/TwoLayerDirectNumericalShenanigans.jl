@@ -8,6 +8,13 @@ ds = NCDataset(joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1m
 # extract variables
 close(ds)
 
+# or using Rasters.jl
+using Rasters, OceanRasterConversions
+ϵ = Raster(joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.nc"), name = :ϵ)
+TS_stack = RasterStack(joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.nc"),  name = (:S, :T))
+S_rs = Raster(joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.nc"),  name = :S)
+x, y, z, t = lookup(S_rs, :xC), lookup(S_rs, :yC), lookup(S_rs, :zC), lookup(S_rs, Ti)
+
 ## Load in saved output if `.jld2`
 using Oceananigans.Fields
 sim_path = joinpath(SIMULATION_PATH, "stable_tanh_salinitygaussianprofile_1min.jld2")

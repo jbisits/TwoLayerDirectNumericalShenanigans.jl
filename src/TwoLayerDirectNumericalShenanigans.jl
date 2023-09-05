@@ -1,10 +1,11 @@
 module TwoLayerDirectNumericalShenanigans
 
-using Oceananigans, Printf, Reexport, JLD2, NCDatasets, GibbsSeaWater
+using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
 using SeawaterPolynomials: TEOS10EquationOfState
 using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
+using OceanRasterConversions: get_σₚ
 using CUDA: allowscalar
 import Base: show, iterate
 

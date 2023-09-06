@@ -35,7 +35,7 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
     file_type = filepath[find_file_type:end]
     if isequal(file_type, ".nc")
 
-        TS_stack = RasterStack(filepath,  name = (:S, :T))
+        TS_stack = RasterStack(filepath, lazy = true, name = (:S, :T))
         rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
         S_rs = set(TS_stack.S, rename_dims...)
         T_rs = set(TS_stack.T, rename_dims...)
@@ -133,6 +133,17 @@ function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
     return minimum(minimum_η_t)
 
 end
+function minimum_η(ϵ::Raster; ν = 1e-6)
+
+    t = lookup(ϵ, :Ti)
+    minimum_η_t = similar(t)
+    for i ∈ eachindex(t)
+        minimum_η_t[i] = minimum(η.(ν, ϵ.data[:, :, :, i]))
+    end
+
+    return minimum(minimum_η_t)
+
+end
 """
     function kolmogorov_and_batchelor_scale!(file::AbstractString)
 Append the minimum Kolmogorov and Batchelor scales (in space and time) from a `TwoLayerDNS`
@@ -151,13 +162,12 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
     find_file_type = file[findlast('.', file):end]
     if isequal(find_file_type, ".nc")
 
-        ϵ = Raster(file, name = :ϵ)
-        max_ϵ = maximum(ϵ) # maximum ϵ in space and time will give minimum η
+        ϵ = Raster(file, lazy = true, name = :ϵ)
         ds = NCDataset(file, "a")
         ν_str = ds.attrib["ν"]
         ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
         Sc = ds.attrib["Sc"]
-        η_min = η(ν, max_ϵ)
+        η_min = minimum_η(ϵ; ν)
         ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
         ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
         close(ds)

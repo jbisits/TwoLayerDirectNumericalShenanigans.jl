@@ -1,25 +1,38 @@
-name = "DirectNumericalCabbelingShenanigans"
+name = "TwoLayerDirectNumericalShenanigans"
 uuid = "40aaee9f-3595-48be-b36c-f1067009652f"
 authors = ["Josef Bisits <jbisits@gmail.com>"]
-version = "0.3.7"
+version = "0.4.3"
 
 [deps]
-CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
 GibbsSeaWater = "9a22fb26-0b63-4589-b28e-8f9d0b5c3d05"
 JLD2 = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
+NCDatasets = "85f8d34a-cbdd-5861-8df4-14fed0d494ab"
+OceanRasterConversions = "07ff2621-03e0-4bfb-9812-e5d28c6dbff8"
 Oceananigans = "9e8cae18-63c1-5223-a75c-80ca9d6e9a09"
 Oceanostics = "d0ccf422-c8fb-49b5-a76d-74acdde946ac"
 Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+Rasters = "a3a2b9e3-a471-40c9-b274-f788e487c689"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SeawaterPolynomials = "d496a93d-167e-4197-9f49-d3af4ff8fe40"
 SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
+[weakdeps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+
+[extensions]
+TLDNSMakieExt = "CairoMakie"
+
 [compat]
+CUDA = "4"
 CairoMakie = "0.10"
 GibbsSeaWater = "0.1"
 JLD2 = "0.4"
+NCDatasets = "0.12"
+OceanRasterConversions = "0.5"
 Oceananigans = "0.82, 0.83, 0.84, 0.85, 0.86, 0.87"
 Oceanostics = "0.11, 0.12"
+Rasters = "0.8"
 Reexport = "1.2"
 SeawaterPolynomials = "0.3"
 SpecialFunctions = "2"

@@ -1,268 +1,4 @@
 """
-    module OutputUtilities
-Module to help process and analyse output data from running a Direct Numerical Simulation.
-"""
-module OutputUtilities
-
-using DirectNumericalCabbelingShenanigans, Printf
-using DirectNumericalCabbelingShenanigans.TwoLayerDNS: TwoLayerInitialConditions
-using Oceananigans.Fields
-
-@reexport using CairoMakie, JLD2, GibbsSeaWater
-
-export
-    animate_2D_field,
-    visualise_initial_conditions,
-    visualise_initial_stepchange,
-    visualise_initial_density,
-    visualise_snapshot,
-    compute_density,
-    compute_density!
-
-"""
-    function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                              field_dimensions::NamedTuple{Symbol, Symbol}; colormap = :thermal)
-Animate a time series that is saved in memory.
-
-Function arguments:
-
-- `field_timeseries` to be animated;
-- `field_name` the name of the variable in the `field_timeseries`;
-- the `xslice` and `yslice` for the `x-z` heatmap and vertical profile.
-
-Keyword arguments:
-
-- `colormap` for the animated `field_timeseries`;
-- `aspect_ration` for the animation;
-- `z_extrema` where to look for the extreme z values while avoiding any random noise, pass
-two ranges or two values for where to look for the `extrema`.
-"""
-function animate_2D_field(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                          xslice::Int64, yslice::Int64; colormap = :thermal,
-                          colorrange = nothing, highclip = nothing, lowclip = nothing,
-                          aspect_ratio = 1)
-
-    x, y, z = nodes(field_timeseries[1])
-
-    t = field_timeseries.times
-    n = Observable(1)
-    field_tₙ = @lift interior(field_timeseries[$n], :, yslice, :)
-    profile_tₙ = @lift interior(field_timeseries[$n], xslice, yslice, :)
-    colorrange = isnothing(colorrange) ? extrema(interior(field_timeseries, :, :, :, 1)) :
-                                         colorrange
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
-
-    fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange, colormap, lowclip, highclip)
-
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    ax[1].aspect = aspect_ratio
-    ax[1].xticklabelrotation = π / 4
-    ax[1].xlabel = "x"
-    ax[1].ylabel = "y"
-    Colorbar(fig[2, 1], hm, label = field_name, vertical = false, flipaxis = false)
-
-    lines!(ax[2], profile_tₙ, z)
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z"
-    ax[2].aspect = aspect_ratio
-    ax[2].xaxisposition = :top
-
-    linkyaxes!(ax[1], ax[2])
-
-    frames = eachindex(t)
-    record(fig, joinpath(pwd(), field_name * ".mp4"),
-          frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
-    end
-
-    return nothing
-
-end
-"""
-    function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
-                                          initial_conditions::TwoLayereInitialConditions,
-                                          interface_location::Number)
-Plot an initial step change of the `tracers` in a `model`. This function assumes there are two
-tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.
-"""
-function visualise_initial_stepchange(model::Oceananigans.AbstractModel,
-                                      initial_conditions::TwoLayerInitialConditions,
-                                      interface_location::Number)
-
-    x, y, z = nodes(model.grid, (Center(), Center(), Center()))
-    S₀ˡ, ΔS₀ = initial_conditions.S₀ˡ, initial_conditions.ΔS₀
-    T₀ˡ, ΔT₀ = initial_conditions.T₀ˡ, initial_conditions.ΔT₀
-    S_stepchange = initial_tracer_heaviside.(z, S₀ˡ, ΔS₀, interface_location)
-    S_sc_array = repeat(S_stepchange', length(x), 1)
-    T_stepchange = initial_tracer_heaviside.(z, T₀ˡ, ΔT₀, interface_location)
-    T_sc_array = repeat(T_stepchange', length(x), 1)
-    fig = Figure(size = (600, 1500))
-    ax = [Axis(fig[j, i]) for i ∈ 1:2, j ∈ 1:3]
-
-    hm = heatmap!(ax[1], x, z, S_sc_array; colormap = :haline)
-    ax[1].title = "Initial salinity (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    heatmap!(ax[2], x, z, S_sc_array; colormap = :haline)
-    ax[2].title = "Initial salinity (y-z)"
-    ax[2].xlabel = "y (m)"
-    ax[2].ylabel = "z (m)"
-    Colorbar(fig[1, 3], hm, label = "S (gkg⁻¹)")
-    hm = heatmap!(ax[3], y, z, T_sc_array; colormap = :thermal)
-    ax[3].title = "Initial temperature (x-z)"
-    ax[3].xlabel = "x (m)"
-    ax[3].ylabel = "z (m)"
-    heatmap!(ax[4], y, z, T_sc_array; colormap = :thermal)
-    ax[4].title = "Initial temperature (y-z)"
-    ax[4].xlabel = "y (m)"
-    ax[4].ylabel = "z (m)"
-    Colorbar(fig[2, 3], hm, label = "Θ (°C)")
-    lines!(ax[5], S_stepchange, z)
-    ax[5].title = "Initial salinity profile"
-    ax[5].xlabel = "S (gkg⁻¹)"
-    ax[5].ylabel = "z (m)"
-    lines!(ax[6], T_stepchange, z)
-    ax[6].title = "Initial temperature profile"
-    ax[6].xlabel =  "Θ (°C)"
-    ax[6].ylabel = "z (m)"
-
-    return fig
-
-end
-"""
-    initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location)
-Modified Heaviside function for initial condition of a tracer with depth. The interface_location of the
-Heaviside function is calculated from the `extrema` of the depth array `z`.
-
-## Function arguments:
-
-- `z` for the Oceananigans model grid to evaulate the function at;
-- `C` tracer value in deeper part of the step;
-- `ΔC` difference in tracer between the steps.
-
-## Keyword arguments:
-- `interface_location` where the step takes place e.g. `z - interface_location < 0 ? 0 : 1`.
-Default behaviour puts the `interface_location` in the centre of the depth range given by `z`.
-"""
-initial_tracer_heaviside(z, C::Number, ΔC::Number, interface_location) =
-                                                    z - interface_location < 0 ? C : C + ΔC
-"""
-    function visualise_initial_conditions(model::Oceanangians.AbstractModelmodel, xslice::Integer,
-                                          yslice::Integer)
-Plot the initial state of the `tracers` in a `model`. This function assumes there are two
-tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields at
-`xslice` and `yslice`.
-"""
-function visualise_initial_conditions(model::Oceananigans.AbstractModel, xslice::Integer,
-                                      yslice::Integer)
-
-    x, y, z = nodes(model.grid, (Center(), Center(), Center()))
-    S = model.tracers.S
-    T = model.tracers.T
-    fig = Figure(size = (600, 1500))
-    ax = [Axis(fig[j, i]) for i ∈ 1:2, j ∈ 1:3]
-
-    hm = heatmap!(ax[1], x, z, interior(S, :, yslice, :, 1); colormap = :haline)
-    ax[1].title = "Initial salinity (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    heatmap!(ax[2], x, z, interior(S, xslice, :, :, 1); colormap = :haline)
-    ax[2].title = "Initial salinity (y-z)"
-    ax[2].xlabel = "y (m)"
-    ax[2].ylabel = "z (m)"
-    Colorbar(fig[1, 3], hm, label = "S (gkg⁻¹)")
-    hm = heatmap!(ax[3], x, z, interior(T, :, yslice, :, 1); colormap = :thermal)
-    ax[3].title = "Initial temperature (x-z)"
-    ax[3].xlabel = "x (m)"
-    ax[3].ylabel = "z (m)"
-    heatmap!(ax[4], y, z, interior(T, xslice, :, :, 1); colormap = :thermal)
-    ax[4].title = "Initial temperature (y-z)"
-    ax[4].xlabel = "y (m)"
-    ax[4].ylabel = "z (m)"
-    Colorbar(fig[2, 3], hm, label = "Θ (°C)")
-    lines!(ax[5], interior(S, xslice, yslice, :, 1), z)
-    ax[5].title = "Initial salinity profile"
-    ax[5].xlabel = "S (gkg⁻¹)"
-    ax[5].ylabel = "z (m)"
-    lines!(ax[6], interior(T, xslice, yslice, :, 1), z)
-    ax[6].title = "Initial temperature profile"
-    ax[6].xlabel =  "Θ (°C)"
-    ax[6].ylabel = "z (m)"
-
-    return fig
-
-end
-"""
-    function visualise_initial_density(model::Oceananigans.AbstractModel,xslice::Integer,
-                                       yslice::Integer, pressure::Union{Number, Vector{Number}})
-Compute and plot the initial density at `pressure` (either reference pressure or in-situ
-pressure). The arguments `xslice` and `yslice` are used to choose where in the domain the
-figures are from.
-"""
-function visualise_initial_density(model::Oceananigans.AbstractModel, xslice::Integer,
-                                   yslice::Integer, pressure::Union{Number, Vector{Number}})
-
-    x = xnodes(model.grid, Center(), Center(), Center())
-    z = znodes(model.grid, Center(), Center(), Center())
-    S = interior(model.tracers.S, :, yslice, :, 1)
-    T = interior(model.tracers.T, :, yslice, :, 1)
-    ρ = gsw_rho.(S, T, pressure)
-
-    fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, ρ; colormap = :dense)
-    ax[1].title = "Initial density (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    Colorbar(fig[2, 1], hm, label = "ρ (kgm⁻³)", vertical = false, flipaxis = false)
-    lines!(ax[2], ρ[xslice, :], z)
-    ax[2].title = "Initial density profile"
-    ax[2].xlabel = "ρ (kgm⁻³)"
-    ax[2].ylabel = "z (m)"
-
-    linkyaxes!(ax[1], ax[2])
-
-    return fig
-
-end
-
-"""
-function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                            snapshot::Int64)
-Plot a `snapshot` of the `field_timeseries`  with `field_name` at `xslice`, `yslice`.
-"""
-function visualise_snapshot(field_timeseries::FieldTimeSeries, field_name::AbstractString,
-                            xslice::Int64, yslice::Int64, snapshot::Int64; colormap = :thermal)
-
-    x, y, z = nodes(field_timeseries[1])
-    t = round(field_timeseries.times[snapshot]; digits = 3)
-    fig = Figure(size = (1000, 500))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, interior(field_timeseries, :, yslice, :, snapshot); colormap)
-    ax[1].title = field_name * " at time t = $(t) (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    Colorbar(fig[2, 1], hm, vertical = false, label = field_name, flipaxis = false)
-    lines!(ax[2], interior(field_timeseries, xslice, yslice, :, snapshot), z)
-    ax[2].title = field_name * " profile at time t = $(t)"
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z (m)"
-
-    linkyaxes!(ax[1], ax[2])
-
-    return fig
-
-end
-
-"""
     function compute_density(S_timeseries::FieldTimeSeries, T_timeseries::FieldTimeSeries;
                              reference_pressure = 0)
 Return a density `FieldTimeSeries` calculated from the salinity and temperature
@@ -293,28 +29,196 @@ this only needs to be done once! After that the group will exist and will not be
 overwritten but a different group can be made by passing a different `density_string`.
 This allows calling `FieldTimeSeries` on the `density_variable`
 """
-function compute_density!(filepath::String; reference_pressure = 0, density_string = "ρ")
+function compute_density!(filepath::AbstractString; density_string ="ρ", reference_pressure = 0)
 
-    file = jldopen(filepath, "a+")
-    file_keys = keys(file["timeseries"]["S"])
-    JLD2.Group(file, "timeseries/"*density_string)
-    for (i, key) ∈ enumerate(file_keys)
-        if i == 1
-            for k ∈ keys(file["timeseries/S/"*key])
-                file["timeseries/"*density_string*"/"*key*"/"*k] =
-                    file["timeseries/S/"*key*"/"*k]
-            end
-            file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
-                reference_pressure
-        else
-            Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
-            file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+    find_file_type = findlast('.', filepath)
+    file_type = filepath[find_file_type:end]
+    if isequal(file_type, ".nc")
+
+        TS_stack = RasterStack(filepath,  name = (:S, :T))
+        rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
+        S_rs = set(TS_stack.S, rename_dims...)
+        T_rs = set(TS_stack.T, rename_dims...)
+        σ = get_σₚ(S_rs, T_rs, reference_pressure)
+
+        NCDataset(filepath, "a") do ds
+            defVar(ds, "Potential density", σ.data, ("xC", "yC", "zC", "Ti"),
+                    attrib = Dict("units" => "kgm⁻³",
+                                  "comments" => "computed at reference pressues p = $reference_pressure"))
         end
-    end
 
-    close(file)
+    elseif isequal(file_type, "jld2")
+
+        file = jldopen(filepath, "a+")
+        file_keys = keys(file["timeseries"]["S"])
+        JLD2.Group(file, "timeseries/"*density_string)
+        for (i, key) ∈ enumerate(file_keys)
+            if i == 1
+                for k ∈ keys(file["timeseries/S/"*key])
+                    file["timeseries/"*density_string*"/"*key*"/"*k] =
+                        file["timeseries/S/"*key*"/"*k]
+                end
+                file["timeseries/"*density_string*"/"*key*"/reference_pressure"] =
+                    reference_pressure
+            else
+                Sᵢ, Θᵢ = file["timeseries/S/"*key], file["timeseries/T/"*key]
+                file["timeseries/"*density_string*"/"*key]= gsw_rho.(Sᵢ, Θᵢ, reference_pressure)
+            end
+        end
+
+        close(file)
+
+    end
 
     return nothing
 
 end
-end # module
+"""
+    function append_density!(; saved_simulations = readdir(SIMULATION_PATH, join = true))
+Append a density timeseries to the saved output from a `TwoLayerDNS` simulation. By default
+the function looks for saved data at the default filepath for saving `SIMULATION_PATH`.
+Pass another path as the keyword argument `saved_simulations` to look somewhere else.
+"""
+function append_density!(; saved_simulations = readdir(SIMULATION_PATH, join = true))
+
+    for simulation ∈ saved_simulations
+        open_sim = jldopen(simulation)
+        if "σ₀" ∉ keys(open_sim["timeseries"])
+            close(open_sim)
+            compute_density!(simulation, density_string = "σ₀")
+        else
+            @info "A density timeseries already exists in $simulation."
+            close(open_sim)
+        end
+    end
+
+    return nothing
+
+end
+
+"Return the mean from a `FieldTimeSeries` that is `OnDisk()`."
+function field_ts_timemean(field_ts::FieldTimeSeries)
+
+    t = field_ts.times
+    field_data = field_ts[1].data
+    for i ∈ 2:length(t)
+        field_data .+= field_ts[i].data
+    end
+
+    return field_data ./ length(t)
+
+end
+"Calculate the Kolmogorov length scale `η` from viscousity and average TKE dissapation."
+η(ν, ϵ) = (ν^3 / ϵ)^(1/4)
+"""
+    function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
+Find the minimum `η`, i.e. the Kolmogorov length scale, from the `KineticEnergyDissaption`,
+ `ϵ`, time series.
+"""
+function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
+
+    t = ϵ.times
+    minimum_η_t = similar(t)
+    for i ∈ eachindex(t)
+        minimum_η_t[i] = minimum(η.(ν, ϵ[i].data))
+    end
+
+    return minimum(minimum_η_t)
+
+end
+"""
+    function kolmogorov_and_batchelor_scale!(file::AbstractString)
+Append the minimum Kolmogorov and Batchelor scales (in space and time) from a `TwoLayerDNS`
+simulation with output saved on `file`. The Kolmogorov scale is defined by
+```math
+    η = \\left(\\frac{ν³}{ϵ}\\right)^\\frac{1}{4}
+```
+and the Batchelor scale is
+```math
+    λ_{B} = \\frac{η}{√Sc}
+```
+where ``Sc`` is the Schmidt number.
+"""
+function kolmogorov_and_batchelor_scale!(file::AbstractString)
+
+    find_file_type = file[findlast('.', file):end]
+    if isequal(find_file_type, ".nc")
+
+        ϵ = Raster(file, name = :ϵ)
+        max_ϵ = maximum(ϵ) # maximum ϵ in space and time will give minimum η
+        ds = NCDataset(file, "a")
+        ν_str = ds.attrib["ν"]
+        ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
+        Sc = ds.attrib["Sc"]
+        η_min = η(ν, max_ϵ)
+        ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
+        ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
+        close(ds)
+
+    elseif isequal(find_file_type, ".jld2")
+
+        ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
+        Sc = load(file, "Non_dimensional_numbers")["Sc"]
+        ν = load(file, "closure/ν")
+        min_η = minimum_η(ϵ_ts; ν)
+
+        jldopen(file, "a+") do f
+            f["minimum_kolmogorov_scale"] = min_η
+            f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
+        end
+
+    end
+
+    return nothing
+
+end
+"""
+    function non_dimensional_numbers(simulation::Simulation, dns::TwoLayerDNS)
+Compute and append non-dimensional numbers related to the DNS experiments.
+The non-dimensional numbers are:
+
+- Prandtl number: ``Pr = ν / κₜ``
+- Schmidt number: ``Sc = ν / κₛ``
+- Lewis number:   ``Le = κₜ / κₛ``
+- Raleigh number (density): ``Ra_{d} = Ra_{t} / Ra_{s} = (αΔT / βΔS) * (1 / Le)``.
+
+These numbers are then saved into the simulation output file.
+"""
+function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
+
+    model, initial_conditions = dns.model, dns.initial_conditions
+    ν = model.closure.ν
+    κₛ, κₜ = model.closure.κ
+    Pr = ν / κₜ
+    Sc = ν / κₛ
+    Le = κₜ / κₛ
+    α = gsw_alpha(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
+    β = gsw_beta(initial_conditions.S₀ˡ, initial_conditions.T₀ˡ, 0)
+    Ra = ((α * initial_conditions.ΔT₀ )/ (β * initial_conditions.ΔS₀)) * (1 / Le)
+
+    nd_nums = Dict("Pr" => Pr, "Sc" => Sc, "Le" => Le, "Ra_ρ" => Ra)
+
+    if simulation.output_writers[:outputs] isa NetCDFOutputWriter
+
+        ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
+        ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
+        ds.attrib["ν"]  = "$(model.closure.ν)m²s⁻¹"
+        ds.attrib["κₛ"] = "$(model.closure.κ.S)m²s⁻¹"
+        ds.attrib["κₜ"] = "$(model.closure.κ.T)m²s⁻¹"
+        for key ∈ keys(nd_nums)
+            ds.attrib[key] = nd_nums[key]
+        end
+        close(ds)
+
+    else
+
+        jldopen(simulation.output_writers[:outputs].filepath, "a+") do file
+            file["Non_dimensional_numbers"] = nd_nums
+        end
+
+    end
+
+    return nothing
+
+end

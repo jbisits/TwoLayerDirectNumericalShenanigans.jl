@@ -67,8 +67,8 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
                                 colorrange = nothing, highclip = nothing, lowclip = nothing,
                                 aspect_ratio = 1)
 
-    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, Ti)
-    field_name = rs.name
+    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
+    field_name = string(rs.name)
 
     n = Observable(1)
     field_tₙ = @lift rs[:, yslice, :, $n]

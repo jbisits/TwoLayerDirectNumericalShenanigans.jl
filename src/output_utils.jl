@@ -39,15 +39,22 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
         rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
         S_rs = set(TS_stack.S, rename_dims...)
         T_rs = set(TS_stack.T, rename_dims...)
-        σ = get_σₚ(S_rs, T_rs, reference_pressure)
+        time = lookup(S_rs, :Ti)
+        σ = similar(S_rs.data)
 
         NCDataset(filepath, "a") do ds
-            defVar(ds, "Potential density", σ.data, ("xC", "yC", "zC", "Ti"),
+            defVar(ds, "σ", σ, ("xC", "yC", "zC", "time"),
                     attrib = Dict("units" => "kgm⁻³",
+                                  "longname" => "Potential density",
                                   "comments" => "computed at reference pressues p = $reference_pressure"))
+            for t ∈ eachindex(time)
+                ds["σ"][:, :, :, t] = get_σₚ(S_rs[:, :, :, t],
+                                             T_rs[:, :, :, t],
+                                             reference_pressure)
+            end
         end
 
-    elseif isequal(file_type, "jld2")
+    elseif isequal(file_type, ".jld2")
 
         file = jldopen(filepath, "a+")
         file_keys = keys(file["timeseries"]["S"])
@@ -203,9 +210,9 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
         ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
         ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
         ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
-        ds.attrib["ν"]  = "$(model.closure.ν)m²s⁻¹"
-        ds.attrib["κₛ"] = "$(model.closure.κ.S)m²s⁻¹"
-        ds.attrib["κₜ"] = "$(model.closure.κ.T)m²s⁻¹"
+        ds.attrib["ν"]  = "$(model.closure.ν) m²s⁻¹"
+        ds.attrib["κₛ"] = "$(model.closure.κ.S) m²s⁻¹"
+        ds.attrib["κₜ"] = "$(model.closure.κ.T) m²s⁻¹"
         for key ∈ keys(nd_nums)
             ds.attrib[key] = nd_nums[key]
         end

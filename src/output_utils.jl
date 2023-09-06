@@ -31,8 +31,7 @@ This allows calling `FieldTimeSeries` on the `density_variable`
 """
 function compute_density!(filepath::AbstractString; density_string ="ρ", reference_pressure = 0)
 
-    find_file_type = findlast('.', filepath)
-    file_type = filepath[find_file_type:end]
+    file_type = find_file_type(filepath)
     if isequal(file_type, ".nc")
 
         @info "Lazily loading data"
@@ -50,9 +49,8 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
                                   "longname" => "Potential density",
                                   "comments" => "computed at reference pressues p = $reference_pressure"))
             for t ∈ eachindex(time)
-                ds["σ"][:, :, :, t] = get_σₚ(S_rs[:, :, :, t],
-                                             T_rs[:, :, :, t],
-                                             reference_pressure)
+                σₜ = get_σₚ(S_rs[:, :, :, t], T_rs[:, :, :, t], reference_pressure)
+                ds["σ"][:, :, :, t] = σₜ.data
             end
         end
 
@@ -91,13 +89,26 @@ Pass another path as the keyword argument `saved_simulations` to look somewhere 
 function append_density!(; saved_simulations = readdir(SIMULATION_PATH, join = true))
 
     for simulation ∈ saved_simulations
-        open_sim = jldopen(simulation)
-        if "σ₀" ∉ keys(open_sim["timeseries"])
-            close(open_sim)
-            compute_density!(simulation, density_string = "σ₀")
-        else
-            @info "A density timeseries already exists in $simulation."
-            close(open_sim)
+
+        file_type = find_file_type(simulation)
+
+        if isequal(file_type, ".jld2")
+            open_sim = jldopen(simulation)
+            if "σ₀" ∉ keys(open_sim["timeseries"])
+                close(open_sim)
+                compute_density!(simulation, density_string = "σ₀")
+            else
+                @info "A density timeseries already exists in $simulation."
+                close(open_sim)
+            end
+        elseif isequal(file_type, ".nc")
+            NCDataset(simulation, "a") do ds
+                if "σ" ∉ keys(ds)
+                    compute_density!(simulation)
+                else
+                    @info "A density timeseries already exists in $simulation."
+                end
+            end
         end
     end
 
@@ -161,8 +172,8 @@ where ``Sc`` is the Schmidt number.
 """
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
-    find_file_type = file[findlast('.', file):end]
-    if isequal(find_file_type, ".nc")
+    file_type = find_file_type
+    if isequal(file_type, ".nc")
 
         ϵ = Raster(file, lazy = true, name = :ϵ)
         ds = NCDataset(file, "a")
@@ -174,7 +185,7 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
         ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
         close(ds)
 
-    elseif isequal(find_file_type, ".jld2")
+    elseif isequal(file_type, ".jld2")
 
         ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
         Sc = load(file, "Non_dimensional_numbers")["Sc"]
@@ -241,3 +252,8 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
     return nothing
 
 end
+"""
+    funciton find_file_type(file::AbstractString)
+Return the file type (either `.nc` or `.jld2`) of a `file`.
+"""
+find_file_type(file::AbstractString) = file[findlast('.', file):end]

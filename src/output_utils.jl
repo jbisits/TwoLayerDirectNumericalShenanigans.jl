@@ -35,6 +35,7 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
     file_type = filepath[find_file_type:end]
     if isequal(file_type, ".nc")
 
+        @info "Lazily loading data"
         TS_stack = RasterStack(filepath, lazy = true, name = (:S, :T))
         rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
         S_rs = set(TS_stack.S, rename_dims...)
@@ -42,6 +43,7 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
         time = lookup(S_rs, :Ti)
         σ = similar(S_rs.data)
 
+        @info "Appending density variable to saved .nc file"
         NCDataset(filepath, "a") do ds
             defVar(ds, "σ", σ, ("xC", "yC", "zC", "time"),
                     attrib = Dict("units" => "kgm⁻³",

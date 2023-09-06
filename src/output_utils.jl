@@ -29,7 +29,7 @@ this only needs to be done once! After that the group will exist and will not be
 overwritten but a different group can be made by passing a different `density_string`.
 This allows calling `FieldTimeSeries` on the `density_variable`
 """
-function compute_density!(filepath::AbstractString; density_string ="ρ", reference_pressure = 0)
+function compute_density!(filepath::AbstractString; density_string = "σ", reference_pressure = 0)
 
     file_type = find_file_type(filepath)
     if isequal(file_type, ".nc")
@@ -44,13 +44,13 @@ function compute_density!(filepath::AbstractString; density_string ="ρ", refere
 
         @info "Appending density variable to saved .nc file"
         NCDataset(filepath, "a") do ds
-            defVar(ds, "σ", σ, ("xC", "yC", "zC", "time"),
+            defVar(ds, density_string, σ, ("xC", "yC", "zC", "time"),
                     attrib = Dict("units" => "kgm⁻³",
                                   "longname" => "Potential density",
                                   "comments" => "computed at reference pressues p = $reference_pressure"))
             for t ∈ eachindex(time)
                 σₜ = get_σₚ(S_rs[:, :, :, t], T_rs[:, :, :, t], reference_pressure)
-                ds["σ"][:, :, :, t] = σₜ.data
+                ds[density_string][:, :, :, t] = σₜ.data
             end
         end
 
@@ -94,7 +94,7 @@ function append_density!(; saved_simulations = readdir(SIMULATION_PATH, join = t
 
         if isequal(file_type, ".jld2")
             open_sim = jldopen(simulation)
-            if "σ₀" ∉ keys(open_sim["timeseries"])
+            if "σ" ∉ keys(open_sim["timeseries"])
                 close(open_sim)
                 compute_density!(simulation, density_string = "σ₀")
             else

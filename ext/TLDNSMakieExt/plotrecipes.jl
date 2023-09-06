@@ -71,8 +71,8 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     field_name = string(rs.name)
 
     n = Observable(1)
-    field_tₙ = @lift rs[:, yslice, :, $n]
-    profile_tₙ = @lift rs[xslice, yslice, :, $n]
+    field_tₙ = @lift rs.data[:, yslice, :, $n]
+    profile_tₙ = @lift rs.data[xslice, yslice, :, $n]
     colorrange = isnothing(colorrange) ? extrema(rs) : colorrange
     time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 

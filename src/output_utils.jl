@@ -29,28 +29,28 @@ this only needs to be done once! After that the group will exist and will not be
 overwritten but a different group can be made by passing a different `density_string`.
 This allows calling `FieldTimeSeries` on the `density_variable`
 """
-function compute_density!(filepath::AbstractString; density_string ="ρ", reference_pressure = 0)
+function compute_density!(filepath::AbstractString; density_string = "σ", reference_pressure = 0)
 
-    find_file_type = findlast('.', filepath)
-    file_type = filepath[find_file_type:end]
+    file_type = find_file_type(filepath)
     if isequal(file_type, ".nc")
 
-        TS_stack = RasterStack(filepath,  name = (:S, :T))
+        @info "Lazily loading data"
+        TS_stack = RasterStack(filepath, lazy = true, name = (:S, :T))
         rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
         S_rs = set(TS_stack.S, rename_dims...)
         T_rs = set(TS_stack.T, rename_dims...)
         time = lookup(S_rs, :Ti)
         σ = similar(S_rs.data)
 
+        @info "Appending density variable to saved .nc file"
         NCDataset(filepath, "a") do ds
-            defVar(ds, "σ", σ, ("xC", "yC", "zC", "time"),
+            defVar(ds, density_string, σ, ("xC", "yC", "zC", "time"),
                     attrib = Dict("units" => "kgm⁻³",
                                   "longname" => "Potential density",
                                   "comments" => "computed at reference pressues p = $reference_pressure"))
             for t ∈ eachindex(time)
-                ds["σ"][:, :, :, t] = get_σₚ(S_rs[:, :, :, t],
-                                             T_rs[:, :, :, t],
-                                             reference_pressure)
+                σₜ = get_σₚ(S_rs[:, :, :, t], T_rs[:, :, :, t], reference_pressure)
+                ds[density_string][:, :, :, t] = σₜ.data
             end
         end
 
@@ -89,13 +89,26 @@ Pass another path as the keyword argument `saved_simulations` to look somewhere 
 function append_density!(; saved_simulations = readdir(SIMULATION_PATH, join = true))
 
     for simulation ∈ saved_simulations
-        open_sim = jldopen(simulation)
-        if "σ₀" ∉ keys(open_sim["timeseries"])
-            close(open_sim)
-            compute_density!(simulation, density_string = "σ₀")
-        else
-            @info "A density timeseries already exists in $simulation."
-            close(open_sim)
+
+        file_type = find_file_type(simulation)
+
+        if isequal(file_type, ".jld2")
+            open_sim = jldopen(simulation)
+            if "σ" ∉ keys(open_sim["timeseries"])
+                close(open_sim)
+                compute_density!(simulation, density_string = "σ₀")
+            else
+                @info "A density timeseries already exists in $simulation."
+                close(open_sim)
+            end
+        elseif isequal(file_type, ".nc")
+            NCDataset(simulation, "a") do ds
+                if "σ" ∉ keys(ds)
+                    compute_density!(simulation)
+                else
+                    @info "A density timeseries already exists in $simulation."
+                end
+            end
         end
     end
 
@@ -133,6 +146,17 @@ function minimum_η(ϵ::FieldTimeSeries; ν = 1e-6)
     return minimum(minimum_η_t)
 
 end
+function minimum_η(ϵ::Raster; ν = 1e-6)
+
+    t = lookup(ϵ, :Ti)
+    minimum_η_t = similar(t)
+    for i ∈ eachindex(t)
+        minimum_η_t[i] = minimum(η.(ν, ϵ.data[:, :, :, i]))
+    end
+
+    return minimum(minimum_η_t)
+
+end
 """
     function kolmogorov_and_batchelor_scale!(file::AbstractString)
 Append the minimum Kolmogorov and Batchelor scales (in space and time) from a `TwoLayerDNS`
@@ -148,21 +172,20 @@ where ``Sc`` is the Schmidt number.
 """
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
-    find_file_type = file[findlast('.', file):end]
-    if isequal(find_file_type, ".nc")
+    file_type = find_file_type
+    if isequal(file_type, ".nc")
 
-        ϵ = Raster(file, name = :ϵ)
-        max_ϵ = maximum(ϵ) # maximum ϵ in space and time will give minimum η
+        ϵ = Raster(file, lazy = true, name = :ϵ)
         ds = NCDataset(file, "a")
         ν_str = ds.attrib["ν"]
         ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
         Sc = ds.attrib["Sc"]
-        η_min = η(ν, max_ϵ)
+        η_min = minimum_η(ϵ; ν)
         ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
         ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
         close(ds)
 
-    elseif isequal(find_file_type, ".jld2")
+    elseif isequal(file_type, ".jld2")
 
         ϵ_ts = FieldTimeSeries(file, "ϵ", backend = OnDisk())
         Sc = load(file, "Non_dimensional_numbers")["Sc"]
@@ -229,3 +252,8 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
     return nothing
 
 end
+"""
+    funciton find_file_type(file::AbstractString)
+Return the file type (either `.nc` or `.jld2`) of a `file`.
+"""
+find_file_type(file::AbstractString) = file[findlast('.', file):end]

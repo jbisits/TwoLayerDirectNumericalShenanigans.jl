@@ -82,6 +82,27 @@ function Base.show(io::IO, tlic::TwoLayerInitialConditions)
     print(io,   "┗━━ lower_layer: S = $(tlic.S₀ˡ), T = $(tlic.T₀ˡ)")
 end
 """
+    function TwoLayerInitialConditions(S₀ᵘ, T₀ᵘ, S₀ˡ, T₀ˡ; reference_pressure = 0)
+Return either `Stable` of `Unstable` `TwoLayerInitialConditions` depending on the
+density differenece
+```math
+    Δρ = ρ \\left(S₀ᵘ, T₀ᵘ, pᵣ \\right) - ρ \\left(S₀ˡ, T₀ˡ, pᵣ \\right)
+```
+calculate from the salinity and temperature set for the upper and lower layer.
+"""
+function TwoLayerInitialConditions(S₀ᵘ, T₀ᵘ, S₀ˡ, T₀ˡ; reference_pressure = 0)
+
+    Δρ = gsw_rho(S₀ᵘ, T₀ᵘ, reference_pressure) - gsw_rho(S₀ˡ, T₀ˡ, reference_pressure)
+
+    tlics = Δρ ≤ 0 ? StableTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ,
+                                                     T₀ᵘ,  T₀ˡ, T₀ᵘ - T₀ˡ) :
+                     UnstableTwoLayerInitialConditions(S₀ᵘ, S₀ˡ, S₀ᵘ - S₀ˡ,
+                                                       T₀ᵘ,  T₀ˡ, T₀ᵘ - T₀ˡ)
+
+    return tlics
+
+end
+"""
     struct StableTwoLayerInitialConditions
 Container for initial salinity and temperature conditions that are stable.
 """

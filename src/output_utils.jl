@@ -34,23 +34,21 @@ function compute_density!(filepath::AbstractString; density_string = "σ", refer
     file_type = find_file_type(filepath)
     if isequal(file_type, ".nc")
 
-        @info "Lazily loading data"
-        TS_stack = RasterStack(filepath, lazy = true, name = (:S, :T))
-        rename_dims = (:xC => X, :yC => Y, :zC => Z, :Ti => Ti)
-        S_rs = set(TS_stack.S, rename_dims...)
-        T_rs = set(TS_stack.T, rename_dims...)
+        @info "Lazily loading S and T into separate Rasters"
+        S_rs = Raster(filepath, lazy = true, name = :S)
+        T_rs = Raster(filepath, lazy = true, name = :T)
         time = lookup(S_rs, :Ti)
-        σ = similar(S_rs.data)
 
-        @info "Appending density variable to saved .nc file"
         NCDataset(filepath, "a") do ds
-            defVar(ds, density_string, σ, ("xC", "yC", "zC", "time"),
+            @info "Appending density variable to saved .nc file"
+            defVar(ds, density_string, zeros(size(S_rs)), ("xC", "yC", "zC", "time"),
                     attrib = Dict("units" => "kgm⁻³",
                                   "longname" => "Potential density",
                                   "comments" => "computed at reference pressues p = $reference_pressure"))
+            @info "Computing density and saving to .nc file"
             for t ∈ eachindex(time)
-                σₜ = get_σₚ(S_rs[:, :, :, t], T_rs[:, :, :, t], reference_pressure)
-                ds[density_string][:, :, :, t] = σₜ.data
+                ds[density_string][:, :, :, t] = get_σₚ(S_rs[:, :, :, t], T_rs[:, :, :, t],
+                                                        reference_pressure)
             end
         end
 
@@ -172,7 +170,7 @@ where ``Sc`` is the Schmidt number.
 """
 function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
-    file_type = find_file_type
+    file_type = find_file_type(file)
     if isequal(file_type, ".nc")
 
         ϵ = Raster(file, lazy = true, name = :ϵ)

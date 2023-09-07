@@ -49,6 +49,8 @@ end
     @test isequal(isothermal_twolayer_alt.T₀ᵘ, T₀ˡ_alt)
     @test isequal(isothermal_twolayer_alt.T₀ˡ, T₀ˡ_alt)
     @test isequal(isothermal_twolayer_alt.ΔT₀, 0)
+    @test TwoLayerInitialConditions(S₀ᵘ.stable, T₀ᵘ, S₀ˡ, T₀ˡ) isa StableTwoLayerInitialConditions
+    @test TwoLayerInitialConditions(S₀ᵘ.unstable, T₀ᵘ, S₀ˡ, T₀ˡ) isa UnstableTwoLayerInitialConditions
 end
 
 include("initialconditions_test.jl")

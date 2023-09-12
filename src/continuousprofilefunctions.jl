@@ -8,6 +8,9 @@ function Base.show(io::IO, cpf::AbstractContinuousProfileFunction)
         println(io, "$(typeof(cpf))")
         println(io, "┣━━ interface_location: z = $(cpf.interface_location)m")
         print(io,   "┗━━━━━━━━ time_evolved: t = $(cpf.time)s")
+    elseif cpf isa MidPoint
+        println(io, "$(typeof(cpf))")
+        print(io, "┗━━ interface_location: z = $(cpf.interface_location)m")
     end
 end
 "`iterate` for `AbstractInitialConditions`"
@@ -35,6 +38,15 @@ struct Erf{T} <: AbstractContinuousProfileFunction
     interface_location :: T
     "Time at which to evaluate the error function which is solution to 1D evolution of S or T."
     time :: T
+end
+"""
+    struct MidPoint
+Container for a profile that is a linear transition through the midpoint of the salinity
+and temperature between the upper and lower layers.
+"""
+struct MidPoint{T} <: AbstractContinuousProfileFunction
+    "Location if the interface between the two layers."
+    interface_location :: T
 end
 """
     function erf_tracer_solution(z, C::Number, ΔC::Number, profile_function::Erf)
@@ -70,3 +82,28 @@ Set a hyperbolic tangent initial condition for a tracer `C` over the vertical do
 tanh_initial_condition(z, Cˡ::Number, ΔC::Number, profile_function::HyperbolicTangent) =
     Cˡ + 0.5 * ΔC * (1  + tanh(profile_function.interface_transition_width *
                                (z - profile_function.interface_location)))
+"""
+    midpoint(z, Cˡ::Number, Cᵘ::Number, profile_function::MidPoint)
+Set the change between the upper and lower layer as the midpoint between `Cˡ` and `Cᵘ`.
+This midpoint change takes place over three grid cells (in the vertical) with the midpoint
+being set at `profile_location.interface_location`.
+
+## Function arguments
+
+- `z` for the Oceananigans model grid to evaluate the function at;
+- `Cˡ` tracer value in the lower layer;
+- `Cᵘ` tracer value in the upper layer;
+- `profile_function::MidPoint` container with `interface_location` - that is where to set
+midpoint transition.
+"""
+function midpoint(z, Cˡ::Number, Cᵘ::Number, profile_function::MidPoint)
+
+    if z > profile_function.interface_location
+        Cᵘ
+    elseif z < profile_function.interface_location
+        Cˡ
+    elseif z == profile_function.interface_location
+        0.5 * (Cᵘ + Cˡ)
+    end
+
+end

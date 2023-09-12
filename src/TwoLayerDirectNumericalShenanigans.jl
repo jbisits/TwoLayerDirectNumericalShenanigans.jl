@@ -40,7 +40,7 @@ export
 
 export set_two_layer_initial_conditions!, find_depth
 
-export AbstractContinuousProfileFunction, HyperbolicTangent, Erf
+export AbstractContinuousProfileFunction, HyperbolicTangent, Erf, MidPoint
 
 export AbstractTracerPerturbation, SalinityGaussianProfile, SalinityGaussianBlob,
        TemperatureGaussianProfile, TemperatureGaussianBlob

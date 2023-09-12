@@ -26,8 +26,7 @@ Set initial conditions for a `TwoLayerDNS` that are smooth according to the
 """
 function set_two_layer_initial_conditions!(dns::TwoLayerDNS)
 
-    model, initial_conditions, profile_function, tracer_perturbation, initial_noise =
-        dns.model, dns.initial_conditions, dns.profile_function, dns.tracer_perturbation, dns.initial_noise
+    model, profile_function, initial_conditions, tracer_perturbation, initial_noise = dns
 
     set_two_layer_initial_conditions!(model, initial_conditions, profile_function,
                                       tracer_perturbation, initial_noise)
@@ -425,7 +424,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     ΔT = initial_conditions.ΔT₀
 
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function) +
-    perturb_tracer(z, tracer_perturbation)
+                                 perturb_tracer(z, tracer_perturbation)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function)
 
@@ -453,7 +452,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function) +
-                                perturb_tracer(z, tracer_perturbation)
+                                 perturb_tracer(z, tracer_perturbation)
 
     set!(model, S = initial_S_profile, T = initial_T_profile)
 
@@ -474,7 +473,7 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     initial_S_profile(x, y, z) = tanh_initial_condition(z, S₀, ΔS, profile_function)
 
     initial_T_profile(x, y, z) = tanh_initial_condition(z, T₀, ΔT, profile_function) +
-                                perturb_tracer(x, y, z, tracer_perturbation)
+                                 perturb_tracer(x, y, z, tracer_perturbation)
 
     set!(model, S = initial_S_profile, T = initial_T_profile)
 
@@ -593,5 +592,245 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     perturb_velocity!(model, initial_noise)
 
     return nothing
+
+end
+####
+#### `MidPoint` methods
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Salinity
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::SalinityGaussianBlob,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(x, y, z, tracer_perturbation)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Salinity + noise
+#####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::SalinityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation) +
+                                 perturb_tracer(z, initial_noise)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    perturb_velocity!(model, initial_noise)
+
+    return nothing
+
+end
+####
+#### Temperature
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::TemperatureGaussianBlob,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(x, y, z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Temperature + noise
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::TemperatureNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation) +
+                                 perturb_tracer(z, initial_noise)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                perturb_tracer(z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    perturb_velocity!(model, initial_noise)
+
+    return nothing
+
+end
+####
+#### Noise
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::SalinityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, initial_noise)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::TemperatureNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, initial_noise)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = midpoint(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = midpoint(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+    perturb_velocity!(model, initial_noise)
 
 end

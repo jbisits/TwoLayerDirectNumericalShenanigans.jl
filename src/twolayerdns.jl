@@ -197,7 +197,8 @@ Create a filename for saved output based on the `profile_function`,`initial_cond
 """
 function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
 
-    pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" : "erf"
+    pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" :
+                            dns.profile_function isa Erf ? "erf" : "midpoint"
     ic_type = typeof(dns.initial_conditions)
     ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :
                             ic_type <: CabbelingTwoLayerInitialConditions ?

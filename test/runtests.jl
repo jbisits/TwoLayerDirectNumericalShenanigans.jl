@@ -97,6 +97,16 @@ end
         @test isequal((true, true), tracer_noise(dns))
 
     end
+    for tnv ∈ tracer_noise_perturbations_vec
+
+        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                    reference_density = REFERENCE_DENSITY)
+        dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tnv)
+        set_two_layer_initial_conditions!(dns)
+
+        @test isequal((true, true), tracer_noise(dns))
+
+    end
 
 end
 

@@ -9,12 +9,12 @@ Base.iterate(noise::AbstractNoise, state = 1) =
     state > length(fieldnames(typeof(noise))) ? nothing :
                                             (getfield(noise, state), state + 1)
 "Tracer Noise type"
-abstract type TracerNoise <: AbstractNoise end
+abstract type TracerNoise{T} <: AbstractNoise end
 """
     struct SalinityNoise
 Container for adding `scale`d random noise to the salinity field at `depth`.
 """
-struct SalinityNoise{T} <: TracerNoise
+struct SalinityNoise{T} <: TracerNoise{T}
     "Depth at which to set random salinity perturbations."
     depth :: T
     "Scale for the random noise."
@@ -24,22 +24,35 @@ end
     struct TemperatuerNoise
 Container for adding `scale`d random noise to the salinity field at `depth`.
 """
-struct TemperatureNoise{T} <: TracerNoise
+struct TemperatureNoise{T} <: TracerNoise{T}
     "Depth at which to set random salinity perturbations."
     depth :: T
     "Scale for the random noise."
     scale :: T
 end
 """
-    function perturb_salinity(z, tracer_perturbation::TracerNoise)
-Perturb tracer by adding `scale`d random noise to the salinity at `depth`.
+    function perturb_tracer(z, tracer_perturbation::TracerNoise)
+Perturb tracer by adding `scale`d random noise to the to the `tracer` field at `depth`.
 **Note** the `depth` needs to be an exact match to a depth at that the `Center` in the `z`
 direction.
+Either a single `depth` and `scale` or a `Vector` of `depths` and `scales` can be passed in.
 """
-function perturb_tracer(z, tracer_perturbation::TracerNoise)
+function perturb_tracer(z, tracer_perturbation::TracerNoise{<:Number})
 
-    if z == tracer_perturbation.depth
-        tracer_perturbation.scale * randn()
+    depth, scale = tracer_perturbation
+    if z == depth
+        scale * randn()
+    else
+        0
+    end
+
+end
+function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
+
+    depths, scales = tracer_perturbation
+    if z ∈ depths
+        idx = findall(z .== depths)[1]
+        scales[idx] * randn()
     else
         0
     end

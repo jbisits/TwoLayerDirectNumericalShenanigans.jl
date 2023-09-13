@@ -59,7 +59,7 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
                 0
             end
         end
-    elseif depths isa AbstractVector
+    else
         if z ∈ depths
             idx = findall(z .== depths)[1]
             scales[idx] * randn()

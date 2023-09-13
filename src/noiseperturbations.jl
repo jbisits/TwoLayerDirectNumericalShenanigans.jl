@@ -51,8 +51,15 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
 
     depths, scales = tracer_perturbation
     if z ∈ depths
-        idx = findall(z .== depths)[1]
-        scales[idx] * randn()
+        if depths isa CuArray
+            allowscalar() do
+            idx = findall(z .== depths)[1]
+            scales[idx] * randn()
+            end
+        else
+            idx = findall(z .== depths)[1]
+            scales[idx] * randn()
+        end
     else
         0
     end

@@ -18,6 +18,22 @@ function find_depth(model::Oceananigans.AbstractModel, depth::Number)
 
     return found_depth
 end
+function find_depth(model::Oceananigans.AbstractModel, depth::AbstractVector)
+
+    sort!(depth)
+    found_depth = model.architecture isa CPU ? begin
+                                                z = znodes(model.grid, Center(), Center(), Center())
+                                                depth_idx = findall(depth[1] .≤ z .≤ depth[2])
+                                                z[depth_idx]
+                                               end :
+                                                allowscalar() do
+                                                z = znodes(model.grid, Center(), Center(), Center())
+                                                depth_idx = findall(depth[1] .≤ z .≤ depth[2])
+                                                z[depth_idx]
+                                               end
+
+    return found_depth
+end
 """
     function set_two_layer_initial_conditions(dns::TwoLayerDNS)
 

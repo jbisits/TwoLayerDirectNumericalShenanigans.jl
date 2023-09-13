@@ -113,4 +113,6 @@ end
 @testset "Find depth" begin
     test_depth = rand(z)
     @test isequal(test_depth, find_depth(model, test_depth))
+    test_depth_range = vcat(z[10], z[20])
+    @test isequal(z[10:20], find_depth(model, test_depth_range))
 end

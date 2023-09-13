@@ -3,7 +3,7 @@ architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 500)
 model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-reference_density = REFERENCE_DENSITY)
+            reference_density = REFERENCE_DENSITY)
 
 ## set initial conditions, currently there are four options available in this submodule
 initial_conditions = StableTwoLayerInitialConditions(0, 0, 0, 0, 0, 0)
@@ -16,6 +16,8 @@ tracer_profile_perturbations = (SalinityGaussianProfile(z[depth_idx], 0.0, 1.5),
 tracer_blob_perturbations = (SalinityGaussianBlob(z[depth_idx], [0.0, 0.0], 1.5),
                              TemperatureGaussianBlob(z[depth_idx], [0.0, 0.0], 1.5))
 tracer_noise_perturbations = (SalinityNoise(z[depth_idx], 1.0), TemperatureNoise(z[depth_idx], 1.0))
+tracer_noise_perturbations_vec = (SalinityNoise(z[depth_idx-1:depth_idx+1], fill(1.0, 3)),
+                                  TemperatureNoise(z[depth_idx-1:depth_idx+1], fill(1.0, 3)))
 tracer_profile_noise_perturbations = ((SalinityGaussianProfile(z[depth_idx], 0.0, 1.5),
                                        SalinityNoise(z[depth_idx], 1.0)),
                                        (TemperatureGaussianProfile(z[depth_idx], 0.0, 1.5),
@@ -60,11 +62,19 @@ function tracer_noise(dns::TwoLayerDNS)
     S, T = interior(dns.model.tracers.S, :, :, :), interior(dns.model.tracers.T, :, :, :)
 
     find_T, find_S = false, false
-    if dns.initial_noise isa SalinityNoise
+    if dns.initial_noise isa SalinityNoise{<:Number}
         find_T = isempty(findall(T .!= 0))
         find_S = findall(S .!= 0)[1][3] == depth_idx
-    elseif dns.initial_noise isa TemperatureNoise
+    elseif dns.initial_noise isa TemperatureNoise{<:Number}
         find_T = findall(T .!= 0)[1][3] == depth_idx
+        find_S = isempty(findall(S .!= 0))
+    elseif dns.initial_noise isa SalinityNoise{<:Vector}
+        find_T = isempty(findall(T .!= 0))
+        find_vec = findall(S .!= 0)
+        find_S = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
+    elseif dns.initial_noise isa TemperatureNoise{<:Vector}
+        find_vec = findall(T .!= 0)
+        find_T = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
         find_S = isempty(findall(S .!= 0))
     end
 

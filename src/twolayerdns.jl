@@ -3,14 +3,14 @@
 Container for all the elements of a `TwoLayerDNS`.
 """
 struct TwoLayerDNS{NHM <: NonhydrostaticModel,
-                  ACPF <: AbstractContinuousProfileFunction,
+                  APF <: AbstractProfileFunction,
                   TLIC <: TwoLayerInitialConditions,
                    ATP <: Union{AbstractTracerPerturbation, Nothing},
                     AN <: Union{AbstractNoise, Nothing}} <: AbstractTwoLayerDNS
     "An [Oceananigans.jl `NonhydrostaticModel`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})"
                   model :: NHM
     "Continuous profile function"
-       profile_function :: ACPF
+       profile_function :: APF
     "The two layer initial conditions"
      initial_conditions :: TLIC
     "Perturbation to a tracer field"
@@ -199,6 +199,7 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbo
 
     pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" :
                             dns.profile_function isa Erf ? "erf" : "midpoint"
+    pf_string = lowercase(string(typeof(dns.profile_function))[1:findfirst('{', string(typeof(dns.profile_function))) - 1])
     ic_type = typeof(dns.initial_conditions)
     ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :
                             ic_type <: CabbelingTwoLayerInitialConditions ?

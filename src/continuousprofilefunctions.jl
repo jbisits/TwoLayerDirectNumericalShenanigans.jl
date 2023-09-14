@@ -1,3 +1,4 @@
+abstract type AbstractContinuousProfileFunction <: AbstractProfileFunction end
 "`show` for `AbstractContinuousProfileFunction`"
 function Base.show(io::IO, cpf::AbstractContinuousProfileFunction)
     if cpf isa HyperbolicTangent
@@ -13,7 +14,7 @@ function Base.show(io::IO, cpf::AbstractContinuousProfileFunction)
         print(io, "┗━━ interface_location: z = $(cpf.interface_location)m")
     end
 end
-"`iterate` for `AbstractInitialConditions`"
+"`iterate` for `AbstractContinuousProfileFunction`"
 Base.iterate(pf::AbstractContinuousProfileFunction, state = 1) =
     state > length(fieldnames(typeof(pf))) ? nothing :
                                             (getfield(pf, state), state + 1)

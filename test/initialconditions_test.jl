@@ -81,3 +81,15 @@ function tracer_noise(dns::TwoLayerDNS)
     return (find_T, find_S)
 
 end
+function tracer_stepchange(dns::TwoLayerDNS)
+
+    S, T = interior(dns.model.tracers.S, :, :, :), interior(dns.model.tracers.T, :, :, :)
+
+    S_upper = unique(S[1, 1, 1:depth_idx])[1] == dns.initial_conditions.S₀ˡ
+    S_lower = unique(S[1, 1, depth_idx + 1:length(z)])[1] == dns.initial_conditions.S₀ᵘ
+    T_upper = unique(T[1, 1, 1:depth_idx])[1] == dns.initial_conditions.T₀ˡ
+    T_lower = unique(T[1, 1, depth_idx + 1:length(z)])[1] == dns.initial_conditions.T₀ᵘ
+
+    return S_upper, S_lower, T_upper, T_lower
+
+end

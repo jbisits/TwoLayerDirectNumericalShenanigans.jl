@@ -850,3 +850,243 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
     perturb_velocity!(model, initial_noise)
 
 end
+####
+#### Step Change methods
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Salinity
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::SalinityGaussianBlob,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(x, y, z, tracer_perturbation)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Salinity + noise
+#####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::SalinityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation) +
+                                 perturb_tracer(z, initial_noise)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::SalinityGaussianProfile,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    perturb_velocity!(model, initial_noise)
+
+    return nothing
+
+end
+####
+#### Temperature
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::TemperatureGaussianBlob,
+                                           initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(x, y, z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+####
+#### Temperature + noise
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::TemperatureNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation) +
+                                 perturb_tracer(z, initial_noise)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::TemperatureGaussianProfile,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, tracer_perturbation)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    perturb_velocity!(model, initial_noise)
+
+    return nothing
+
+end
+####
+#### Noise
+####
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::MidPoint,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::SalinityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function) +
+                                 perturb_tracer(z, initial_noise)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::TemperatureNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function) +
+                                 perturb_tracer(z, initial_noise)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+end
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                           initial_conditions::TwoLayerInitialConditions,
+                                           profile_function::StepChange,
+                                           tracer_perturbation::Nothing,
+                                           initial_noise::VelocityNoise)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside(z, T₀ˡ, T₀ᵘ, profile_function)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+    return nothing
+
+    perturb_velocity!(model, initial_noise)
+
+end

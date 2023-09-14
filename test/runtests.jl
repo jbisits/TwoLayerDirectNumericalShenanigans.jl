@@ -110,6 +110,18 @@ end
 
 end
 
+@testset "Step change" begin
+
+    model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                reference_density = REFERENCE_DENSITY)
+    profile_function = StepChange(z[depth_idx])
+    initial_conditions = TwoLayerInitialConditions(34.551, -1.5, 34.7, 0.5)
+    dns = TwoLayerDNS(model, profile_function, initial_conditions)
+    set_two_layer_initial_conditions!(dns)
+
+    @test isequal((true, true, true, true), tracer_stepchange(dns))
+end
+
 @testset "Find depth" begin
     test_depth = rand(z)
     @test isequal(test_depth, find_depth(model, test_depth))

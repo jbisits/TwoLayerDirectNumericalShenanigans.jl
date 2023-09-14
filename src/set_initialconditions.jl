@@ -995,7 +995,7 @@ end
 ####
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           profile_function::MidPoint,
+                                           profile_function::StepChange,
                                            tracer_perturbation::TemperatureGaussianProfile,
                                            initial_noise::TemperatureNoise)
 
@@ -1037,7 +1037,7 @@ end
 ####
 function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                            initial_conditions::TwoLayerInitialConditions,
-                                           profile_function::MidPoint,
+                                           profile_function::StepChange,
                                            tracer_perturbation::Nothing,
                                            initial_noise::SalinityNoise)
 

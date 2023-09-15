@@ -29,7 +29,7 @@ function find_depth(model::Oceananigans.AbstractModel, depth::AbstractVector)
                                                 allowscalar() do
                                                 z = znodes(model.grid, Center(), Center(), Center())
                                                 depth_idx = findall(depth[1] .≤ z .≤ depth[2])
-                                                z[depth_idx]
+                                                Array(z[depth_idx])
                                                end
 
     return found_depth

@@ -52,7 +52,7 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
     depths, scales = tracer_perturbation
     match_depth = z .== depths
     if sum(match_depth) != 0
-        scales[match_depth][1] * randn()
+        reduce(+, scales[match_depth]) * randn()
     else
         0
     end
@@ -63,9 +63,7 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:CuArray})
     depths, scales = tracer_perturbation
     match_depth = z .== depths
     if sum(match_depth) != 0
-        allowscalar() do
-            scales[match_depth][1] * randn()
-        end
+        reduce(+, scales[match_depth]) * randn()
     else
         0
     end

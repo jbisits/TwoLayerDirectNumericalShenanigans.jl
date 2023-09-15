@@ -60,7 +60,9 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
 end
 function perturb_tracer(z, tracer_perturbation::TracerNoise{<:CuArray})
 
-    Array(depths), Array(scales) = tracer_perturbation
+    depths, scales = tracer_perturbation
+    depths = Array(depths) # move to CPU
+    scales = Array(scales) # move to CPU
     match_depth = z .== depths
     if sum(match_depth) != 0
         reduce(+, scales[match_depth]) * randn()

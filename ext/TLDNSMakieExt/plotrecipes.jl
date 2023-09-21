@@ -285,7 +285,11 @@ function TLDNS.visualise_snapshot(field_timeseries::FieldTimeSeries, field_name:
     return fig
 
 end
-
+"""
+    function visualise_snapshot(::Raster)
+Plot snapshot of saved output at time = `snapshot`. Passing only `yslice` plots a 2D
+colourmap. Passing `xslice` as well will plot a profile next to the heatmap.
+"""
 function TLDNS.visualise_snapshot(rs::Raster, yslice::Int64, snapshot::Int64;
                                   colormap = :thermal, unit = nothing, aspect_ratio = 1)
 
@@ -295,7 +299,7 @@ function TLDNS.visualise_snapshot(rs::Raster, yslice::Int64, snapshot::Int64;
         ax = Axis(fig[1, 1])
 
         hm = heatmap!(ax, x, z, rs.data[:, yslice, :, snapshot]; colormap)
-        ax.title = field_name * " at time t = $(t) (x-z)"
+        ax.title = field_name * " at time t = $(t[snapshot]) (x-z)"
         ax.xlabel = "x (m)"
         ax.ylabel = "z (m)"
         ax.aspect = aspect_ratio
@@ -306,7 +310,7 @@ function TLDNS.visualise_snapshot(rs::Raster, yslice::Int64, snapshot::Int64;
 
 end
 function TLDNS.visualise_snapshot(rs::Raster, xslice::Int64, yslice::Int64, snapshot::Int64;
-                                  colormap = :thermal, aspect_ratio = 1)
+                                  colormap = :thermal, unit = nothing, aspect_ratio = 1)
 
     x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
     field_name = string(rs.name)
@@ -314,13 +318,14 @@ function TLDNS.visualise_snapshot(rs::Raster, xslice::Int64, yslice::Int64, snap
     ax = [Axis(fig[1, i]) for i ∈ 1:2]
 
     hm = heatmap!(ax[1], x, z, rs.data[:, yslice, :, snapshot]; colormap)
-    ax[1].title = field_name * " at time t = $(t) (x-z)"
+    ax[1].title = field_name * " at time t = $(t[snapshot]) (x-z)"
     ax[1].xlabel = "x (m)"
     ax[1].ylabel = "z (m)"
     ax[1].aspect = aspect_ratio
-    Colorbar(fig[2, 1], hm, vertical = false, label = field_name, flipaxis = false)
+    cbar_label = isnothing(unit) ? field_name : field_name * unit
+    Colorbar(fig[2, 1], hm, vertical = false, label = cbar_label, flipaxis = false)
     lines!(ax[2], rs.data[xslice, yslice, :, snapshot], z)
-    ax[2].title = field_name * " profile at time t = $(t)"
+    ax[2].title = field_name * " profile at time t = $(t[snapshot])"
     ax[2].xlabel = field_name
     ax[2].ylabel = "z (m)"
 

@@ -151,7 +151,8 @@ the course of a simulation;
 - `cfl` maximum cfl value used to determine the adaptive timestep size;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
-- `max_Δt` the maximum timestep.
+- `max_Δt` the maximum timestep;
+- `density_reference_pressure` for the seawater density calculation.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
@@ -159,7 +160,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
-                              max_Δt = 1e-1)
+                              max_Δt = 1e-1,
+                              density_reference_pressure = 0)
 
     model, initial_conditions = dns.model, dns.initial_conditions
     simulation = Simulation(model; Δt, stop_time)
@@ -172,7 +174,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     ϵ = KineticEnergyDissipationRate(model)
     η_space(model) = minimum(model.closure.ν ./ ϵ)
     ρ(model) = gsw_rho.(model.tracers.S.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz],
-                        model.tracers.T.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz], 0)
+                        model.tracers.T.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz],
+                        density_reference_pressure)
     dims = Dict("η_space" => (), "ρ" => ("xC", "yC", "zC"))
     oa = Dict(
         "ρ" => Dict("longname" => "Seawater density calculated using TEOS-10",

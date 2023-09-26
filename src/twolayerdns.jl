@@ -171,11 +171,16 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # save output
     ϵ = KineticEnergyDissipationRate(model)
     η_space(model) = minimum(model.closure.ν ./ ϵ)
-    dims = Dict("η_space" => ())
+    ρ(model) = gsw_rho.(model.tracers.S.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz],
+                        model.tracers.T.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz], 0)
+    dims = Dict("η_space" => (), "ρ" => ("xC", "yC", "zC"))
     oa = Dict(
+        "ρ" => Dict("longname" => "Seawater density calculated using TEOS-10",
+                    "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length")
     )
-    outputs = (S = model.tracers.S, T = model.tracers.T, η_space = η_space, w = model.velocities.w)
+    outputs = (S = model.tracers.S, T = model.tracers.T, w = model.velocities.w,
+               η_space = η_space, ρ = ρ)
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
                                             NetCDFOutputWriter(model, outputs,

@@ -170,13 +170,20 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # save output
     ϵ = KineticEnergyDissipationRate(model)
-    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
+    η_space(model) = minimum(model.closure.ν ./ ϵ)
+    dims = Dict("η_space" => ())
+    oa = Dict(
+        "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length")
+    )
+    outputs = (S = model.tracers.S, T = model.tracers.T, η_space = η_space, w = model.velocities.w)
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
                                             NetCDFOutputWriter(model, outputs,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true) :
+                                                            overwrite_existing = true,
+                                                            dimensions = dims,
+                                                            output_attributes = oa) :
                                             JLD2OutputWriter(model, outputs,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),

@@ -163,27 +163,49 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               max_Δt = 1e-1,
                               density_reference_pressure = 0)
 
-    model, initial_conditions = dns.model, dns.initial_conditions
+    model = dns.model
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
-    # save output
+    # custom saved output
     ϵ = KineticEnergyDissipationRate(model)
+    # Minimum in space Kolmogorov length scale at each saved snapshot
     η_space(model) = minimum(model.closure.ν ./ ϵ)
-    ρ(model) = gsw_rho.(model.tracers.S.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz],
-                        model.tracers.T.data[1:model.grid.Nx, 1:model.grid.Ny, 1:model.grid.Nz],
-                        density_reference_pressure)
-    dims = Dict("η_space" => (), "ρ" => ("xC", "yC", "zC"))
+    # Density at each saved snapshot
+    # σ(model) = gsw_rho.(interior(model.tracers.S),
+    #                     interior(model.tracers.T),
+    #                     density_reference_pressure)
+    S, T = model.tracers.S, model.tracers.T
+    σ_kernel_function(i, j, k, grid, S, T, density_reference_pressure) =
+        gsw_rho(S.data[i, j, k], T.data[i, j, k], density_reference_pressure)
+    σ_op = KernelFunctionOperation{Center, Center, Center}(σ_kernel_function,
+                                                           model.grid, S, T,
+                                                           density_reference_pressure)
+    S_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, S)
+    S_i = Field(S_interpolation)
+    T_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, T)
+    T_i = Field(T_interpolation)
+    σ_interpolation = KernelFunctionOperation{Center, Center, Face}(σ_kernel_function,
+                                                                    model.grid, S_i, T_i,
+                                                                    density_reference_pressure)
+    # Inferred vertical diffusivity
+    κᵥ(model) = 1
+    # Dimensions and attributes for custom saved output
+    dims = Dict("η_space" => (), "κᵥ" => (), "σ" => ("xC", "yC", "zC"))
     oa = Dict(
-        "ρ" => Dict("longname" => "Seawater density calculated using TEOS-10",
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
                     "units" => "kgm⁻³"),
-        "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length")
+        "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
+        "S_i" => Dict("longname" => "Salinity interpolation"),
+        "T_i" => Dict("longname" => "Temperature interpolation")
     )
-    outputs = (S = model.tracers.S, T = model.tracers.T, w = model.velocities.w,
-               η_space = η_space, ρ = ρ)
+    # outputs to be saved during the simulation
+    outputs = (S = S, T = T, η_space = η_space, σ = σ_interpolation,
+               S_i = S_interpolation, T_i = T_interpolation)
+
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
                                             NetCDFOutputWriter(model, outputs,
@@ -212,8 +234,6 @@ Create a filename for saved output based on the `profile_function`,`initial_cond
 """
 function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
 
-    pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" :
-                            dns.profile_function isa Erf ? "erf" : "midpoint"
     pf_string = lowercase(string(typeof(dns.profile_function))[1:findfirst('{', string(typeof(dns.profile_function))) - 1])
     ic_type = typeof(dns.initial_conditions)
     ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :

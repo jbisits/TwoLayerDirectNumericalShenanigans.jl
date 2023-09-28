@@ -65,7 +65,7 @@ function TLDNS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::A
 end
 function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colormap = :thermal,
                                 colorrange = nothing, highclip = nothing, lowclip = nothing,
-                                aspect_ratio = 1)
+                                aspect_ratio = 1, profile_xlims = nothing)
 
     x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
     field_name = string(rs.name)
@@ -94,6 +94,9 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     ax[2].ylabel = "z"
     ax[2].aspect = aspect_ratio
     ax[2].xaxisposition = :top
+    if !isnothing(profile_xlims)
+        xlims!(ax[2], profile_xlims)
+    end
 
     linkyaxes!(ax[1], ax[2])
 

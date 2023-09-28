@@ -118,11 +118,13 @@ a `Raster`.
 """
 function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; unit = nothing)
 
-    rs_series = slice(rs, Ti)
-    t = lookup(rs_series, Ti)
-    rs_series_hist = RasterLayerHistogram.(rs_series, edges)
+    t = lookup(rs, Ti)
+    rs_series_hist = Vector{RasterLayerHistogram}(undef, length(t))
+    for i ∈ eachindex(t)
+        rs_series_hist[i] = RasterLayerHistogram(rs[:, :, :, i], edges)
+    end
     n = Observable(1)
-    @lift rs_series_hist[$n]
+    dₜ = @lift rs_series_hist[$n]
     time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (500, 500))
@@ -130,7 +132,7 @@ function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; u
     ylabel = "Volume (m³)"
     ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
 
-    plot!(ax, rs_series_hist[1], color = :steelblue)
+    plot!(ax, dₜ, color = :steelblue)
 
     frames = eachindex(t)
     record(fig, joinpath(pwd(), string(rs.name) * "_vd.mp4"), frames, framerate=8) do i

@@ -65,7 +65,7 @@ function TLDNS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::A
 end
 function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colormap = :thermal,
                                 colorrange = nothing, highclip = nothing, lowclip = nothing,
-                                aspect_ratio = 1)
+                                aspect_ratio = 1, profile_xlims = nothing)
 
     x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
     field_name = string(rs.name)
@@ -94,6 +94,9 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     ax[2].ylabel = "z"
     ax[2].aspect = aspect_ratio
     ax[2].xaxisposition = :top
+    if !isnothing(profile_xlims)
+        xlims!(ax[2], profile_xlims)
+    end
 
     linkyaxes!(ax[1], ax[2])
 
@@ -106,6 +109,37 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     end
 
     return nothing
+
+end
+"""
+    function animate_volume_distributions(rs::Raster)
+Animate the volume distribution from each saved snapshot of data for the variable saved as
+a `Raster`.
+"""
+function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; unit = nothing)
+
+    rs_series = slice(rs, Ti)
+    t = lookup(rs_series, Ti)
+    rs_series_hist = RasterLayerHistogram.(rs_series, edges)
+    n = Observable(1)
+    @lift rs_series_hist[$n]
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+    fig = Figure(size = (500, 500))
+    xlabel = isnothing(unit) ? string(rs.name) : string(rs.name) * unit
+    ylabel = "Volume (m³)"
+    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
+
+    plot!(ax, rs_series_hist[1], color = :steelblue)
+
+    frames = eachindex(t)
+    record(fig, joinpath(pwd(), string(rs.name) * "_vd.mp4"), frames, framerate=8) do i
+        msg = string("Plotting frame ", i, " of ", frames[end])
+        print(msg * " \r")
+        n[] = i
+    end
+
+    return fig
 
 end
 """

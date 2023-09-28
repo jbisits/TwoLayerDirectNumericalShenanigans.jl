@@ -126,6 +126,41 @@ function field_ts_timemean(field_ts::FieldTimeSeries)
     return field_data ./ length(t)
 
 end
+"""
+    function predicted_maximum_density()
+Compute the predicted maximum density of water that can form along the mixing line.
+"""
+function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; reference_pressure = 0)
+
+    Sᵘ, Sˡ, ΔS, Tᵘ, Tˡ, ΔT = dns.initial_conditions
+    slope = - ΔT / ΔS
+    S_mix = range(Sᵘ, Sˡ, step = 0.000001)
+    T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
+    ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
+    NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
+        ds.attrib["Predicted maximum density"] = ρ_mix_max
+    end
+
+    return nothing
+
+end
+function predicted_maximum_density!(file::AbstractString; reference_pressure = 0)
+
+    NCDataset(file, "a") do ds
+        Sᵘ, Sˡ = ds["S"][end, end, end, 1], ds["S"][1, 1, 1, 1]
+        ΔS = Sᵘ - Sˡ
+        Tᵘ, Tˡ = ds["T"][end, end, end, 1], ds["T"][1, 1, 1, 1]
+        ΔT = Tᵘ - Tˡ
+        slope = - ΔT / ΔS
+        S_mix = range(Sᵘ, Sˡ, step = 0.000001)
+        T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
+        ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
+        ds.attrib["Predicted maximum density"] = ρ_mix_max
+    end
+
+    return nothing
+
+end
 "Calculate the Kolmogorov length scale `η` from viscousity and average TKE dissapation."
 η(ν, ϵ) = (ν^3 / ϵ)^(1/4)
 """
@@ -228,7 +263,7 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
     if simulation.output_writers[:outputs] isa NetCDFOutputWriter
 
-        ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        ds = NCDataset(simulation.output_writers[:outputs].filepath, "a")
         ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
         ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
         ds.attrib["ν"]  = "$(model.closure.ν) m²s⁻¹"

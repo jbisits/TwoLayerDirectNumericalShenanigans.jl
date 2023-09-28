@@ -228,7 +228,7 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
     if simulation.output_writers[:outputs] isa NetCDFOutputWriter
 
-        ds = NCDataset(simulation.output_writers[:outputs].filepath,"a")
+        ds = NCDataset(simulation.output_writers[:outputs].filepath, "a")
         ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
         ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
         ds.attrib["ν"]  = "$(model.closure.ν) m²s⁻¹"

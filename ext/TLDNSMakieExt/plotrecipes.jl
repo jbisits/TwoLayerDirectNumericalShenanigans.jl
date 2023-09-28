@@ -109,6 +109,37 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
 
 end
 """
+    function animate_volume_distributions(rs::Raster)
+Animate the volume distribution from each saved snapshot of data for the variable saved as
+a `Raster`.
+"""
+function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; unit = nothing)
+
+    rs_series = slice(rs, Ti)
+    t = lookup(rs_series, Ti)
+    rs_series_hist = RasterLayerHistogram.(rs_series, edges)
+    n = Observable(1)
+    @lift rs_series_hist[$n]
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+    fig = Figure(size = (500, 500))
+    xlabel = isnothing(unit) ? string(rs.name) : string(rs.name) * unit
+    ylabel = "Volume (m³)"
+    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
+
+    plot!(ax, rs_series_hist[1], color = :steelblue)
+
+    frames = eachindex(t)
+    record(fig, joinpath(pwd(), string(rs.name) * "_vd.mp4"), frames, framerate=8) do i
+        msg = string("Plotting frame ", i, " of ", frames[end])
+        print(msg * " \r")
+        n[] = i
+    end
+
+    return fig
+
+end
+"""
     function visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)
 Plot an initial step change of the `tracers` in a `model`. This function assumes there are two
 tracers (salinity and temperature) and plots the x-z, y-z and field-z initial fields.

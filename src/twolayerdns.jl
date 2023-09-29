@@ -181,20 +181,26 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     S, T = model.tracers.S, model.tracers.T
     σ_kernel_function(i, j, k, grid, S, T, density_reference_pressure) =
         gsw_rho(S.data[i, j, k], T.data[i, j, k], density_reference_pressure)
+    σ_anomaly_kernel_function(i, j, k, grid, Sᶜᶜᶠ, Tᶜᶜᶠ, density_reference_pressure, model) =
+        gsw_rho(Sᶜᶜᶠ.data[i, j, k], Tᶜᶜᶠ.data[i, j, k], density_reference_pressure) -
+            model.buoyancy.model.equation_of_state.reference_density
     σ_op = KernelFunctionOperation{Center, Center, Center}(σ_kernel_function,
                                                            model.grid, S, T,
                                                            density_reference_pressure)
     S_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, S)
-    S_i = Field(S_interpolation)
+    Sᶜᶜᶠ = Field(S_interpolation)
     T_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, T)
-    T_i = Field(T_interpolation)
-    σ_interpolation = KernelFunctionOperation{Center, Center, Face}(σ_kernel_function,
-                                                                    model.grid, S_i, T_i,
-                                                                    density_reference_pressure)
+    Tᶜᶜᶠ = Field(T_interpolation)
+    σ_opᶜᶜᶠ = KernelFunctionOperation{Center, Center, Face}(σ_anomaly_kernel_function,
+                                                            model.grid, Sᶜᶜᶠ, Tᶜᶜᶠ,
+                                                            density_reference_pressure,
+                                                            model)
+    σᶜᶜᶠ = Field(σ_opᶜᶜᶠ)
+    wσ_anomaly = model.velocities.w * σᶜᶜᶠ
     # Inferred vertical diffusivity
     κᵥ(model) = 1
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "κᵥ" => (), "σ" => ("xC", "yC", "zC"))
+    dims = Dict("η_space" => (), "κᵥ" => ())
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
                     "units" => "kgm⁻³"),
@@ -203,8 +209,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         "T_i" => Dict("longname" => "Temperature interpolation")
     )
     # outputs to be saved during the simulation
-    outputs = (S = S, T = T, η_space = η_space, σ = σ_interpolation,
-               S_i = S_interpolation, T_i = T_interpolation)
+    outputs = (S = S, T = T, η_space = η_space, σ = σ_op, σ_anomaly = σᶜᶜᶠ, wσ_anomaly = wσ_anomaly)
 
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
@@ -213,7 +218,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                                             schedule = TimeInterval(save_schedule),
                                                             overwrite_existing = true,
                                                             dimensions = dims,
-                                                            output_attributes = oa) :
+                                                            #output_attributes = oa
+                                                            ) :
                                             JLD2OutputWriter(model, outputs,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),

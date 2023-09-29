@@ -98,6 +98,7 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     if !isnothing(vline)
         vlines!(ax[2], vline, linestyle = :dash, color = :red,
                 label = "Predicted maximum density")
+        axislegend(ax[2])
     end
 
     linkyaxes!(ax[1], ax[2])

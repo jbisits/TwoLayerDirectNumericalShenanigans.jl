@@ -220,6 +220,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                                             overwrite_existing = true)
 
     non_dimensional_numbers!(simulation, dns)
+    predicted_maximum_density!(simulation, dns)
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))

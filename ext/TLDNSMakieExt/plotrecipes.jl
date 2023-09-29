@@ -116,12 +116,18 @@ end
 Animate the volume distribution from each saved snapshot of data for the variable saved as
 a `Raster`.
 """
-function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; unit = nothing)
+function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing)
 
     t = lookup(rs, Ti)
     rs_series_hist = Vector{RasterLayerHistogram}(undef, length(t))
     for i ∈ eachindex(t)
-        rs_series_hist[i] = RasterLayerHistogram(rs[:, :, :, i], edges)
+        if i == 1
+            rs_series_hist[i] = isnothing(edges) ? RasterLayerHistogram(rs[:, :, :, i]) :
+                                                   RasterLayerHistogram(rs[:, :, :, i], edges)
+        else
+            rs_series_hist[i] = RasterLayerHistogram(rs[:, :, :, i],
+                                                     rs_series_hist[1].histogram.edges[1])
+        end
     end
     n = Observable(1)
     dₜ = @lift rs_series_hist[$n]
@@ -129,9 +135,10 @@ function TLDNS.animate_volume_distributions(rs::Raster, edges::AbstractVector; u
 
     fig = Figure(size = (500, 500))
     xlabel = isnothing(unit) ? string(rs.name) : string(rs.name) * unit
+    xlimits = isnothing(edges) ? rs_series_hist[1].histogram.edges[1] : edges
     ylabel = "Volume (m³)"
     ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-
+    xlims!(ax, xlimits[1], xlimits[end])
     plot!(ax, dₜ, color = :steelblue)
 
     frames = eachindex(t)

@@ -94,8 +94,10 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     ax[2].ylabel = "z"
     ax[2].aspect = aspect_ratio
     ax[2].xaxisposition = :top
+    ax[2].xticklabelrotation = π / 4
     if !isnothing(vline)
-        vlines!(ax[2], vline, linestyle = :dash, color = :red)
+        vlines!(ax[2], vline, linestyle = :dash, color = :red,
+                label = "Predicted maximum density")
     end
 
     linkyaxes!(ax[1], ax[2])
@@ -114,7 +116,10 @@ end
 """
     function animate_volume_distributions(rs::Raster)
 Animate the volume distribution from each saved snapshot of data for the variable saved as
-a `Raster`.
+a `Raster`. Optional arguments:
+- `edges` for the bins, in `nothing` the edges for the first fitted `Histogram` are used for
+the subsequent histograms;
+- `unit` for the variable that is being plotted - must be a `String`.
 """
 function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing)
 

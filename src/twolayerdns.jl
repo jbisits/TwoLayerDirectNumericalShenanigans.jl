@@ -170,46 +170,31 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
-    # custom saved output
-    ϵ = KineticEnergyDissipationRate(model)
-    # Minimum in space Kolmogorov length scale at each saved snapshot
-    η_space(model) = minimum(model.closure.ν ./ ϵ)
-    # Density at each saved snapshot
-    # σ(model) = gsw_rho.(interior(model.tracers.S),
-    #                     interior(model.tracers.T),
-    #                     density_reference_pressure)
+    # model tracers
     S, T = model.tracers.S, model.tracers.T
-    σ_kernel_function(i, j, k, grid, S, T, density_reference_pressure) =
-        gsw_rho(S.data[i, j, k], T.data[i, j, k], density_reference_pressure)
-    σ_anomaly_kernel_function(i, j, k, grid, Sᶜᶜᶠ, Tᶜᶜᶠ, density_reference_pressure, model) =
-        gsw_rho(Sᶜᶜᶠ.data[i, j, k], Tᶜᶜᶠ.data[i, j, k], density_reference_pressure) -
-            model.buoyancy.model.equation_of_state.reference_density
-    σ_op = KernelFunctionOperation{Center, Center, Center}(σ_kernel_function,
-                                                           model.grid, S, T,
-                                                           density_reference_pressure)
-    S_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, S)
-    Sᶜᶜᶠ = Field(S_interpolation)
-    T_interpolation = KernelFunctionOperation{Center, Center, Face}(Oceananigans.Operators.ℑzᵃᵃᶠ, model.grid, T)
-    Tᶜᶜᶠ = Field(T_interpolation)
-    σ_opᶜᶜᶠ = KernelFunctionOperation{Center, Center, Face}(σ_anomaly_kernel_function,
-                                                            model.grid, Sᶜᶜᶠ, Tᶜᶜᶠ,
-                                                            density_reference_pressure,
-                                                            model)
-    σᶜᶜᶠ = Field(σ_opᶜᶜᶠ)
-    wσ_anomaly = model.velocities.w * σᶜᶜᶠ
-    # Inferred vertical diffusivity
-    κᵥ(model) = 1
+    # custom saved output
+
+    # Density
+    σ = DensityField(model, density_reference_pressure)
+
+    # Interpolated density
+    σ_anomaly_interp = InterpolatedDensityAnomaly(model, density_reference_pressure)
+    κᵥ = Integral((model.velocities.w * σ_anomaly_interp) / σ)
+
+    # Minimum in space Kolmogorov length scale
+    ϵ = KineticEnergyDissipationRate(model)
+    η_space(model) = minimum(model.closure.ν ./ ϵ)
+
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "κᵥ" => ())
+    dims = Dict("η_space" => ())
     oa = Dict(
-        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
-                    "units" => "kgm⁻³"),
+        # "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
+        #             "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "S_i" => Dict("longname" => "Salinity interpolation"),
-        "T_i" => Dict("longname" => "Temperature interpolation")
     )
+
     # outputs to be saved during the simulation
-    outputs = (S = S, T = T, η_space = η_space, σ = σ_op, σ_anomaly = σᶜᶜᶠ, wσ_anomaly = wσ_anomaly)
+    outputs = (S = S, T = T, η_space = η_space, σ = σ, κᵥ = κᵥ)
 
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?

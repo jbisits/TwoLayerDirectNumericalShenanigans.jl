@@ -21,7 +21,7 @@ tracer_perturbation = SalinityGaussianProfile(tracer_perturbation_depth, 0.0, 1.
 noise_depth = find_depth(model, INTERFACE_LOCATION)
 initial_noise = SalinityNoise(noise_depth, 0.01)
 
-dns = TwoLayerDNS(model, profile_function, initial_conditions)
+dns = TwoLayerDNS(model, profile_function, initial_conditions; initial_noise)
 
 set_two_layer_initial_conditions!(dns)
 

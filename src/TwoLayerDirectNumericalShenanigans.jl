@@ -1,8 +1,8 @@
 module TwoLayerDirectNumericalShenanigans
 
 using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
+using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶠ, Operators.ℑzᵃᵃᶜ
 using SeawaterPolynomials: TEOS10EquationOfState
-using Oceananigans: AbstractModel
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
 using OceanRasterConversions: get_σₚ
@@ -61,6 +61,7 @@ include("initialconditions.jl")
 include("continuousprofilefunctions.jl")
 include("stepchangeprofilefunction.jl")
 include("tracerperturbations.jl")
+include("kernelfunctions.jl")
 include("twolayerdns.jl")
 include("noiseperturbations.jl")
 include("set_initialconditions.jl")

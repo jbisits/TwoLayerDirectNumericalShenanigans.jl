@@ -180,7 +180,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Inferred vertical diffusivity
     σ_anomaly_interpolated = InterpolatedDensityAnomaly(model, density_reference_pressure)
     w = model.velocities.w
-    κᵥ = Integral((w * σ_anomaly_interpolated) / σ)
+    κᵥ = Integral((-w * σ_anomaly_interpolated) / σ)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)

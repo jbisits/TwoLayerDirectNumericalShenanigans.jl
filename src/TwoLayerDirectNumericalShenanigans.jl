@@ -1,7 +1,7 @@
 module TwoLayerDirectNumericalShenanigans
 
 using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
-using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶠ, Operators.ℑzᵃᵃᶜ
+using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶠ
 using SeawaterPolynomials: TEOS10EquationOfState
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate

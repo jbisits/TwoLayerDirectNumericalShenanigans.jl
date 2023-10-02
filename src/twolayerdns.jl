@@ -151,7 +151,9 @@ the course of a simulation;
 - `cfl` maximum cfl value used to determine the adaptive timestep size;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
-- `max_Δt` the maximum timestep.
+- `max_Δt` the maximum timestep;
+- `density_reference_pressure` for the seawater density calculation;
+- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
@@ -159,24 +161,59 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
-                              max_Δt = 1e-1)
+                              max_Δt = 1e-1,
+                              density_reference_pressure = 0,
+                              save_velocities = false)
 
-    model, initial_conditions = dns.model, dns.initial_conditions
+    model = dns.model
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
-    # save output
+    # model tracers
+    S, T = model.tracers.S, model.tracers.T
+    # custom saved output
+
+    # Density
+    σ = DensityField(model, density_reference_pressure)
+
+    # Inferred vertical diffusivity
+    σ_anomaly_interpolated = InterpolatedDensityAnomaly(model, density_reference_pressure)
+    w = model.velocities.w
+    κᵥ = Integral((-w * σ_anomaly_interpolated) / σ)
+
+    # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
-    outputs = (S = model.tracers.S, T = model.tracers.T, ϵ = ϵ, w = model.velocities.w)
+    η_space(model) = minimum(model.closure.ν ./ ϵ)
+
+    # Dimensions and attributes for custom saved output
+    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "κᵥ" => ())
+    oa = Dict(
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
+                    "units" => "kgm⁻³"),
+        "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
+        "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
+                     "units" => "m²s⁻¹"))
+
+    # outputs to be saved during the simulation
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "κᵥ" => κᵥ)
+    if save_velocities
+        u, v = model.velocities.u, model.velocities.v
+        velocities = Dict("u" => u, "v" => v, "w" => w)
+        merge!(outputs, velocities)
+    end
+
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
                                             NetCDFOutputWriter(model, outputs,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true) :
+                                                            overwrite_existing = true,
+                                                            dimensions = dims,
+                                                            output_attributes = oa
+                                                            ) :
                                             JLD2OutputWriter(model, outputs,
                                                             filename = filename,
                                                             schedule = TimeInterval(save_schedule),
@@ -198,8 +235,6 @@ Create a filename for saved output based on the `profile_function`,`initial_cond
 """
 function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
 
-    pf_string = dns.profile_function isa HyperbolicTangent ? "tanh" :
-                            dns.profile_function isa Erf ? "erf" : "midpoint"
     pf_string = lowercase(string(typeof(dns.profile_function))[1:findfirst('{', string(typeof(dns.profile_function))) - 1])
     ic_type = typeof(dns.initial_conditions)
     ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :

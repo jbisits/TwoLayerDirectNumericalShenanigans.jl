@@ -127,8 +127,9 @@ function field_ts_timemean(field_ts::FieldTimeSeries)
 
 end
 """
-    function predicted_maximum_density()
-Compute the predicted maximum density of water that can form along the mixing line.
+    function predicted_maximum_density
+Compute the predicted maximum density of water that can form along the mixing line between
+the salinity and temperature of the upper and lower layers.
 """
 function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; reference_pressure = 0)
 
@@ -137,8 +138,15 @@ function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; re
     S_mix = range(Sᵘ, Sˡ, step = 0.000001)
     T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
     ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
-    NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
-        ds.attrib["Predicted maximum density"] = ρ_mix_max
+    file_type = find_file_type(simulation.output_writers[:outputs].filepath)
+    if isequal(file_type, ".nc")
+        NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
+            ds.attrib["Predicted maximum density"] = ρ_mix_max
+        end
+    elseif isequal(file_type, ".jld2")
+        jldopen(simulation.output_writers[:outputs].filepath, "a+") do f
+            f["Predicted maximum density"] = ρ_mix_max
+        end
     end
 
     return nothing
@@ -208,15 +216,15 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
     file_type = find_file_type(file)
     if isequal(file_type, ".nc")
 
-        ϵ = Raster(file, lazy = true, name = :ϵ)
-        ds = NCDataset(file, "a")
-        ν_str = ds.attrib["ν"]
-        ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
-        Sc = ds.attrib["Sc"]
-        η_min = minimum_η(ϵ; ν)
-        ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
-        ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
-        close(ds)
+        NCDataset(file, "a") do ds
+            ϵ = Raster(file, lazy = true, name = :ϵ)
+            ν_str = ds.attrib["ν"]
+            ν = parse(Float64, ν_str[1:findfirst('m', ν_str)-1])
+            Sc = ds.attrib["Sc"]
+            η_min = minimum_η(ϵ; ν)
+            ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
+            ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
+        end
 
     elseif isequal(file_type, ".jld2")
 
@@ -227,6 +235,35 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
 
         jldopen(file, "a+") do f
             f["minimum_kolmogorov_scale"] = min_η
+            f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
+        end
+
+    end
+
+    return nothing
+
+end
+"""
+    function batchelor_scale!
+Compute and append the minimum space-time Batchelor scale and append it to save output.
+"""
+function batchelor_scale!(file::AbstractString)
+
+    file_type = find_file_type(file)
+    if isequal(file_type, ".nc")
+
+        NCDataset(file, "a") do ds
+            Sc = ds.attrib["Sc"]
+            η_min = minimum(ds["η_space"][:])
+            ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
+        end
+
+    elseif isequal(file_type, ".jld2")
+
+        Sc = load(file, "Non_dimensional_numbers")["Sc"]
+        η = FieldTimeSeries(simulation.output_writers[:outputs].filepath, "η_space")
+        min_η = minimum(η)
+        jldopen(file, "a+") do f
             f["minimum_batchelor_scale"] = min_η / sqrt(Sc)
         end
 
@@ -263,16 +300,16 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
     if simulation.output_writers[:outputs] isa NetCDFOutputWriter
 
-        ds = NCDataset(simulation.output_writers[:outputs].filepath, "a")
-        ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
-        ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
-        ds.attrib["ν"]  = "$(model.closure.ν) m²s⁻¹"
-        ds.attrib["κₛ"] = "$(model.closure.κ.S) m²s⁻¹"
-        ds.attrib["κₜ"] = "$(model.closure.κ.T) m²s⁻¹"
-        for key ∈ keys(nd_nums)
-            ds.attrib[key] = nd_nums[key]
+        NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
+            ds.attrib["EOS"] = summary(model.buoyancy.model.equation_of_state.seawater_polynomial)
+            ds.attrib["Reference density"] = "$(model.buoyancy.model.equation_of_state.reference_density)kgm⁻³"
+            ds.attrib["ν"]  = "$(model.closure.ν) m²s⁻¹"
+            ds.attrib["κₛ"] = "$(model.closure.κ.S) m²s⁻¹"
+            ds.attrib["κₜ"] = "$(model.closure.κ.T) m²s⁻¹"
+            for key ∈ keys(nd_nums)
+                ds.attrib[key] = nd_nums[key]
+            end
         end
-        close(ds)
 
     else
 

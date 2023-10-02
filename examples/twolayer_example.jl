@@ -3,9 +3,10 @@ using TwoLayerDirectNumericalShenanigans
 
 architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
+resolution = (Nx = 10, Ny = 10, Nz = 100)
 
 ## Setup the model
-model = DNS(architecture, DOMAIN_EXTENT, HIGH_RESOLUTION, diffusivities;
+model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
             reference_density = REFERENCE_DENSITY)
 
 ## set initial conditions
@@ -18,9 +19,9 @@ profile_function = StepChange(transition_depth)#HyperbolicTangent(INTERFACE_LOCA
 tracer_perturbation_depth = find_depth(model, INTERFACE_LOCATION / 2)
 tracer_perturbation = SalinityGaussianProfile(tracer_perturbation_depth, 0.0, 1.5)
 noise_depth = find_depth(model, INTERFACE_LOCATION)
-initial_noise = SalinityNoise(noise_depth, 0.01)
+initial_noise = SalinityNoise(noise_depth, 1.0)
 
-dns = TwoLayerDNS(model, profile_function, initial_conditions)
+dns = TwoLayerDNS(model, profile_function, initial_conditions; initial_noise)
 
 set_two_layer_initial_conditions!(dns)
 
@@ -28,7 +29,7 @@ set_two_layer_initial_conditions!(dns)
 Δt = 1e-4
 stop_time = 60
 save_schedule = 0.5 # seconds
-simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule)
+simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule, save_velocities = true)
 
 ## Run the simulation
 run!(simulation)

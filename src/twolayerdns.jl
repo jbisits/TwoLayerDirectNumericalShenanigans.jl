@@ -177,20 +177,23 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Density
     σ = DensityField(model, density_reference_pressure)
 
-    # Interpolated density
-    σ_anomaly_interp = InterpolatedDensityAnomaly(model, density_reference_pressure)
-    κᵥ = Integral((model.velocities.w * σ_anomaly_interp) / σ)
+    # Inferred vertical diffusivity
+    σ_anomaly_interpolated = InterpolatedDensityAnomaly(model, density_reference_pressure)
+    w = model.velocities.w
+    κᵥ = Integral((w * σ_anomaly_interpolated) / σ)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
     η_space(model) = minimum(model.closure.ν ./ ϵ)
 
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => ())
+    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "κᵥ" => ())
     oa = Dict(
-        # "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
-        #             "units" => "kgm⁻³"),
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
+                    "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
+        "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
+                     "units" => "m²s⁻¹")
     )
 
     # outputs to be saved during the simulation
@@ -203,7 +206,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                                             schedule = TimeInterval(save_schedule),
                                                             overwrite_existing = true,
                                                             dimensions = dims,
-                                                            #output_attributes = oa
+                                                            output_attributes = oa
                                                             ) :
                                             JLD2OutputWriter(model, outputs,
                                                             filename = filename,

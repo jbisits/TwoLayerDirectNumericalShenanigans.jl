@@ -152,7 +152,8 @@ the course of a simulation;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
-- `density_reference_pressure` for the seawater density calculation.
+- `density_reference_pressure` for the seawater density calculation;
+- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
@@ -161,7 +162,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
                               max_Δt = 1e-1,
-                              density_reference_pressure = 0)
+                              density_reference_pressure = 0,
+                              save_velocities = false)
 
     model = dns.model
     simulation = Simulation(model; Δt, stop_time)
@@ -193,11 +195,15 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
         "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
-                     "units" => "m²s⁻¹")
-    )
+                     "units" => "m²s⁻¹"))
 
     # outputs to be saved during the simulation
-    outputs = (S = S, T = T, η_space = η_space, σ = σ, κᵥ = κᵥ)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "κᵥ" => κᵥ)
+    if save_velocities
+        u, v = model.velocities.u, model.velocities.v
+        velocities = Dict("u" => u, "v" => v, "w" => w)
+        merge!(outputs, velocities)
+    end
 
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?

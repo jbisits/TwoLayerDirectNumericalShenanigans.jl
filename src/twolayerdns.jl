@@ -174,21 +174,24 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # model tracers
     S, T = model.tracers.S, model.tracers.T
-    # custom saved output
 
-    # Density
-    σ = DensityField(model, density_reference_pressure)
+    # Custom saved output
+    # Potential density
+    parameters = (pᵣ = density_reference_pressure,)
+    σ = PotentialDensityField(model, parameters)
 
     # Inferred vertical diffusivity
     b_field = BuoyancyField(model)
+    compute!(b_field)
 
     w = model.velocities.w
     κᵥ = Integral((-w * σ_anomaly_interpolated) / σ)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
-    ∫ϵ = Integral(ϵ)
-    η_space(model) = model.closure.ν / maximum(ϵ)
+    η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
+
+    # Volume integrated TKE dissipation
 
     # Dimensions and attributes for custom saved output
     dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "κᵥ" => (), "∫ϵ" => ())

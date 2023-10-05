@@ -1,48 +1,40 @@
+"Extend `ρ′` to compute at user defined reference pressure"
+Oceananigans.BuoyancyModels.ρ′(i, j, k, grid, eos, θ, sᴬ, pᵣ) = ρ′(θ_and_sᴬ(i, j, k, θ, sᴬ)..., pᵣ, eos)
 """
-    C(i, j, k, grid, C)
-Get tracer `C` values for use in other function. There may be another way to do this for
-`KernelFunctionOperation`s but I have not found it so will use this for now. **Note:** this
-return the value of the tracer with no interpolation so if the tracer `C` is at
-`(Center, Center, Center)` the value extracted will be at (Center, Center, Center)`.
+    function densityᶜᶜᶜ(i, j, k, grid, b::SeawaterBuoyancy, C)
+Compute the density of seawater at grid point `(i, j, k)` using `SeawaterBuoyancy`.
 """
-C(i, j, k, grid, C) = C[i, j, k]
-"""
-    σ(i, j, k, grid, model, reference_pressure)
-Compute potential density `σ` at `reference_pressure` from salinity and temperature tracers
-in `model`.
-"""
-σ(i, j, k, grid, model, reference_pressure) = gsw_rho(C(i, j, k, grid, model.tracers.S),
-                                                      C(i, j, k, grid, model.tracers.T),
-                                                      reference_pressure)
-"""
-    DensityField(model, reference_pressure)
-Return an `KernelFunctionOperation` at `(Center, Center, Center)` that computes the
-potential density from the salinity and temperature tracers in `model` at `reference_pressure`.
-"""
-DensityField(model, reference_pressure) =
-    KernelFunctionOperation{Center, Center, Center}(σ, model.grid, model,
-                                                    reference_pressure)
-"""
-    σ_anomalyᶜᶜᶠ(i, j, k, grid, model, reference_pressure)
-Compute potential density anomaly at `reference_pressure` from salinity and temperature tracers
-in `model` that have been interpolated from `(Center, Center, Center)` to
-`(Center, Center, Face)`.
-"""
-σ_anomalyᶜᶜᶠ(i, j, k, grid, model, reference_pressure, σ_reference) =
-    gsw_rho(ℑzᵃᵃᶠ(i, j, k, grid, model.tracers.S), ℑzᵃᵃᶠ(i, j, k, grid, model.tracers.T),
-            reference_pressure) - σ_reference
-"""
-    function InterpolatedDensityAnomaly(model, reference_pressure)
-Return a `KernelFunctionOperation` at `(Center, Center, Face)` to compute the potential
-density anomaly from the salinity and temperature tracers from `model` that have been
-interpolated from `(Center, Center, Center)` to `(Center, Center, Face)`
-"""
-function InterpolatedDensityAnomaly(model, reference_pressure)
-
-    σ_reference = model.buoyancy.model.equation_of_state.reference_density
-    return KernelFunctionOperation{Center, Center, Face}(σ_anomalyᶜᶜᶠ,
-                                                         model.grid, model,
-                                                         reference_pressure,
-                                                         σ_reference)
-
+@inline function densityᶜᶜᶜ(i, j, k, grid, b::SeawaterBuoyancy, C)
+    T, S = get_temperature_and_salinity(b, C)
+    return  b.equation_of_state.reference_density + ρ′(i, j, k, grid, b.equation_of_state, T, S)
 end
+density(model) = density(model.buoyancy, model.grid, model.tracers)
+density(b, grid, tracers) =
+    KernelFunctionOperation{Center, Center, Center}(densityᶜᶜᶜ, grid, b.model, tracers)
+DensityField(model) = Field(density(model))
+"""
+    function potential_densityᶜᶜᶜ(i, j, k, grid, b::SeawaterBuoyancy, C, parameters)
+Compute the potential density of seawater at grid point `(i, j, k)`
+at reference pressure `parameters.pᵣ` using `SeawaterBuoyancy`.
+"""
+@inline function potential_densityᶜᶜᶜ(i, j, k, grid, b::SeawaterBuoyancy, C, parameters)
+    T, S = get_temperature_and_salinity(b, C)
+    pᵣ = parameters.pᵣ
+    return  b.equation_of_state.reference_density + ρ′(i, j, k, grid, b.equation_of_state, T, S, pᵣ)
+end
+potential_density(model, parameters) = potential_density(model.buoyancy, model.grid,
+                                                         model.tracers, parameters)
+potential_density(b, grid, tracers, parameters) =
+    KernelFunctionOperation{Center, Center, Center}(potential_densityᶜᶜᶜ, grid, b.model,
+                                                    tracers, parameters)
+PotentialDensityField(model, parameters) = Field(potential_density(model, parameters))
+
+# ## Center velocity `Field`
+# wᶜᶜᶜ(model) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃᶠ, model.grid, model.velocities.w)
+# w_center = Field(wᶜᶜᶜ(dns.model))
+# compute!(w_center)
+# ## Face buoyancy gradient field
+# ∂b∂z(model) = KernelFunctionOperation{Center, Center, Face}(∂z_b, model.grid, model.buoyancy, model.tracers)
+# b_vertical_grad = Field(∂b∂z(model))
+# compute!(b_vertical_grad)
+# Integral(b_field * w_center / b_vertical_grad)

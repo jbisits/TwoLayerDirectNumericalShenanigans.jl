@@ -1,5 +1,6 @@
-using TwoLayerDirectNumericalShenanigans: DensityField, InterpolatedDensityAnomaly
+using TwoLayerDirectNumericalShenanigans: PotentialDensityField, DensityField
 using Oceananigans: Operators.ℑzᵃᵃᶠ
+using Oceananigans: BuoyancyModels.ρ′, BuoyancyModels.θ_and_sᴬ
 using GibbsSeaWater
 
 architecture = CPU()
@@ -23,24 +24,26 @@ dns = TwoLayerDNS(model, profile_function, initial_conditions)
 set_two_layer_initial_conditions!(dns)
 
 reference_pressure = 0
-σ_field = Field(DensityField(dns.model, 0))
-compute!(σ_field)
+parameters = (pᵣ = reference_pressure,)
+model = dns.model
+pd_field = PotentialDensityField(model, parameters)
+compute!(pd_field)
 
-function test_density_profile(σ_field, computed_density_profile)
+function test_potential_density_profile(pd_field, computed_density_profile, atol)
 
-    vertical_slice = interior(σ_field, rand(1:10), rand(1:10), :)
+    vertical_slice = interior(pd_field, rand(1:10), rand(1:10), :)
 
-    return vertical_slice .== computed_density_profile
+    return isapprox.(vertical_slice, computed_density_profile; atol)
 
 end
 
-σ_anomaly_interp_field = Field(InterpolatedDensityAnomaly(dns.model, reference_pressure))
-compute!(σ_anomaly_interp_field)
+d_field = DensityField(model)
+compute!(d_field)
 
-function test_density_anom_profile(σ_anomaly_interp_field, computed_density_profile)
+function test_density_profile(d_field, computed_density_profile, atol)
 
-    vertical_slice = interior(σ_anomaly_interp_field, rand(1:10), rand(1:10), :)
+    vertical_slice = interior(d_field, rand(1:10), rand(1:10), :)
 
-    return vertical_slice .== computed_density_profile
+    return isapprox.(vertical_slice, computed_density_profile; atol)
 
 end

@@ -182,10 +182,11 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # Inferred vertical diffusivity
     b_field = BuoyancyField(model)
-    compute!(b_field)
-
-    w = model.velocities.w
-    κᵥ = Integral((-w * σ_anomaly_interpolated) / σ)
+    w_center_field = wᶜᶜᶜField(model)
+    b_grad_field = ∂b∂zField(model)
+    κᵥ_field = Field((-w_center_field * b_field) / b_grad_field)
+    compute!(κᵥ_field)
+    κᵥ = Integral(κᵥ_field)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)

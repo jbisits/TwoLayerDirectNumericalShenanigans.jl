@@ -29,12 +29,10 @@ potential_density(b, grid, tracers, parameters) =
                                                     tracers, parameters)
 PotentialDensityField(model, parameters) = Field(potential_density(model, parameters))
 
-# ## Center velocity `Field`
-# wᶜᶜᶜ(model) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃᶠ, model.grid, model.velocities.w)
-# w_center = Field(wᶜᶜᶜ(dns.model))
-# compute!(w_center)
-# ## Face buoyancy gradient field
-# ∂b∂z(model) = KernelFunctionOperation{Center, Center, Face}(∂z_b, model.grid, model.buoyancy, model.tracers)
-# b_vertical_grad = Field(∂b∂z(model))
-# compute!(b_vertical_grad)
-# Integral(b_field * w_center / b_vertical_grad)
+"`(Center, Center, Center)` vertical velocity `Field`"
+wᶜᶜᶜ(model) = wᶜᶜᶜ(model.veolcities.w, model.grid)
+wᶜᶜᶜ(w, grid) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃᶜ, grid, w)
+"`(Center, Center, Face)` vertical buoyancy gradient `Field`"
+∂b∂z(model) = ∂b∂z(model.buoyancy, model.grid, model.tracers)
+∂b∂z(b, grid, tracers) = KernelFunctionOperation{Center, Center, Face}(∂z_b, grid, b, tracers)
+∂b∂zField(model) = Field(∂b∂z(model))

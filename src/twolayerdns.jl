@@ -192,6 +192,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
 
     # Volume integrated TKE dissipation
+    ∫ϵ = Integral(ϵ)
 
     # Dimensions and attributes for custom saved output
     dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "κᵥ" => (), "∫ϵ" => ())

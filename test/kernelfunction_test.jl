@@ -3,7 +3,6 @@ using Oceananigans: Operators.ℑzᵃᵃᶠ
 using Oceananigans: BuoyancyModels.ρ′, BuoyancyModels.θ_and_sᴬ
 using GibbsSeaWater
 
-architecture = CPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 100)
 

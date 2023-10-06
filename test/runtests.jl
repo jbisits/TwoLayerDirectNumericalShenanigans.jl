@@ -1,7 +1,9 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
 using GibbsSeaWater: gsw_p_from_z
+using CUDA: has_cuda_gpu
 
+architecture = has_cuda_gpu() ? GPU() : CPU()
 include("twolayercontainers_test.jl")
 
 @testset "TwoLayerDNS upper layer containers" begin

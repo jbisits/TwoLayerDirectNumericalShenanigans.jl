@@ -1,5 +1,4 @@
 # Need to write these to check things are set at the right level in the right field
-architecture = CPU() # or GPU()
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 500)
 model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;

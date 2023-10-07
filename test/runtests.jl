@@ -1,5 +1,7 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
+using SeawaterPolynomials
+import SeawaterPolynomials.ρ
 using GibbsSeaWater: gsw_p_from_z
 using CUDA: has_cuda_gpu
 
@@ -134,7 +136,7 @@ end
 
 include("kernelfunction_test.jl")
 
-atol = 1e-3 # tolerance for accuracy of density compared to GSW
+atol = 2e-4 # tolerance for accuracy of density compared to GSW
 @testset "PotentialDensity field computation" begin
 
     σ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),

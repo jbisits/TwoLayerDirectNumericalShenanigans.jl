@@ -177,13 +177,13 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # Custom saved output
     # Potential density
-    parameters = (pᵣ = density_reference_pressure,)
-    σ = PotentialDensityField(model, parameters)
+    parameters = (Zᵣ = density_reference_pressure,)
+    σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
     # b_field = BuoyancyField(model)
-    # w_center_field = wᶜᶜᶜField(model)
-    # b_grad_field = ∂b∂zField(model)
+    # w_center_field = wᶜᶜᶜ(model)
+    # b_grad_field = ∂b∂z(model)
     # κᵥ_field = Field((-w_center_field * b_field) / b_grad_field)
     # compute!(κᵥ_field)
     # κᵥ = Integral(κᵥ_field)

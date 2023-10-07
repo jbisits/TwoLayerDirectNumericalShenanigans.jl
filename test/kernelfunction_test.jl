@@ -1,6 +1,7 @@
-using TwoLayerDirectNumericalShenanigans: PotentialDensityField, DensityField
+using TwoLayerDirectNumericalShenanigans: PotentialDensity, Density
 using Oceananigans: Operators.ℑzᵃᵃᶠ
-using Oceananigans: BuoyancyModels.ρ′, BuoyancyModels.θ_and_sᴬ
+using Oceananigans: BuoyancyModels.θ_and_sᴬ
+
 using GibbsSeaWater
 
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
@@ -23,9 +24,9 @@ dns = TwoLayerDNS(model, profile_function, initial_conditions)
 set_two_layer_initial_conditions!(dns)
 
 reference_pressure = 0
-parameters = (pᵣ = reference_pressure,)
+parameters = (Zᵣ = 0,)
 model = dns.model
-pd_field = PotentialDensityField(model, parameters)
+pd_field = Field(PotentialDensity(model, parameters))
 compute!(pd_field)
 
 function test_potential_density_profile(pd_field, computed_density_profile, atol)
@@ -36,7 +37,7 @@ function test_potential_density_profile(pd_field, computed_density_profile, atol
 
 end
 
-d_field = DensityField(model)
+d_field = Field(Density(model))
 compute!(d_field)
 
 function test_density_profile(d_field, computed_density_profile, atol)

@@ -1,6 +1,11 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
+using SeawaterPolynomials
+import SeawaterPolynomials.ρ
+using GibbsSeaWater: gsw_p_from_z
+using CUDA: has_cuda_gpu
 
+architecture = has_cuda_gpu() ? GPU() : CPU()
 include("twolayercontainers_test.jl")
 
 @testset "TwoLayerDNS upper layer containers" begin
@@ -131,34 +136,22 @@ end
 
 include("kernelfunction_test.jl")
 
-@testset "Density field computation" begin
-    d_idx = findfirst(z .== transition_depth)
-    σᵘ = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), 1:d_idx),
-                  interior(model.tracers.T, rand(1:10), rand(1:10), 1:d_idx),
-                  reference_pressure)
-    σˡ = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), d_idx+1:100),
-                  interior(model.tracers.T, rand(1:10), rand(1:10), d_idx+1:100),
-                  reference_pressure)
-    σ_computed_profile = vcat(σᵘ, σˡ)
-    @test isequal(trues(length(z)), test_density_profile(σ_field, σ_computed_profile))
+atol = 2e-4 # tolerance for accuracy of density compared to GSW
+@testset "PotentialDensity field computation" begin
+
+    σ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
+                         interior(model.tracers.T, rand(1:10), rand(1:10), :),
+                         reference_pressure)
+
+    @test isequal(trues(length(z)),
+                  test_potential_density_profile(pd_field, σ_profile, atol))
 end
 
-@testset "Interpolated density anomaly" begin
-    d_idx = findfirst(z .== transition_depth)
-    S_interpolation = Field(KernelFunctionOperation{Center, Center, Face}(ℑzᵃᵃᶠ, model.grid,
-                                                                          model.tracers.S))
-    compute!(S_interpolation)
-    T_interpolation = Field(KernelFunctionOperation{Center, Center, Face}(ℑzᵃᵃᶠ, model.grid,
-                                                                          model.tracers.T))
-    compute!(T_interpolation)
-    σ_reference = dns.model.buoyancy.model.equation_of_state.reference_density
-    σᵘ = gsw_rho.(interior(S_interpolation, rand(1:10), rand(1:10), 1:d_idx),
-                  interior(T_interpolation, rand(1:10), rand(1:10), 1:d_idx),
-                  reference_pressure) .- σ_reference
-    σˡ = gsw_rho.(interior(S_interpolation, rand(1:10), rand(1:10), d_idx+1:101),
-                  interior(T_interpolation, rand(1:10), rand(1:10), d_idx+1:101),
-                  reference_pressure) .- σ_reference
-    σ_anom_computed_profile = vcat(σᵘ, σˡ)
-    @test isequal(trues(length(σ_anom_computed_profile)),
-                  test_density_anom_profile(σ_anomaly_interp_field, σ_anom_computed_profile))
+@testset "Density field computation" begin
+
+    p = gsw_p_from_z.(z, 0)
+    ρ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
+                         interior(model.tracers.T, rand(1:10), rand(1:10), :), p)
+    @test isequal(trues(length(ρ_profile)),
+                   test_density_profile(d_field, ρ_profile, atol))
 end

@@ -174,31 +174,40 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # model tracers
     S, T = model.tracers.S, model.tracers.T
-    # custom saved output
 
-    # Density
-    σ = DensityField(model, density_reference_pressure)
+    # Custom saved output
+    # Potential density
+    parameters = (Zᵣ = density_reference_pressure,)
+    σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
-    σ_anomaly_interpolated = InterpolatedDensityAnomaly(model, density_reference_pressure)
-    w = model.velocities.w
-    κᵥ = Integral((-w * σ_anomaly_interpolated) / σ)
+    # b_field = BuoyancyField(model)
+    # w_center_field = wᶜᶜᶜ(model)
+    # b_grad_field = ∂b∂z(model)
+    # κᵥ_field = Field((-w_center_field * b_field) / b_grad_field)
+    # compute!(κᵥ_field)
+    # κᵥ = Integral(κᵥ_field)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
-    η_space(model) = minimum(model.closure.ν ./ ϵ)
+    η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
+
+    # Volume integrated TKE dissipation
+    ∫ϵ = Integral(ϵ)
 
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "κᵥ" => ())
+    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), #="κᵥ" => (),=# "∫ϵ" => ())
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
-                     "units" => "m²s⁻¹"))
+        # "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
+        #              "units" => "m²s⁻¹"),
+        "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
+        )
 
     # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "κᵥ" => κᵥ)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, #="κᵥ" => κᵥ,=# "∫ϵ" => ∫ϵ)
     if save_velocities
         u, v = model.velocities.u, model.velocities.v
         velocities = Dict("u" => u, "v" => v, "w" => w)

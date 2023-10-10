@@ -15,7 +15,7 @@ S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.59)
 stable = StableUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(stable)
 transition_depth = find_depth(model, INTERFACE_LOCATION)
-profile_function = StepChange(transition_depth)#HyperbolicTangent(INTERFACE_LOCATION, 50.0)
+profile_function = StepChange(transition_depth)#HyperbolicTangent(INTERFACE_LOCATION, 1.0)
 tracer_perturbation_depth = find_depth(model, INTERFACE_LOCATION / 2)
 tracer_perturbation = SalinityGaussianProfile(tracer_perturbation_depth, 0.0, 1.5)
 noise_depth = find_depth(model, INTERFACE_LOCATION)
@@ -29,7 +29,7 @@ set_two_layer_initial_conditions!(dns)
 Δt = 1e-4
 stop_time = 60
 save_schedule = 0.5 # seconds
-simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule, save_velocities = true)
+simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule)
 
 ## Run the simulation
 run!(simulation)

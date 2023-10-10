@@ -152,7 +152,7 @@ the course of a simulation;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
-- `density_reference_pressure` for the seawater density calculation;
+- `density_reference_gp_height` for the seawater density calculation;
 - `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
@@ -162,7 +162,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
                               max_Δt = 1e-1,
-                              density_reference_pressure = 0,
+                              density_reference_gp_height = 0,
                               save_velocities = false)
 
     model = dns.model
@@ -177,16 +177,12 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # Custom saved output
     # Potential density
-    parameters = (Zᵣ = density_reference_pressure,)
+    parameters = (Zᵣ = density_reference_gp_height,)
     σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
-    # b_field = BuoyancyField(model)
-    # w_center_field = wᶜᶜᶜ(model)
-    # b_grad_field = ∂b∂z(model)
-    # κᵥ_field = Field((-w_center_field * b_field) / b_grad_field)
-    # compute!(κᵥ_field)
-    # κᵥ = Integral(κᵥ_field)
+    κᵥ = InferredVerticalDiffusivity(model)
+    ∫κᵥ = Integral(κᵥ)
 
     # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
@@ -196,20 +192,20 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     ∫ϵ = Integral(ϵ)
 
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), #="κᵥ" => (),=# "∫ϵ" => ())
+    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "∫κᵥ" => (), "∫ϵ" => ())
     oa = Dict(
-        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        # "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
-        #              "units" => "m²s⁻¹"),
+        "∫κᵥ" => Dict("longname" => "Volumen integrated inferred vertical diffusivity",
+                      "units" => "m²s⁻¹"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, #="κᵥ" => κᵥ,=# "∫ϵ" => ∫ϵ)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫κᵥ" => ∫κᵥ, "∫ϵ" => ∫ϵ)
     if save_velocities
-        u, v = model.velocities.u, model.velocities.v
+        u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)
         merge!(outputs, velocities)
     end

@@ -131,13 +131,16 @@ end
 Compute the predicted maximum density of water that can form along the mixing line between
 the salinity and temperature of the upper and lower layers.
 """
-function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; reference_pressure = 0)
+function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; reference_gp_height = 0)
 
     Sᵘ, Sˡ, ΔS, Tᵘ, Tˡ, ΔT = dns.initial_conditions
     slope = - ΔT / ΔS
     S_mix = range(Sᵘ, Sˡ, step = 0.000001)
     T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
-    ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
+    Zᵣ = similar(S_mix)
+    fill!(Zᵣ, reference_gp_height)
+    eos = dns.model.buoyancy.model.equation_of_state
+    ρ_mix_max = maximum(ρ.(T_mix, S_mix, Zᵣ, fill(eos, length(S_mix))))
     file_type = find_file_type(simulation.output_writers[:outputs].filepath)
     if isequal(file_type, ".nc")
         NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
@@ -162,6 +165,7 @@ function predicted_maximum_density!(file::AbstractString; reference_pressure = 0
         slope = - ΔT / ΔS
         S_mix = range(Sᵘ, Sˡ, step = 0.000001)
         T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
+        # Do not have eos so cannot use `SeawaterPolynomials.ρ`
         ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
         ds.attrib["Predicted maximum density"] = ρ_mix_max
     end

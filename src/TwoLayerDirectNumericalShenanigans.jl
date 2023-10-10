@@ -3,6 +3,7 @@ module TwoLayerDirectNumericalShenanigans
 using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
 using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶜ
 using Oceananigans: BuoyancyModels.get_temperature_and_salinity, BuoyancyModels.θ_and_sᴬ,  BuoyancyModels.Zᶜᶜᶜ
+using Oceananigans: BuoyancyModels.buoyancy_perturbationᶜᶜᶜ, BuoyancyModels.∂z_b
 using SeawaterPolynomials
 using SeawaterPolynomials: TEOS10EquationOfState
 import SeawaterPolynomials.ρ

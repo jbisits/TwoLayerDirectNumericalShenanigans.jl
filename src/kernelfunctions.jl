@@ -40,7 +40,7 @@ wᶜᶜᶜ(w, grid) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃ
 @inline function Kᵥ(i, j, k, grid, b::SeawaterBuoyancy, C, w)
 
     if ∂z_b(i, j, k, grid, b, C) != 0
-        (ℑzᵃᵃᶜ(i, j, k, w) * buoyancy_perturbationᶜᶜᶜ(i, j, k, grid, b, C)) / ∂z_b(i, j, k, grid, b, C)
+        (-ℑzᵃᵃᶜ(i, j, k, w) * buoyancy_perturbationᶜᶜᶜ(i, j, k, grid, b, C)) / ∂z_b(i, j, k, grid, b, C)
     else
         0
     end

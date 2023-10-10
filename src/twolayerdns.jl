@@ -205,7 +205,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # outputs to be saved during the simulation
     outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫κᵥ" => ∫κᵥ, "∫ϵ" => ∫ϵ)
     if save_velocities
-        u, v = model.velocities.u, model.velocities.v
+        u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)
         merge!(outputs, velocities)
     end

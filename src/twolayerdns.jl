@@ -181,6 +181,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
+    κᵥ = InferredVerticalDiffusivity(model)
+    ∫κᵥ = Integral(κᵥ)
     # b_field = BuoyancyField(model)
     # w_center_field = wᶜᶜᶜ(model)
     # b_grad_field = ∂b∂z(model)
@@ -196,18 +198,18 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     ∫ϵ = Integral(ϵ)
 
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), #="κᵥ" => (),=# "∫ϵ" => ())
+    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "∫κᵥ" => (), "∫ϵ" => ())
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        # "κᵥ" => Dict("longname" => "Inferred vertical diffusivity",
-        #              "units" => "m²s⁻¹"),
+        "∫κᵥ" => Dict("longname" => "Volumen integrated inferred vertical diffusivity",
+                      "units" => "m²s⁻¹"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, #="κᵥ" => κᵥ,=# "∫ϵ" => ∫ϵ)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫κᵥ" => ∫κᵥ, "∫ϵ" => ∫ϵ)
     if save_velocities
         u, v = model.velocities.u, model.velocities.v
         velocities = Dict("u" => u, "v" => v, "w" => w)

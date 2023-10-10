@@ -36,3 +36,22 @@ wᶜᶜᶜ(w, grid) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃ
 "`(Center, Center, Face)` vertical buoyancy gradient `Field`"
 ∂b∂z(model) = ∂b∂z(model.buoyancy, model.grid, model.tracers)
 ∂b∂z(b, grid, tracers) = KernelFunctionOperation{Center, Center, Face}(∂z_b, grid, b, tracers)
+
+@inline function Kᵥ(i, j, k, grid, b::SeawaterBuoyancy, C, w)
+
+    if ∂z_b(i, j, k, grid, b, C) != 0
+        (ℑzᵃᵃᶜ(i, j, k, w) * buoyancy_perturbationᶜᶜᶜ(i, j, k, grid, b, C)) / ∂z_b(i, j, k, grid, b, C)
+    else
+        0
+    end
+
+end
+function InferredVerticalDiffusivity(model)
+
+    grid = model.grid
+    b = model.buoyancy.model
+    C = model.tracers
+    w = model.velocities.w
+
+    return KernelFunctionOperation{Center, Center, Center}(Kᵥ, grid, b, C, w)
+end

@@ -152,7 +152,7 @@ the course of a simulation;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
-- `density_reference_pressure` for the seawater density calculation;
+- `density_reference_gp_height` for the seawater density calculation;
 - `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
@@ -162,7 +162,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
                               max_Δt = 1e-1,
-                              density_reference_pressure = 0,
+                              density_reference_gp_height = 0,
                               save_velocities = false)
 
     model = dns.model
@@ -177,7 +177,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # Custom saved output
     # Potential density
-    parameters = (Zᵣ = density_reference_pressure,)
+    parameters = (Zᵣ = density_reference_gp_height,)
     σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
@@ -194,7 +194,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Dimensions and attributes for custom saved output
     dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "∫κᵥ" => (), "∫ϵ" => ())
     oa = Dict(
-        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_pressure)dbar",
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
         "∫κᵥ" => Dict("longname" => "Volumen integrated inferred vertical diffusivity",

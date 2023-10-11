@@ -11,9 +11,9 @@ model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
 
 ## set initial conditions
 T₀ᵘ = -1.5
-S₀ᵘ = (stable = 34.551, cabbeling = 34.568, unstable = 34.59)
-stable = StableUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
-initial_conditions = TwoLayerInitialConditions(stable)
+S₀ᵘ = (stable = 34.551, cabbeling = 34.58, unstable = 34.59)
+cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
+initial_conditions = TwoLayerInitialConditions(cabbeling)
 transition_depth = find_depth(model, INTERFACE_LOCATION)
 profile_function = StepChange(transition_depth)#HyperbolicTangent(INTERFACE_LOCATION, 1.0)
 tracer_perturbation_depth = find_depth(model, INTERFACE_LOCATION / 2)

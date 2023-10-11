@@ -197,7 +197,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "∫κᵥ" => Dict("longname" => "Volumen integrated inferred vertical diffusivity",
+        "∫κᵥ" => Dict("longname" => "Volume integrated inferred vertical diffusivity",
                       "units" => "m²s⁻¹"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )

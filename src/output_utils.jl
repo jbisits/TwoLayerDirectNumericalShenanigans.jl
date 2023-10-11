@@ -134,21 +134,25 @@ the salinity and temperature of the upper and lower layers.
 function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; reference_gp_height = 0)
 
     Sᵘ, Sˡ, ΔS, Tᵘ, Tˡ, ΔT = dns.initial_conditions
-    slope = - ΔT / ΔS
+    slope = ΔT / ΔS
     S_mix = range(Sᵘ, Sˡ, step = 0.000001)
-    T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
+    T_mix = @. Tᵘ + slope * (S_mix - Sᵤ)
     Zᵣ = similar(S_mix)
     fill!(Zᵣ, reference_gp_height)
     eos = dns.model.buoyancy.model.equation_of_state
-    ρ_mix_max = maximum(ρ.(T_mix, S_mix, Zᵣ, fill(eos, length(S_mix))))
+    ρ_mix_max, max_idx = findmax(ρ.(T_mix, S_mix, Zᵣ, fill(eos, length(S_mix))))
     file_type = find_file_type(simulation.output_writers[:outputs].filepath)
     if isequal(file_type, ".nc")
         NCDataset(simulation.output_writers[:outputs].filepath, "a") do ds
             ds.attrib["Predicted maximum density"] = ρ_mix_max
+            ds.attrib["Predicted equilibrium Tₗ"] = T_mix[max_idx]
+            ds.attrib["Predicted equilibrium Sₗ"] = S_mix[max_idx]
         end
     elseif isequal(file_type, ".jld2")
         jldopen(simulation.output_writers[:outputs].filepath, "a+") do f
             f["Predicted maximum density"] = ρ_mix_max
+            f["Predicted equilibrium Tₗ"] = T_mix[max_idx]
+            f["Predicted equilibrium Sₗ"] = S_mix[max_idx]
         end
     end
 

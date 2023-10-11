@@ -136,7 +136,7 @@ function predicted_maximum_density!(simulation::Simulation, dns::TwoLayerDNS; re
     Sᵘ, Sˡ, ΔS, Tᵘ, Tˡ, ΔT = dns.initial_conditions
     slope = ΔT / ΔS
     S_mix = range(Sᵘ, Sˡ, step = 0.000001)
-    T_mix = @. Tᵘ + slope * (S_mix - Sᵤ)
+    T_mix = @. Tᵘ + slope * (S_mix - Sᵘ)
     Zᵣ = similar(S_mix)
     fill!(Zᵣ, reference_gp_height)
     eos = dns.model.buoyancy.model.equation_of_state
@@ -166,12 +166,14 @@ function predicted_maximum_density!(file::AbstractString; reference_pressure = 0
         ΔS = Sᵘ - Sˡ
         Tᵘ, Tˡ = ds["T"][end, end, end, 1], ds["T"][1, 1, 1, 1]
         ΔT = Tᵘ - Tˡ
-        slope = - ΔT / ΔS
+        slope = ΔT / ΔS
         S_mix = range(Sᵘ, Sˡ, step = 0.000001)
-        T_mix = @. Tᵘ + slope * (Sᵘ - S_mix)
+        T_mix = @. Tᵘ + slope * (S_mix - Sᵘ)
         # Do not have eos so cannot use `SeawaterPolynomials.ρ`
-        ρ_mix_max = maximum(gsw_rho.(S_mix, T_mix, reference_pressure))
+        ρ_mix_max, max_idx = findmax(gsw_rho.(S_mix, T_mix, reference_pressure))
         ds.attrib["Predicted maximum density"] = ρ_mix_max
+        ds.attrib["Predicted equilibrium Tₗ"] = T_mix[max_idx]
+        ds.attrib["Predicted equilibrium Sₗ"] = S_mix[max_idx]
     end
 
     return nothing

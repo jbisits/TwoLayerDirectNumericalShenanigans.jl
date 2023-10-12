@@ -154,8 +154,43 @@ function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = 
         n[] = i
     end
 
-    return fig
+    return nothing
 
+end
+"""
+    function animate_volume_distributions(rs::RasterStack)
+**Note:** This method assumes that the `RasterStack` has two variables for a 2D distribution.
+"""
+function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
+
+    t = lookup(rs, Ti)
+    rs_series_hist = Vector{RasterStackHistogram}(undef, length(t))
+    for i ∈ eachindex(t)
+        rs_series_hist[i] = RasterStackHistogram(rs[:, :, :, i], edges)
+    end
+    n = Observable(1)
+    dₜ = @lift rs_series_hist[$n]
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+    fig = Figure(size = (500, 500))
+    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
+    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) :  string(names(rs)[2]) * unit[2]
+    xlimits, ylimits = edges
+    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
+    xlims!(ax, xlimits[1], xlimits[end])
+    ylims!(ax, ylimits[1], ylimits[end])
+    hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
+    Colorbar(fig[1, 2], hm)
+
+    frames = eachindex(t)
+    savename = string(names(rs)[1]) * string(names(rs)[2]) * "_vd.mp4"
+    record(fig, joinpath(pwd(), savename), frames, framerate=8) do i
+        msg = string("Plotting frame ", i, " of ", frames[end])
+        print(msg * " \r")
+        n[] = i
+    end
+
+    return nothing
 end
 """
     function visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)

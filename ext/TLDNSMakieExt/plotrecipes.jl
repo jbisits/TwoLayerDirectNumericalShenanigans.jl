@@ -96,8 +96,10 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     ax[2].xaxisposition = :top
     ax[2].xticklabelrotation = π / 4
     if !isnothing(vline)
-        vlines!(ax[2], vline, linestyle = :dash, color = :red,
-                label = "Predicted maximum density")
+        label = isequal(field_name, σ) ? "Predicted maximum $(field_name)" :
+                                         "Predicted equilibrium $(field_name)"
+        vlines!(ax[2], vline, linestyle = :dash, color = :red;
+                label)
         axislegend(ax[2])
     end
 
@@ -109,6 +111,39 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
         msg = string("Plotting frame ", i, " of ", frames[end])
         print(msg * " \r")
         n[] = i
+    end
+
+    return nothing
+
+end
+"""
+    function plot_scalar_diagnostics(saved_output::AbstractString)
+Animate the density and diagnostics (at this stage ∫ϵ and ∫κᵥ) from `saved_output`. **Note:**
+this function assumes that `saved_output` is a `.nc` file.
+"""
+function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
+
+    NCDataset(saved_output) do ds
+        t = ds["time"][:] / (60)
+        ∫ϵ = ds["∫ϵ"][:]
+        ∫κᵥ = ds["∫κᵥ"][:]
+
+        fig = Figure(size = (600, 1000))
+        ax = [Axis(fig[i, 1]) for i ∈ 1:2]
+        lines!(ax[1], t, ∫ϵ)
+        ax[1].title = "Integraged TKE"
+        ax[1].ylabel = "∫ϵ"
+
+        lines!(ax[2], t, ∫κᵥ)
+        ax[2].title = "Integrated inferred vertical diffusivity"
+        ax[2].xlabel = "t (minutes)"
+        ax[2].ylabel = "∫κᵥ"
+
+        linkxaxes!(ax[1], ax[2])
+
+        plotsave = "TKE_and_inferredK.png"
+        save(plotsave, fig)
+        @info "Save plot to $(plotsave)"
     end
 
     return nothing
@@ -174,7 +209,38 @@ function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (g
 
     fig = Figure(size = (500, 500))
     xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) :  string(names(rs)[2]) * unit[2]
+    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
+    xlimits, ylimits = edges
+    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
+    xlims!(ax, xlimits[1], xlimits[end])
+    ylims!(ax, ylimits[1], ylimits[end])
+    hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
+    Colorbar(fig[1, 2], hm)
+
+    frames = eachindex(t)
+    savename = string(names(rs)[1]) * string(names(rs)[2]) * "_vd.mp4"
+    record(fig, joinpath(pwd(), savename), frames, framerate=8) do i
+        msg = string("Plotting frame ", i, " of ", frames[end])
+        print(msg * " \r")
+        n[] = i
+    end
+
+    return nothing
+end
+function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
+
+    t = lookup(rs, Ti)
+    rs_series_hist = Vector{RasterStackHistogram}(undef, length(t))
+    for i ∈ eachindex(t)
+        rs_series_hist[i] = RasterStackHistogram(rs[:, :, :, i], edges)
+    end
+    n = Observable(1)
+    dₜ = @lift rs_series_hist[$n]
+    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+    fig = Figure(size = (500, 500))
+    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
+    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
     xlimits, ylimits = edges
     ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
     xlims!(ax, xlimits[1], xlimits[end])

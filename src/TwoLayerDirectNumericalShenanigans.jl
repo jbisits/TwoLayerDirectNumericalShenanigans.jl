@@ -59,7 +59,7 @@ export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
 export compute_density, compute_density!
 
 export animate_2D_field, visualise_initial_conditions, visualise_initial_density,
-       visualise_snapshot
+       visualise_snapshot, plot_scalar_diagnostics
 
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")

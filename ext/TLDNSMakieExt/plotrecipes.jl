@@ -230,12 +230,8 @@ end
 function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
 
     t = lookup(rs, Ti)
-    rs_series_hist = Vector{RasterStackHistogram}(undef, length(t))
-    for i ∈ eachindex(t)
-        rs_series_hist[i] = RasterStackHistogram(rs[:, :, :, i], edges)
-    end
     n = Observable(1)
-    dₜ = @lift rs_series_hist[$n]
+    dₜ = Observable(RasterStackHistogram(rs[:, :, :, 1], edges))
     time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (500, 500))
@@ -245,6 +241,7 @@ function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (g
     ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
     xlims!(ax, xlimits[1], xlimits[end])
     ylims!(ax, ylimits[1], ylimits[end])
+
     hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
     Colorbar(fig[1, 2], hm)
 
@@ -254,9 +251,37 @@ function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (g
         msg = string("Plotting frame ", i, " of ", frames[end])
         print(msg * " \r")
         n[] = i
+        dₜ[] = RasterStackHistogram(rs[:, :, :, i], edges)
     end
 
     return nothing
+end
+function TLDNS.volume_distribution_snaphsots(rs::RasterStack, edges, snapshots;
+                                             unit = (" (gkg⁻¹)", " (°C)"))
+
+    t = lookup(rs, Ti)
+
+    fig = Figure(size = (1500, 1500))
+    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
+    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
+    ax = [Axis(fig[j, i]; xlabel, ylabel) for i ∈ 1:2, j ∈ 1:3]
+
+    for (i, s) ∈ enumerate(snapshots)
+        xlims!(ax[i], 34.57, 34.75)
+        ylims!(ax[i], -1.6, 0.6)
+        ax[i].title = "t=$(round(t[s] / 60, digits = 2)) minutes"
+
+        stack_hist = RasterStackHistogram(rs[:, :, :, s], edges)
+        hm = heatmap!(ax[i], stack_hist, color = :viridis, colorscale = log10; colorrange)
+        if i == 1
+            Colorbar(fig[:, 3], hm)
+        end
+    end
+
+    save("ST_vd.png", fig)
+
+    return nothing
+
 end
 """
     function visualise_initial_stepchange(dns::TwoLayerDNS, interface_location::Number)

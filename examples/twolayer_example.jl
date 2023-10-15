@@ -19,7 +19,7 @@ profile_function = StepChange(transition_depth)#HyperbolicTangent(INTERFACE_LOCA
 tracer_perturbation_depth = find_depth(model, INTERFACE_LOCATION / 2)
 tracer_perturbation = SalinityGaussianProfile(tracer_perturbation_depth, 0.0, 1.5)
 noise_depth = find_depth(model, INTERFACE_LOCATION)
-initial_noise = SalinityNoise(noise_depth, 1.0)
+initial_noise = SalinityNoise(noise_depth, 1e-2)
 
 dns = TwoLayerDNS(model, profile_function, initial_conditions; initial_noise)
 

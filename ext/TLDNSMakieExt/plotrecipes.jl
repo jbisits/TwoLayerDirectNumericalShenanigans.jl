@@ -96,8 +96,8 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     ax[2].xaxisposition = :top
     ax[2].xticklabelrotation = π / 4
     if !isnothing(vline)
-        label = isequal(field_name, σ) ? "Predicted maximum $(field_name)" :
-                                         "Predicted equilibrium $(field_name)"
+        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
+                                           "Predicted equilibrium " * field_name
         vlines!(ax[2], vline, linestyle = :dash, color = :red;
                 label)
         axislegend(ax[2])
@@ -157,9 +157,10 @@ a `Raster`. Optional arguments:
 the subsequent histograms;
 - `unit` for the variable that is being plotted - must be a `String`.
 """
-function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing)
+function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing, vline = nothing)
 
     t = lookup(rs, Ti)
+    field_name = rs.name
     rs_series_hist = Vector{RasterLayerHistogram}(undef, length(t))
     for i ∈ eachindex(t)
         if i == 1
@@ -175,10 +176,16 @@ function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = 
     time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit) ? string(rs.name) : string(rs.name) * unit
+    xlabel = isnothing(unit) ? string(field_name) : string(field_name) * unit
     xlimits = isnothing(edges) ? rs_series_hist[1].histogram.edges[1] : edges
     ylabel = "Volume (m³)"
     ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
+    if !isnothing(vline)
+        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
+                                           "Predicted equilibrium " * field_name
+        vlines!(ax, vline, linestyle = :dash, color = :red; label)
+
+    end
     xlims!(ax, xlimits[1], xlimits[end])
     plot!(ax, dₜ, color = :steelblue)
 

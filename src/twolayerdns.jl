@@ -181,29 +181,34 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     σ = PotentialDensity(model, parameters)
 
     # Inferred vertical diffusivity
-    κᵥ = InferredVerticalDiffusivity(model)
-    ∫κᵥ = Integral(κᵥ)
+    b_flux = vertical_buoyancy_flux(model)
+    ∫ₐb_flux = Integral(b_flux, dims = (1, 2))
+    b_grad = ∂b∂z(model)
+    ∫ₐb_grad = Integral(b_grad, dims = (1, 2))
 
-    # Minimum in space Kolmogorov length scale
     ϵ = KineticEnergyDissipationRate(model)
+    # Volume integrated TKE dissipation
+    ∫ϵ = Integral(ϵ)
+    # Minimum in space Kolmogorov length scale
     η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
 
     # Volume integrated TKE dissipation
     ∫ϵ = Integral(ϵ)
 
     # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => (), "σ" => ("xC", "xC", "zC"), "∫κᵥ" => (), "∫ϵ" => ())
+    dims = Dict("η_space" => ())
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "∫κᵥ" => Dict("longname" => "Volume integrated inferred vertical diffusivity",
-                      "units" => "m²s⁻¹"),
+        "∫ₐb_flux" => Dict("longname" => "Horizontally integrated vertical buoyacny flux (w'b')"),
+        "∫ₐb_grad" => Dict("longname" => "Horizontally integrated vertical buoyancy gradient (∂b/∂z)"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫κᵥ" => ∫κᵥ, "∫ϵ" => ∫ϵ)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ,
+                  "∫ₐb_flux" => ∫ₐb_flux, "∫ₐb_grad" => ∫ₐb_grad)
     if save_velocities
         u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)

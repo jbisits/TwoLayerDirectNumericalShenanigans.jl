@@ -333,6 +333,39 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
 end
 """
+    function inferred_vertical_diffusivity(saved_output::AbstractString)
+Calculate the inferred vertical diffusivity using the horizontally averaged vertical
+buoyancy gradient and horizontally averaged vertical buoyancy flux
+```math
+κᵥ = -\\frac{\\overline{w'b'}}{\\overline{\\frac{∂b}{∂z}}}.
+```
+**Note:** the horizontally avergaed vertical buoyancy gradient and vertical buoyancy flux
+must be saved in `saved_output`. This is the default behaviour as of version 0.4.5.
+Further it is assumed the horizontal resolution is equal.
+"""
+function inferred_vertical_diffusivity(saved_output::AbstractString)
+
+    NCDataset(saved_output, "a") do ds
+        b_grad = ds[:∫ₐb_grad][2:end, :]
+        replace!(b_grad, 0 => NaN)
+        b_flux = ds[:∫ₐb_flux][:, :]
+        ∫ₐκᵥ = similar(b_flux)
+        ∫ₐκᵥ .= b_flux ./ b_grad
+        defVar(ds, "∫ₐκᵥ", ∫ₐκᵥ, ("zC", "time"),
+               attrib = Dict("longname" => "Horizontally integrated inferred vertical diffusivity",
+                             "units" => "m²s⁻¹"))
+        dV = (diff(ds[:xC][1:2]) .* diff(ds[:yC][1:2])) .* diff(ds[:zF][:])
+        replace!(∫ₐκᵥ, NaN => 0)
+        ∫κᵥ = mapslices(sum, ∫ₐκᵥ .* dV, dims = 1)
+        defVar(ds, "∫κᵥ", ∫κᵥ, ("time",),
+        attrib = Dict("longname" => "Volume integrated inferred vertical diffusivity",
+                      "units" => "m²s⁻¹"))
+    end
+
+    return nothing
+
+end
+"""
     funciton find_file_type(file::AbstractString)
 Return the file type (either `.nc` or `.jld2`) of a `file`.
 """

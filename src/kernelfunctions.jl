@@ -37,6 +37,17 @@ wᶜᶜᶜ(w, grid) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃ
 ∂b∂z(model) = ∂b∂z(model.buoyancy, model.grid, model.tracers)
 ∂b∂z(b, grid, tracers) = KernelFunctionOperation{Center, Center, Face}(∂z_b, grid, b, tracers)
 
+@inline vertical_buoyancy_flux(i, j, k, grid, b::SeawaterBuoyancy, C, w) =
+        -ℑzᵃᵃᶜ(i, j, k, w) * buoyancy_perturbationᶜᶜᶜ(i, j, k, grid, b, C)
+@inline function vertical_buoyancy_flux(model)
+
+    grid = model.grid
+    b = model.buoyancy.model
+    C = model.tracers
+    w = model.velocities.w
+
+    return KernelFunctionOperation{Center, Center, Center}(vertical_buoyancy_flux, grid, b, C, w)
+end
 @inline function Kᵥ(i, j, k, grid, b::SeawaterBuoyancy, C, w)
 
     if ∂z_b(i, j, k, grid, b, C) != 0

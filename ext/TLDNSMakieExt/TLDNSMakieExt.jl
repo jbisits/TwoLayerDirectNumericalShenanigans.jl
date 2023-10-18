@@ -1,6 +1,6 @@
 module TLDNSMakieExt
 
-using CairoMakie, TwoLayerDirectNumericalShenanigans, Printf,
+using CairoMakie, TwoLayerDirectNumericalShenanigans, Printf, NCDatasets,
       GibbsSeaWater, Rasters, RasterHistograms
 using Oceananigans.Fields
 

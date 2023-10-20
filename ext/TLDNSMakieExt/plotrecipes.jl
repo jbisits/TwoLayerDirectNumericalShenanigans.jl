@@ -150,6 +150,40 @@ function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
 
 end
 """
+    function hovmoller(saved_output::AbstractString, variable::AbstractString)
+Produce a Hovmoller plot of a `variable` in `saved_ouput`.
+"""
+function TLDNS.hovmoller(saved_output::AbstractString, variable::AbstractString;
+                         colormap = :viridis, unit = nothing)
+
+    NCDataset(saved_output) do ds
+
+        t = ds["time"][:] ./ 60
+        zC = ds["zC"][:]
+        plot_var = ds[variable][:, :]
+        fig = Figure(size = (600, 1000))
+        ax = Axis(fig[1, 1],
+                  title = "Hovmoller plot of $(variable)",
+                  xlabel = "t (minutes)",
+                  ylabel = "z (m)")
+        colormap = cgrad(colormap)[2:end-1]
+        lowclip = cgrad(colormap)[1]
+        highclip = cgrad(colormap)[end]
+        hm = heatmap!(ax, t, zC, plot_var';
+                      colormap, lowclip, highclip, colorrange = (-1e-4, 1e-4))
+        cbar_label = isnothing(unit) ? variable : variable * unit
+        Colorbar(fig[1, 2], hm, label = cbar_label)
+
+        plotsave = "hovmoller_"*variable*".png"
+        save(plotsave, fig)
+        @info "Save plot to $(plotsave)"
+
+    end
+
+    return nothing
+
+end
+"""
     function animate_volume_distributions(rs::Raster)
 Animate the volume distribution from each saved snapshot of data for the variable saved as
 a `Raster`. Optional arguments:

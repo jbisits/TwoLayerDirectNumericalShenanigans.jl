@@ -4,6 +4,7 @@ using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
 using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶜ
 using Oceananigans: BuoyancyModels.get_temperature_and_salinity, BuoyancyModels.θ_and_sᴬ,  BuoyancyModels.Zᶜᶜᶜ
 using Oceananigans: BuoyancyModels.buoyancy_perturbationᶜᶜᶜ, BuoyancyModels.∂z_b
+using Oceananigans: Models.seawater_density
 using SeawaterPolynomials
 using SeawaterPolynomials: TEOS10EquationOfState
 import SeawaterPolynomials.ρ
@@ -59,7 +60,7 @@ export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
 export compute_density, compute_density!
 
 export animate_2D_field, visualise_initial_conditions, visualise_initial_density,
-       visualise_snapshot, plot_scalar_diagnostics
+       visualise_snapshot, plot_scalar_diagnostics, hovmoller
 
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")

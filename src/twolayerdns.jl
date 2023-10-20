@@ -177,8 +177,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # Custom saved output
     # Potential density
-    parameters = (Zᵣ = density_reference_gp_height,)
-    σ = PotentialDensity(model, parameters)
+    σ = seawater_density(model, geopotential_height = 0)
 
     # Inferred vertical diffusivity
     b_flux = vertical_buoyancy_flux(model)

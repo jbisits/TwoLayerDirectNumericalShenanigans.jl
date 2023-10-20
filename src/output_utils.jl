@@ -343,7 +343,7 @@ buoyancy gradient and horizontally averaged vertical buoyancy flux
 must be saved in `saved_output`. This is the default behaviour as of version 0.4.5.
 Further it is assumed the horizontal resolution is equal.
 """
-function inferred_vertical_diffusivity(saved_output::AbstractString)
+function inferred_vertical_diffusivity!(saved_output::AbstractString)
 
     NCDataset(saved_output, "a") do ds
         b_grad = ds[:∫ₐb_grad][2:end, :]

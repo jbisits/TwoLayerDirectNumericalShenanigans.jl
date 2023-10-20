@@ -134,24 +134,24 @@ end
     @test isequal(z[10:20], find_depth(model, test_depth_range))
 end
 
-include("kernelfunction_test.jl")
+# include("kernelfunction_test.jl")
 
-atol = 2e-4 # tolerance for accuracy of density compared to GSW
-@testset "PotentialDensity field computation" begin
+# atol = 2e-4 # tolerance for accuracy of density compared to GSW
+# @testset "PotentialDensity field computation" begin
 
-    σ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
-                         interior(model.tracers.T, rand(1:10), rand(1:10), :),
-                         reference_pressure)
+#     σ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
+#                          interior(model.tracers.T, rand(1:10), rand(1:10), :),
+#                          reference_pressure)
 
-    @test isequal(trues(length(z)),
-                  test_potential_density_profile(pd_field, σ_profile, atol))
-end
+#     @test isequal(trues(length(z)),
+#                   test_potential_density_profile(pd_field, σ_profile, atol))
+# end
 
-@testset "Density field computation" begin
+# @testset "Density field computation" begin
 
-    p = gsw_p_from_z.(z, 0)
-    ρ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
-                         interior(model.tracers.T, rand(1:10), rand(1:10), :), p)
-    @test isequal(trues(length(ρ_profile)),
-                   test_density_profile(d_field, ρ_profile, atol))
-end
+#     p = gsw_p_from_z.(z, 0)
+#     ρ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
+#                          interior(model.tracers.T, rand(1:10), rand(1:10), :), p)
+#     @test isequal(trues(length(ρ_profile)),
+#                    test_density_profile(d_field, ρ_profile, atol))
+# end

@@ -156,7 +156,9 @@ there is no `Checkpointer`.
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
 - `density_reference_gp_height` for the seawater density calculation;
-- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
+- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output;
+- `overwrite_existing` whether the output overwrites a file of the same name, default is
+`false`.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
@@ -167,6 +169,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               max_change = 1.2,
                               max_Δt = 1e-1,
                               density_reference_gp_height = 0,
+                              overwrite_existing = false,
                               save_velocities = false)
 
     model = dns.model
@@ -223,17 +226,17 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
-                                            NetCDFOutputWriter(model, outputs,
-                                                            filename = filename,
+                                            NetCDFOutputWriter(model, outputs;
+                                                            filename,
+                                                            overwrite_existing,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true,
                                                             dimensions = dims,
                                                             output_attributes = oa
                                                             ) :
-                                            JLD2OutputWriter(model, outputs,
-                                                            filename = filename,
+                                            JLD2OutputWriter(model, outputs;
+                                                            filename,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true)
+                                                            overwrite_existing)
 
     non_dimensional_numbers!(simulation, dns)
     predicted_maximum_density!(simulation, dns)

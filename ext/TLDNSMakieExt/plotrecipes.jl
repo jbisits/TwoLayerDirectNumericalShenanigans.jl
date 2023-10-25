@@ -268,35 +268,6 @@ function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (g
 
     return nothing
 end
-function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
-
-    t = lookup(rs, Ti)
-    n = Observable(1)
-    dₜ = Observable(RasterStackHistogram(rs[:, :, :, 1], edges))
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
-
-    fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
-    xlimits, ylimits = edges
-    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-    xlims!(ax, xlimits[1], xlimits[end])
-    ylims!(ax, ylimits[1], ylimits[end])
-
-    hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
-    Colorbar(fig[1, 2], hm)
-
-    frames = eachindex(t)
-    savename = string(names(rs)[1]) * string(names(rs)[2]) * "_vd.mp4"
-    record(fig, joinpath(pwd(), savename), frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
-        dₜ[] = RasterStackHistogram(rs[:, :, :, i], edges)
-    end
-
-    return nothing
-end
 function TLDNS.volume_distribution_snaphsots(rs::RasterStack, edges, snapshots;
                                              unit = (" (gkg⁻¹)", " (°C)"))
 

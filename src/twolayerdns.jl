@@ -72,7 +72,7 @@ function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
              α = 1.67e-4,
              β = 7.80e-4,
              reference_density = nothing,
-             zgrid_stretching = true,
+             zgrid_stretching = false,
              refinement = 1.05,
              stretching = 40)
 
@@ -148,21 +148,28 @@ the course of a simulation;
 
 ## Keyword arguments:
 
+- `checkpointer_time_interval`, pass a `Number` to setup a `Checkpointer` for saving
+and restarting a model state at `TimeInterval(Number)`. Defaults to `nothing` in which case
+there is no `Checkpointer`.
 - `cfl` maximum cfl value used to determine the adaptive timestep size;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
 - `density_reference_gp_height` for the seawater density calculation;
-- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output.
+- `save_velocities` defaults to `false`, if `true` model velocities will be saved to output;
+- `overwrite_existing` whether the output overwrites a file of the same name, default is
+`false`.
 """
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
                               output_writer::Symbol=:netcdf;
+                              checkpointer_time_interval = nothing,
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
                               max_Δt = 1e-1,
                               density_reference_gp_height = 0,
+                              overwrite_existing = false,
                               save_velocities = false)
 
     model = dns.model
@@ -179,11 +186,14 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Potential density
     σ = seawater_density(model, geopotential_height = 0)
 
-    # Inferred vertical diffusivity
-    b_flux = vertical_buoyancy_flux(model)
-    ∫ₐb_flux = Integral(b_flux, dims = (1, 2))
-    b_grad = ∂b∂z(model)
-    ∫ₐb_grad = Integral(b_grad, dims = (1, 2))
+    # Inferred vertical temperature diffusivity
+    T_mean = Average(T)
+    T′ = T - Field(T_mean)
+    w′ = wᶜᶜᶜ(model)
+    w′T′ = Field(w′ * T′)
+    ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
+    T_gradient = ∂z(T)
+    ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
 
     ϵ = KineticEnergyDissipationRate(model)
     # Volume integrated TKE dissipation
@@ -200,14 +210,14 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "∫ₐb_flux" => Dict("longname" => "Horizontally integrated vertical buoyacny flux (w'b')"),
-        "∫ₐb_grad" => Dict("longname" => "Horizontally integrated vertical buoyancy gradient (∂b/∂z)"),
+        "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temperature flux (w′T′)"),
+        "∫ₐT_gradient" => Dict("longname" => "Horizontally integrated vertical temperature gradient (∂T/∂z)"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
     outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ,
-                  "∫ₐb_flux" => ∫ₐb_flux, "∫ₐb_grad" => ∫ₐb_grad)
+                  "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)
     if save_velocities
         u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)
@@ -216,23 +226,25 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     filename = form_filename(dns, stop_time, output_writer)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
-                                            NetCDFOutputWriter(model, outputs,
-                                                            filename = filename,
+                                            NetCDFOutputWriter(model, outputs;
+                                                            filename,
+                                                            overwrite_existing,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true,
                                                             dimensions = dims,
                                                             output_attributes = oa
                                                             ) :
-                                            JLD2OutputWriter(model, outputs,
-                                                            filename = filename,
+                                            JLD2OutputWriter(model, outputs;
+                                                            filename,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = true)
+                                                            overwrite_existing)
 
     non_dimensional_numbers!(simulation, dns)
     predicted_maximum_density!(simulation, dns)
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
+    # Checkpointer setup
+    checkpointer_setup!(simulation, model, checkpointer_time_interval)
 
     return simulation
 
@@ -269,6 +281,27 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbo
     return filename
 
 end
+"""
+    function checkpointer_setup!(simulation, model, checkpointer_time_interval)
+Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
+"""
+function checkpointer_setup!(simulation::Simulation, model::Oceananigans.AbstractModel,
+                             checkpointer_time_interval::Number)
+
+    isdir(CHECKPOINT_PATH) ? nothing : mkdir(CHECKPOINT_PATH)
+    schedule = TimeInterval(checkpointer_time_interval)
+    sim_name_start = findlast('/', simulation.output_writers[:outputs].filepath) + 1
+    sim_name_end = findlast('.', simulation.output_writers[:outputs].filepath) - 1
+    prefix = simulation.output_writers[:outputs].filepath[sim_name_start:sim_name_end] * "_checkpoint"
+    dir = CHECKPOINT_PATH
+    cleanup = true
+    checkpointer = Checkpointer(model; schedule, dir, prefix, cleanup)
+    simulation.output_writers[:checkpointer] = checkpointer
+
+    return nothing
+
+end
+checkpointer_setup!(simulation, model, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

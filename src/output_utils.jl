@@ -333,7 +333,7 @@ function non_dimensional_numbers!(simulation::Simulation, dns::TwoLayerDNS)
 
 end
 """
-    function inferred_vertical_diffusivity(saved_output::AbstractString)
+    function inferred_vertical_diffusivity(saved_output, flux, gradient)
 Calculate the inferred vertical diffusivity using the horizontally averaged vertical
 buoyancy gradient and horizontally averaged vertical buoyancy flux
 ```math
@@ -343,14 +343,14 @@ buoyancy gradient and horizontally averaged vertical buoyancy flux
 must be saved in `saved_output`. This is the default behaviour as of version 0.4.5.
 Further it is assumed the horizontal resolution is equal.
 """
-function inferred_vertical_diffusivity!(saved_output::AbstractString)
+function inferred_vertical_diffusivity!(saved_output::AbstractString, flux::Symbol, vertical_gradient::Symbol)
 
     NCDataset(saved_output, "a") do ds
-        b_grad = ds[:∫ₐb_grad][2:end, :]
-        replace!(b_grad, 0 => NaN)
-        b_flux = ds[:∫ₐb_flux][:, :]
-        ∫ₐκᵥ = similar(b_flux)
-        ∫ₐκᵥ .= b_flux ./ b_grad
+        vertical_gradient = ds[vertical_gradient][2:end, :]
+        replace!(vertical_gradient, 0 => NaN)
+        flux = ds[flux][:, :]
+        ∫ₐκᵥ = similar(flux)
+        ∫ₐκᵥ .= flux ./ vertical_gradient
         defVar(ds, "∫ₐκᵥ", ∫ₐκᵥ, ("zC", "time"),
                attrib = Dict("longname" => "Horizontally integrated inferred vertical diffusivity",
                              "units" => "m²s⁻¹"))

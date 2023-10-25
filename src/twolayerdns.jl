@@ -72,7 +72,7 @@ function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
              α = 1.67e-4,
              β = 7.80e-4,
              reference_density = nothing,
-             zgrid_stretching = true,
+             zgrid_stretching = false,
              refinement = 1.05,
              stretching = 40)
 

@@ -148,6 +148,7 @@ the course of a simulation;
 
 ## Keyword arguments:
 
+- `output_path` path where to save output, defualt is `SIMULATION_PATH`
 - `checkpointer_time_interval`, pass a `Number` to setup a `Checkpointer` for saving
 and restarting a model state at `TimeInterval(Number)`. Defaults to `nothing` in which case
 there is no `Checkpointer`.
@@ -163,6 +164,7 @@ there is no `Checkpointer`.
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
                               output_writer::Symbol=:netcdf;
+                              output_path = SIMULATION_PATH,
                               checkpointer_time_interval = nothing,
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
@@ -224,7 +226,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         merge!(outputs, velocities)
     end
 
-    filename = form_filename(dns, stop_time, output_writer)
+    filename = form_filename(dns, stop_time, output_writer, output_path)
     simulation.output_writers[:outputs] = output_writer == :netcdf ?
                                             NetCDFOutputWriter(model, outputs;
                                                             filename,
@@ -244,17 +246,17 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
     # Checkpointer setup
-    checkpointer_setup!(simulation, model, checkpointer_time_interval)
+    checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 
     return simulation
 
 end
 """
-    function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
+    function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol, output_path::AbstractString)
 Create a filename for saved output based on the `profile_function`,`initial_conditions`,
 `tracer_perturbation` and length of the simulation.
 """
-function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol)
+function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol, output_path::AbstractString)
 
     pf_string = lowercase(string(typeof(dns.profile_function))[1:findfirst('{', string(typeof(dns.profile_function))) - 1])
     ic_type = typeof(dns.initial_conditions)
@@ -273,10 +275,10 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbo
     savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" * filetype
 
     # make a simulation directory if one is not present
-    if !isdir(SIMULATION_PATH)
-        mkdir(SIMULATION_PATH)
+    if !isdir(output_path)
+        mkdir(output_path)
     end
-    filename = joinpath(SIMULATION_PATH, savefile)
+    filename = joinpath(output_path, savefile)
 
     return filename
 
@@ -286,14 +288,15 @@ end
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
 """
 function checkpointer_setup!(simulation::Simulation, model::Oceananigans.AbstractModel,
-                             checkpointer_time_interval::Number)
+                             output_path::AbstractString, checkpointer_time_interval::Number)
 
-    isdir(CHECKPOINT_PATH) ? nothing : mkdir(CHECKPOINT_PATH)
+    dir = output_path == SIMULATION_PATH ? CHECKPOINT_PATH :
+                                           joinpath(output_path, "model_checkpoints/")
+    isdir(dir) ? nothing : mkdir(dir)
     schedule = TimeInterval(checkpointer_time_interval)
     sim_name_start = findlast('/', simulation.output_writers[:outputs].filepath) + 1
     sim_name_end = findlast('.', simulation.output_writers[:outputs].filepath) - 1
     prefix = simulation.output_writers[:outputs].filepath[sim_name_start:sim_name_end] * "_checkpoint"
-    dir = CHECKPOINT_PATH
     cleanup = true
     checkpointer = Checkpointer(model; schedule, dir, prefix, cleanup)
     simulation.output_writers[:checkpointer] = checkpointer
@@ -301,7 +304,7 @@ function checkpointer_setup!(simulation::Simulation, model::Oceananigans.Abstrac
     return nothing
 
 end
-checkpointer_setup!(simulation, model, checkpointer_time_interval::Nothing) = nothing
+checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

@@ -32,5 +32,10 @@ Path to where the simulations are saved by default. If the folder does not exist
 created when initialising a `Simulation` with `DNS_simulation_setup`.
 """
 const SIMULATION_PATH = joinpath(pwd(), "data/simulations")
+"""
+    const CHECKPOINT_PATH
+Path to where `Checkpoint`s are saved if used in a simulation.
+"""
+const CHECKPOINT_PATH = joinpath(SIMULATION_PATH, "model_checkpoints/")
 "Alias for DirectNumericalCabbelingShenanigans."
 const TLDNS = TwoLayerDirectNumericalShenanigans # alias

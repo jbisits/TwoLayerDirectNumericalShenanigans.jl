@@ -55,7 +55,7 @@ export AbstractTracerPerturbation, SalinityGaussianProfile, SalinityGaussianBlob
 export AbstractNoise, SalinityNoise, TemperatureNoise, VelocityNoise
 
 export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
-       INTERFACE_LOCATION, SIMULATION_PATH, TLDNS
+       INTERFACE_LOCATION, SIMULATION_PATH, CHECKPOINT_PATH, TLDNS
 
 export compute_density, compute_density!
 

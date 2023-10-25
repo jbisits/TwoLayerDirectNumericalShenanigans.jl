@@ -148,6 +148,9 @@ the course of a simulation;
 
 ## Keyword arguments:
 
+- `checkpointer_time_interval`, pass a `Number` to setup a `Checkpointer` for saving
+and restarting a model state at `TimeInterval(Number)`. Defaults to `nothing` in which case
+there is no `Checkpointer`.
 - `cfl` maximum cfl value used to determine the adaptive timestep size;
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
@@ -158,6 +161,7 @@ the course of a simulation;
 function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                               stop_time::Number, save_schedule::Number,
                               output_writer::Symbol=:netcdf;
+                              checkpointer_time_interval = nothing,
                               cfl = 0.75,
                               diffusive_cfl = 0.75,
                               max_change = 1.2,
@@ -233,6 +237,8 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
+    # Checkpointer setup
+    checkpointer_setup!(simulation, model, checkpointer_time_interval)
 
     return simulation
 
@@ -269,6 +275,27 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbo
     return filename
 
 end
+"""
+    function checkpointer_setup!(simulation, model, checkpointer_time_interval)
+Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
+"""
+function checkpointer_setup!(simulation::Simulation, model::Oceananigans.AbstractModel,
+                             checkpointer_time_interval::Number)
+
+    isdir(CHECKPOINT_PATH) ? nothing : mkdir(CHECKPOINT_PATH)
+    schedule = TimeInterval(checkpointer_time_interval)
+    sim_name_start = findlast('/', simulation.output_writers[:outputs].filepath) + 1
+    sim_name_end = findlast('.', simulation.output_writers[:outputs].filepath) - 1
+    prefix = simulation.output_writers[:outputs].filepath[sim_name_start:sim_name_end] * "_checkpoint"
+    dir = CHECKPOINT_PATH
+    cleanup = true
+    checkpointer = Checkpointer(model; schedule, dir, prefix, cleanup)
+    simulation.output_writers[:checkpointer] = checkpointer
+
+    return nothing
+
+end
+checkpointer_setup!(simulation, model, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

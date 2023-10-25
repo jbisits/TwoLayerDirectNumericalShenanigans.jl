@@ -183,11 +183,14 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Potential density
     σ = seawater_density(model, geopotential_height = 0)
 
-    # Inferred vertical diffusivity
-    b_flux = vertical_buoyancy_flux(model)
-    ∫ₐb_flux = Integral(b_flux, dims = (1, 2))
-    b_grad = ∂b∂z(model)
-    ∫ₐb_grad = Integral(b_grad, dims = (1, 2))
+    # Inferred vertical temperature diffusivity
+    T_mean = Average(T)
+    T′ = T - Field(T_mean)
+    w′ = wᶜᶜᶜ(model)
+    w′T′ = Field(w′ * T′)
+    ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
+    T_gradient = ∂z(T)
+    ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
 
     ϵ = KineticEnergyDissipationRate(model)
     # Volume integrated TKE dissipation
@@ -204,14 +207,14 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "∫ₐb_flux" => Dict("longname" => "Horizontally integrated vertical buoyacny flux (w'b')"),
-        "∫ₐb_grad" => Dict("longname" => "Horizontally integrated vertical buoyancy gradient (∂b/∂z)"),
+        "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temperature flux (w′T′)"),
+        "∫ₐT_gradient" => Dict("longname" => "Horizontally integrated vertical temperature gradient (∂T/∂z)"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
     outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ,
-                  "∫ₐb_flux" => ∫ₐb_flux, "∫ₐb_grad" => ∫ₐb_grad)
+                  "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)
     if save_velocities
         u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)

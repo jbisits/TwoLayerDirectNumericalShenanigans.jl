@@ -1,5 +1,5 @@
 "`(Center, Center, Center)` vertical velocity `Field`"
-wᶜᶜᶜ(model) = wᶜᶜᶜ(model.veolcities.w, model.grid)
+wᶜᶜᶜ(model) = wᶜᶜᶜ(model.velocities.w, model.grid)
 wᶜᶜᶜ(w, grid) = KernelFunctionOperation{Center, Center, Center}(ℑzᵃᵃᶜ, grid, w)
 "`(Center, Center, Face)` vertical buoyancy gradient `Field`"
 ∂b∂z(model) = ∂b∂z(model.buoyancy, model.grid, model.tracers)
@@ -33,6 +33,18 @@ function InferredVerticalDiffusivity(model)
     w = model.velocities.w
 
     return KernelFunctionOperation{Center, Center, Center}(Kᵥ, grid, b, C, w)
+end
+
+@inline tracer_perturbationᶜᶜᶜ(i, j, k, grid, tracer, tracer_mean) = tracer[i, j, k] - tracer_mean
+@inline vertical_tracer_flux(i, j, k, grid, tracer, tracer_mean, w) =
+        -ℑzᵃᵃᶜ(i, j, k, w) * tracer_perturbationᶜᶜᶜ(i, j, k, grid, tracer, tracer_mean)
+@inline function vertical_tracer_flux(model, tracer)
+
+    grid = model.grid
+    tracer_mean = Average(tracer)
+    w = model.velocities.w
+
+    return KernelFunctionOperation{Center, Center, Center}(vertical_tracer_flux, grid, tracer, tracer_mean, w)
 end
 
 ## This has been implemented (by me) in Oceananigans.jl as of v0.89.3. Once I know

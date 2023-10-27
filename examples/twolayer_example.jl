@@ -29,7 +29,9 @@ set_two_layer_initial_conditions!(dns)
 Δt = 1e-4
 stop_time = 60
 save_schedule = 0.5 # seconds
-simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule, overwrite_existing = true)
+output_path = joinpath(@__DIR__, "outputs/")
+simulation = DNS_simulation_setup(dns, Δt, stop_time, save_schedule,
+                                  overwrite_existing = true; output_path)
 
 ## Run the simulation
 run!(simulation)

@@ -3,7 +3,7 @@
 Container for all the elements of a `TwoLayerDNS`.
 """
 struct TwoLayerDNS{NHM <: NonhydrostaticModel,
-                  APF <: AbstractProfileFunction,
+                   APF <: AbstractProfileFunction,
                   TLIC <: TwoLayerInitialConditions,
                    ATP <: Union{AbstractTracerPerturbation, Nothing},
                     AN <: Union{AbstractNoise, Nothing}} <: AbstractTwoLayerDNS
@@ -219,7 +219,7 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
     # outputs to be saved during the simulation
     outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ,
-                  "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)
+                   "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)
     if save_velocities
         u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)

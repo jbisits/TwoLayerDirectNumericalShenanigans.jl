@@ -28,7 +28,7 @@ abstract type AbstractProfileFunction end
 "Abstract supertype for dns initial conditions."
 abstract type AbstractInitialConditions end
 
-export TwoLayerDNS, DNS, DNS_simulation_setup
+export TwoLayerDNS, DNSModel, TLDNS_simulation_setup
 
 export
     StableUpperLayerInitialConditions,

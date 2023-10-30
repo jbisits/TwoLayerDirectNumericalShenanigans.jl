@@ -1,8 +1,8 @@
 # Need to write these to check things are set at the right level in the right field
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 500)
-model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-            reference_density = REFERENCE_DENSITY)
+model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+                reference_density = REFERENCE_DENSITY)
 
 ## set initial conditions, currently there are four options available in this submodule
 initial_conditions = StableTwoLayerInitialConditions(0, 0, 0, 0, 0, 0)

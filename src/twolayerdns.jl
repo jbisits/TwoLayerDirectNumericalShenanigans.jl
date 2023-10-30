@@ -187,7 +187,7 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
 
     # Custom saved output
     # Potential density
-    σ = seawater_density(model, geopotential_height = 0)
+    σ = seawater_density(model, geopotential_height = density_reference_gp_height)
 
     # Inferred vertical temperature diffusivity
     # T_mean = Average(T)

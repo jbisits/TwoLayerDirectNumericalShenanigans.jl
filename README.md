@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/jbisits/TwoLayerDirectNumericalShenanigans.jl/actions/workflows/CI.yml/badge.svg?branch=main)](https://github.com/jbisits/TwoLayerDirectNumericalShenanigans.jl/actions/workflows/CI.yml?query=branch%3Amain)
 
-A Julia package (unregistered) to explore the cabbeling instability using Direct Numerical Simulation experiments built with [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
+A Julia package (unregistered) to explore two layer systems using Direct Numerical Simulation experiments built with [Oceananigans.jl](https://github.com/CliMA/Oceananigans.jl).
 
 To add the package (assuming julia is already installed):
 

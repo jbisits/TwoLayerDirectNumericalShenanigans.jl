@@ -63,7 +63,7 @@ include("initialconditions_test.jl")
 
     for tb ∈ tracer_profile_perturbations
 
-        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
                     reference_density = REFERENCE_DENSITY)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
         set_two_layer_initial_conditions!(dns)
@@ -80,7 +80,7 @@ end
 
     for tb ∈ tracer_blob_perturbations
 
-        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
                     reference_density = REFERENCE_DENSITY)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
         set_two_layer_initial_conditions!(dns)
@@ -94,7 +94,7 @@ end
 
     for tn ∈ tracer_noise_perturbations
 
-        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
                     reference_density = REFERENCE_DENSITY)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tn)
         set_two_layer_initial_conditions!(dns)
@@ -104,7 +104,7 @@ end
     end
     for tnv ∈ tracer_noise_perturbations_vec
 
-        model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
                     reference_density = REFERENCE_DENSITY)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tnv)
         set_two_layer_initial_conditions!(dns)
@@ -117,7 +117,7 @@ end
 
 @testset "Step change" begin
 
-    model = DNS(architecture, DOMAIN_EXTENT, resolution, diffusivities;
+    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
                 reference_density = REFERENCE_DENSITY)
     profile_function = StepChange(z[depth_idx])
     initial_conditions = TwoLayerInitialConditions(34.551, -1.5, 34.7, 0.5)

@@ -33,9 +33,10 @@ Base.iterate(tldns::TwoLayerDNS, state = 1) =
     state > length(fieldnames(TwoLayerDNS)) ? nothing :
                                             (getfield(tldns, state), state + 1)
 """
-    function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
-                 diffusivities::NamedTuple)
-Setup a Direct Numerical Simulation on `architecture` (`CPU()` or `GPU()`) over the
+    function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
+                      diffusivities::NamedTuple)
+Setup a Direct Numerical Simulation [`Model`](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.Models.NonhydrostaticModels.NonhydrostaticModel-Tuple{})
+on `architecture` (`CPU()` or `GPU()`) over the
 `domain_extent` with `resolution` and scalar diffusivities for momentum
 (kinematic viscosity `ν`) and the temperature and salinity tracers (`κₜ` and `κₛ`).
 To evolve the temperature and salinity tracers, the [polynomial approximation to the
@@ -66,15 +67,15 @@ the rate `stretching`, if `false` uniform grid spacing is used;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
 - `stretching = 100` rate of stretching at the bottom of grid in the `z` dimension.
 """
-function DNS(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
-             diffusivities::NamedTuple;
-             linear_eos = false,
-             α = 1.67e-4,
-             β = 7.80e-4,
-             reference_density = nothing,
-             zgrid_stretching = false,
-             refinement = 1.05,
-             stretching = 40)
+function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
+                  diffusivities::NamedTuple;
+                  linear_eos = false,
+                  α = 1.67e-4,
+                  β = 7.80e-4,
+                  reference_density = nothing,
+                  zgrid_stretching = false,
+                  refinement = 1.05,
+                  stretching = 40)
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
@@ -127,11 +128,11 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
 
 end
 """
-    function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number, stop_time::Number,
-                                  save_schedule::Number;  cfl = 0.75, diffusive_cfl = 0.75,
-                                  max_change = 1.2, max_Δt = 1e-1)
-Setup a DNS from `initial_conditions` that are of type `TwoLayerInitialConditions`.
-Important non-dimensional numnbers that are part of this experiment are computed and saved
+    function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number, stop_time::Number,
+                                    save_schedule::Number;  cfl = 0.75, diffusive_cfl = 0.75,
+                                    max_change = 1.2, max_Δt = 1e-1)
+Setup a `Simulation` of `dns` from `initial_conditions` that are of type `TwoLayerInitialConditions`.
+Important non-dimensional numbers that are part of this experiment are computed and saved
 to the simulation output file.
 
 ## Function arguments:
@@ -161,18 +162,18 @@ there is no `Checkpointer`.
 - `overwrite_existing` whether the output overwrites a file of the same name, default is
 `false`.
 """
-function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
-                              stop_time::Number, save_schedule::Number,
-                              output_writer::Symbol=:netcdf;
-                              output_path = SIMULATION_PATH,
-                              checkpointer_time_interval = nothing,
-                              cfl = 0.75,
-                              diffusive_cfl = 0.75,
-                              max_change = 1.2,
-                              max_Δt = 1e-1,
-                              density_reference_gp_height = 0,
-                              overwrite_existing = false,
-                              save_velocities = false)
+function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
+                                stop_time::Number, save_schedule::Number,
+                                output_writer::Symbol=:netcdf;
+                                output_path = SIMULATION_PATH,
+                                checkpointer_time_interval = nothing,
+                                cfl = 0.75,
+                                diffusive_cfl = 0.75,
+                                max_change = 1.2,
+                                max_Δt = 1e-1,
+                                density_reference_gp_height = 0,
+                                overwrite_existing = false,
+                                save_velocities = false)
 
     model = dns.model
     simulation = Simulation(model; Δt, stop_time)
@@ -189,13 +190,13 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     σ = seawater_density(model, geopotential_height = 0)
 
     # Inferred vertical temperature diffusivity
-    T_mean = Average(T)
-    T′ = T - Field(T_mean)
-    w′ = wᶜᶜᶜ(model)
-    w′T′ = Field(w′ * T′)
-    ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
-    T_gradient = ∂z(T)
-    ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
+    # T_mean = Average(T)
+    # T′ = T - Field(T_mean)
+    # w′ = wᶜᶜᶜ(model)
+    # w′T′ = Field(w′ * T′)
+    # ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
+    # T_gradient = ∂z(T)
+    # ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
 
     ϵ = KineticEnergyDissipationRate(model)
     # Volume integrated TKE dissipation
@@ -212,14 +213,14 @@ function DNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temperature flux (w′T′)"),
-        "∫ₐT_gradient" => Dict("longname" => "Horizontally integrated vertical temperature gradient (∂T/∂z)"),
+        # "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temperature flux (w′T′)"),
+        # "∫ₐT_gradient" => Dict("longname" => "Horizontally integrated vertical temperature gradient (∂T/∂z)"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
         )
 
     # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ,
-                   "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)
+    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ)#=,
+                   "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)=#
     if save_velocities
         u, v, w = model.velocities
         velocities = Dict("u" => u, "v" => v, "w" => w)

@@ -128,10 +128,10 @@ function grid_stretching(Lz::Number, Nz::Number, refinement::Number, stretching:
 
 end
 """
-    function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number, stop_time::Number,
+    function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number, stop_time::Number,
                                     save_schedule::Number;  cfl = 0.75, diffusive_cfl = 0.75,
                                     max_change = 1.2, max_Δt = 1e-1)
-Setup a `Simulation` of `dns` from `initial_conditions` that are of type `TwoLayerInitialConditions`.
+Setup a `Simulation` of `tldns` from `initial_conditions` that are of type `TwoLayerInitialConditions`.
 Important non-dimensional numbers that are part of this experiment are computed and saved
 to the simulation output file.
 
@@ -144,7 +144,7 @@ the course of a simulation;
 - `savefile` name of the file to save the data to,
 - `save_schedule` number (representing time in seconds) at which to save model output, e.g.,
 `save_schedule = 1` saves output every second;
-- `output_writer` a `Symbol` (either `:netcdf` or `:jld2`) choosing whether to save data in
+- `save_file` a `Symbol` (either `:netcdf` or `:jld2`) choosing whether to save data in
 `NetCDF` format (`.nc`) ot `JLD2` format ('.jld2).
 
 ## Keyword arguments:
@@ -159,12 +159,12 @@ there is no `Checkpointer`.
 - `max_Δt` the maximum timestep;
 - `density_reference_gp_height` for the seawater density calculation;
 - `save_velocities` defaults to `false`, if `true` model velocities will be saved to output;
-- `overwrite_existing` whether the output overwrites a file of the same name, default is
-`false`.
+- `overwrite_saved_output` whether the output overwrites a file of the same name, default is
+`true`.
 """
-function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
-                                stop_time::Number, save_schedule::Number,
-                                output_writer::Symbol=:netcdf;
+function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
+                                stop_time::Number, save_schedule::Number;
+                                save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
                                 cfl = 0.75,
@@ -172,10 +172,10 @@ function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
                                 density_reference_gp_height = 0,
-                                overwrite_existing = false,
+                                overwrite_saved_output = nothing,
                                 save_velocities = false)
 
-    model = dns.model
+    model = tldns.model
     simulation = Simulation(model; Δt, stop_time)
 
     # time step adjustments
@@ -204,9 +204,6 @@ function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
     # Minimum in space Kolmogorov length scale
     η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
 
-    # Volume integrated TKE dissipation
-    ∫ϵ = Integral(ϵ)
-
     # Dimensions and attributes for custom saved output
     dims = Dict("η_space" => ())
     oa = Dict(
@@ -227,11 +224,10 @@ function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
         merge!(outputs, velocities)
     end
 
-    filename = form_filename(dns, stop_time, output_writer, output_path)
-    simulation.output_writers[:outputs] = output_writer == :netcdf ?
-                                            NetCDFOutputWriter(model, outputs;
-                                                            filename,
-                                                            overwrite_existing,
+    filename = form_filename(tldns, stop_time, save_file, output_path)
+    simulation.output_writers[:outputs] = save_file == :netcdf ?
+                                            NetCDFOutputWriter(model, outputs; filename,
+                                                            overwrite_existing = overwrite_saved_output,
                                                             schedule = TimeInterval(save_schedule),
                                                             dimensions = dims,
                                                             output_attributes = oa
@@ -239,10 +235,10 @@ function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
                                             JLD2OutputWriter(model, outputs;
                                                             filename,
                                                             schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing)
+                                                            overwrite_existing = overwrite_saved_output)
 
-    non_dimensional_numbers!(simulation, dns)
-    predicted_maximum_density!(simulation, dns)
+    non_dimensional_numbers!(simulation, tldns)
+    predicted_maximum_density!(simulation, tldns)
 
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
@@ -253,26 +249,26 @@ function TLDNS_simulation_setup(dns::TwoLayerDNS, Δt::Number,
 
 end
 """
-    function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol, output_path::AbstractString)
+    function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_path)
 Create a filename for saved output based on the `profile_function`,`initial_conditions`,
 `tracer_perturbation` and length of the simulation.
 """
-function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbol, output_path::AbstractString)
+function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_path)
 
-    pf_string = lowercase(string(typeof(dns.profile_function))[1:findfirst('{', string(typeof(dns.profile_function))) - 1])
-    ic_type = typeof(dns.initial_conditions)
+    pf_string = lowercase(string(typeof(tldns.profile_function))[1:findfirst('{', string(typeof(tldns.profile_function))) - 1])
+    ic_type = typeof(tldns.initial_conditions)
     ic_string = ic_type <: StableTwoLayerInitialConditions ? "stable" :
                             ic_type <: CabbelingTwoLayerInitialConditions ?
                                 "cabbeling" : ic_type <: UnstableTwoLayerInitialConditions ?
                                               "unstable" : ic_type <: IsohalineTwoLayerInitialConditions ?
                                                             "isohaline" : "isothermal"
 
-    tp_string = lowercase(string(typeof(dns.tracer_perturbation)))
+    tp_string = lowercase(string(typeof(tldns.tracer_perturbation)))
     tp_find = isnothing(findfirst('{', tp_string)) ? length(tp_string) :
                                                      findfirst('{', tp_string) - 1
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
-    filetype = output_writer == :netcdf ? ".nc" : ".jld2"
+    filetype = save_file == :netcdf ? ".nc" : ".jld2"
     savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" * filetype
 
     # make a simulation directory if one is not present
@@ -285,11 +281,11 @@ function form_filename(dns::TwoLayerDNS, stop_time::Number, output_writer::Symbo
 
 end
 """
-    function checkpointer_setup!(simulation, model, checkpointer_time_interval)
+    function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
 """
-function checkpointer_setup!(simulation::Simulation, model::Oceananigans.AbstractModel,
-                             output_path::AbstractString, checkpointer_time_interval::Number)
+function checkpointer_setup!(simulation, model, output_path,
+                             checkpointer_time_interval::Number)
 
     dir = output_path == SIMULATION_PATH ? CHECKPOINT_PATH :
                                            joinpath(output_path, "model_checkpoints/")

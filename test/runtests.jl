@@ -1,5 +1,6 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
+using Oceananigans.Fields
 using SeawaterPolynomials
 using NCDatasets, JLD2
 import SeawaterPolynomials.ρ

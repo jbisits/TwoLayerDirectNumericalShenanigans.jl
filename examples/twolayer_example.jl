@@ -29,7 +29,7 @@ set_two_layer_initial_conditions!(tldns)
 Δt = 1e-4
 stop_time = 60
 save_schedule = 0.5 # seconds
-output_path = joinpath(@__DIR__, "outputs")
+output_path = joinpath(@__DIR__, "outputs/")
 simulation = TLDNS_simulation_setup(tldns, Δt, stop_time, save_schedule; output_path)
 
 ## Run the simulation

@@ -157,7 +157,7 @@ there is no `Checkpointer`.
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
-- `density_reference_gp_height` for the seawater density calculation;
+- `reference_gp_height` for the `seawater_density` calculation;
 - `save_velocities` defaults to `false`, if `true` model velocities will be saved to output;
 - `overwrite_saved_output` whether the output overwrites a file of the same name, default is
 `true`.
@@ -171,8 +171,8 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                density_reference_gp_height = 0,
-                                overwrite_saved_output = nothing,
+                                reference_gp_height = 0,
+                                overwrite_saved_output = true,
                                 save_velocities = false)
 
     model = tldns.model
@@ -182,78 +182,36 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
     wizard = TimeStepWizard(; cfl, diffusive_cfl, max_change, max_Δt)
     simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
+    # progress reporting
+    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
+
+    filename = form_filename(tldns, stop_time, output_path)
+    save_info = (save_schedule, save_file, filename, overwrite_saved_output)
+
     # model tracers
-    S, T = model.tracers.S, model.tracers.T
+    save_tracers!(simulation, model, save_info)
+
+    # model velocities
+    save_velocities ? save_velocities!(simulation, model, save_info) : nothing
 
     # Custom saved output
-    # Potential density
-    σ = seawater_density(model, geopotential_height = density_reference_gp_height)
+    save_computed_output!(simulation, model, save_info, reference_gp_height)
 
-    # Inferred vertical temperature diffusivity
-    # T_mean = Average(T)
-    # T′ = T - Field(T_mean)
-    # w′ = wᶜᶜᶜ(model)
-    # w′T′ = Field(w′ * T′)
-    # ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
-    # T_gradient = ∂z(T)
-    # ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
-
-    ϵ = KineticEnergyDissipationRate(model)
-    # Volume integrated TKE dissipation
-    ∫ϵ = Integral(ϵ)
-    # Minimum in space Kolmogorov length scale
-    η_space(model) = (model.closure.ν^3 / maximum(ϵ))^(1/4)
-
-    # Dimensions and attributes for custom saved output
-    dims = Dict("η_space" => ())
-    oa = Dict(
-        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(density_reference_gp_height)dbar",
-                    "units" => "kgm⁻³"),
-        "η_space" => Dict("longname" => "Minimum (in space) Kolmogorov length"),
-        # "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temperature flux (w′T′)"),
-        # "∫ₐT_gradient" => Dict("longname" => "Horizontally integrated vertical temperature gradient (∂T/∂z)"),
-        "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
-        )
-
-    # outputs to be saved during the simulation
-    outputs = Dict("S" => S, "T" => T, "η_space" => η_space, "σ" => σ, "∫ϵ" => ∫ϵ)#=,
-                   "∫ₐw′T′" => ∫ₐw′T′, "∫ₐT_gradient" => ∫ₐT_gradient)=#
-    if save_velocities
-        u, v, w = model.velocities
-        velocities = Dict("u" => u, "v" => v, "w" => w)
-        merge!(outputs, velocities)
-    end
-
-    filename = form_filename(tldns, stop_time, save_file, output_path)
-    simulation.output_writers[:outputs] = save_file == :netcdf ?
-                                            NetCDFOutputWriter(model, outputs; filename,
-                                                            overwrite_existing = overwrite_saved_output,
-                                                            schedule = TimeInterval(save_schedule),
-                                                            dimensions = dims,
-                                                            output_attributes = oa
-                                                            ) :
-                                            JLD2OutputWriter(model, outputs;
-                                                            filename,
-                                                            schedule = TimeInterval(save_schedule),
-                                                            overwrite_existing = overwrite_saved_output)
+    # Checkpointer setup
+    checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 
     non_dimensional_numbers!(simulation, tldns)
     predicted_maximum_density!(simulation, tldns)
-
-    # progress reporting
-    simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
-    # Checkpointer setup
-    checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 
     return simulation
 
 end
 """
-    function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_path)
+    function form_filename(tldns::TwoLayerDNS, stop_time::Number, output_path)
 Create a filename for saved output based on the `profile_function`,`initial_conditions`,
 `tracer_perturbation` and length of the simulation.
 """
-function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_path)
+function form_filename(tldns::TwoLayerDNS, stop_time::Number, output_path)
 
     pf_string = lowercase(string(typeof(tldns.profile_function))[1:findfirst('{', string(typeof(tldns.profile_function))) - 1])
     ic_type = typeof(tldns.initial_conditions)
@@ -268,8 +226,7 @@ function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_
                                                      findfirst('{', tp_string) - 1
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
-    filetype = save_file == :netcdf ? ".nc" : ".jld2"
-    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" * filetype
+    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" #* filetype
 
     # make a simulation directory if one is not present
     if !isdir(output_path)
@@ -280,6 +237,105 @@ function form_filename(tldns::TwoLayerDNS, stop_time::Number, save_file, output_
     return filename
 
 end
+"""
+    function save_tracers!(simulation, model, save_schedule, save_file, filename, overwrite_saved_output)
+Save `model.tracers` during a `Simulation` using an `OutputWriter`.
+"""
+function save_tracers!(simulation, model, save_schedule, save_file, filename,
+                       overwrite_saved_output)
+
+    S, T = model.tracers.S, model.tracers.T
+    tracers = Dict("S" => S, "T" => T)
+
+    simulation.output_writers[:tracers] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
+                                                  filename = filename*"_tracers",
+                                                  overwrite_existing = overwrite_saved_output,
+                                                  schedule = TimeInterval(save_schedule)
+                                                  ) :
+                                JLD2OutputWriter(model, tracers;
+                                                 filename = filename*"_tracers",
+                                                 schedule = TimeInterval(save_schedule),
+                                                 overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_tracers!(simulation, model, save_info::Tuple) =
+    save_tracers!(simulation, model, save_info...)
+"""
+    function save_velocities!(simulation, model, save_schedule, save_file, filename,
+                              overwrite_saved_output)
+Save `model.velocities` during a `Simulation` using an `OutputWriter`.
+"""
+function save_velocities!(simulation, model, save_schedule, save_file, filename,
+                          overwrite_saved_output)
+
+    u, v, w = model.velocities
+    velocities = Dict("u" => u, "v" => v, "w" => w)
+
+    simulation.output_writers[:velocities] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
+                                                filename = filename*"_velocities",
+                                                overwrite_existing = overwrite_saved_output,
+                                                schedule = TimeInterval(save_schedule)
+                                                ) :
+                                JLD2OutputWriter(model, velocities;
+                                                filename = filename*"_velocities",
+                                                schedule = TimeInterval(save_schedule),
+                                                overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_velocities!(simulation, model, save_info::Tuple) =
+    save_velocities!(simulation, model, save_info...)
+"""
+    function save_computed_output!(simulation, model, save_schedule, save_file, filename,
+                                   overwrite_saved_output, reference_gp_height)
+Save selection of computed output during a `Simulation` using an `OutputWriter`.
+"""
+function save_computed_output!(simulation, model, save_schedule, save_file, filename,
+                               overwrite_saved_output, reference_gp_height)
+
+    σ = seawater_density(model, geopotential_height = reference_gp_height)
+    ϵ = KineticEnergyDissipationRate(model)
+    ∫ϵ = Integral(ϵ)
+    ϵ_maximum = Reduction(maximum!, ϵ, dims = (1, 2, 3))
+    computed_outputs = Dict("σ" => σ, "∫ϵ" => ∫ϵ, "ϵ_maximum" => ϵ_maximum)
+    oa = Dict(
+        "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",
+                    "units" => "kgm⁻³"),
+        "ϵ_maximum" => Dict("longname" => "Maximum (in space) TKE dissipation"),
+        "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
+        )
+
+    #TODO: finish this calculation.
+    # Inferred vertical temperature diffusivity
+    # T_mean = Average(T)
+    # T′ = T - Field(T_mean)
+    # w′ = wᶜᶜᶜ(model)
+    # w′T′ = Field(w′ * T′)
+    # ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
+    # T_gradient = ∂z(T)
+    # ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
+    simulation.output_writers[:computed_output] =
+        save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
+                                                filename = filename*"_computed_output",
+                                                overwrite_existing = overwrite_saved_output,
+                                                schedule = TimeInterval(save_schedule),
+                                                output_attributes = oa
+                                                ) :
+                                JLD2OutputWriter(model, outputs;
+                                                filename = filename*"_computed_output",
+                                                schedule = TimeInterval(save_schedule),
+                                                overwrite_existing = overwrite_saved_output)
+
+    return nothing
+
+end
+save_computed_output!(simulation, model, save_info::Tuple, reference_gp_height) =
+    save_computed_output!(simulation, model, save_info..., reference_gp_height)
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`

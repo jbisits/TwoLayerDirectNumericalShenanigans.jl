@@ -1,6 +1,7 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
 using SeawaterPolynomials
+using NCDatasets, JLD2
 import SeawaterPolynomials.ρ
 using GibbsSeaWater: gsw_p_from_z
 using CUDA: has_cuda_gpu
@@ -132,6 +133,50 @@ end
     @test isequal(test_depth, find_depth(model, test_depth))
     test_depth_range = vcat(z[10], z[20])
     @test isequal(z[10:20], find_depth(model, test_depth_range))
+end
+
+include("output_test.jl")
+@testset "Saving output" begin
+
+    @testset "NetCDF" begin
+        simulation, td, tldns = run_sim(:netcdf)
+        NCDataset(simulation.output_writers[:tracers].filepath) do ds
+            S, T = ds[:S], ds[:T]
+            @test all(S[:, :, 1:td, :]     .== tldns.initial_conditions.S₀ˡ)
+            @test all(S[:, :, td+1:end, :] .== tldns.initial_conditions.S₀ᵘ)
+            @test all(T[:, :, 1:td, :]     .== tldns.initial_conditions.T₀ˡ)
+            @test all(T[:, :, td+1:end, :] .== tldns.initial_conditions.T₀ᵘ)
+        end
+        NCDataset(simulation.output_writers[:computed_output].filepath) do ds
+            σ = ds[:σ]
+            @test all(σ[:, :, 1:td, :] .== SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ˡ,
+                                             tldns.initial_conditions.S₀ˡ, 0,
+                                             tldns.model.buoyancy.model.equation_of_state))
+            @test all(σ[:, :, td+1:end, :] .== SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ᵘ,
+                                                 tldns.initial_conditions.S₀ᵘ, 0,
+                                                 tldns.model.buoyancy.model.equation_of_state))
+        end
+    end
+
+    @testset "jld2" begin
+        simulation, td, tldns = run_sim(:jld2)
+        S = FieldTimeSeries(simulation.output_writers[:tracers].filepath, "S")
+        T = FieldTimeSeries(simulation.output_writers[:tracers].filepath, "T")
+        @test all(S.data[:, :, 1:td, :]     .== tldns.initial_conditions.S₀ˡ)
+        @test all(S.data[:, :, td+1:end, :] .== tldns.initial_conditions.S₀ᵘ)
+        @test all(T.data[:, :, 1:td, :]     .== tldns.initial_conditions.T₀ˡ)
+        @test all(T.data[:, :, td+1:end, :] .== tldns.initial_conditions.T₀ᵘ)
+        σ = FieldTimeSeries(simulation.output_writers[:computed_output].filepath, "σ")
+        @test all(σ.data[:, :, 1:td, :] .==
+                SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ˡ,
+                                      tldns.initial_conditions.S₀ˡ, 0,
+                                      tldns.model.buoyancy.model.equation_of_state))
+        @test all(σ.data[:, :, td+1:end, :] .==
+                SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ᵘ,
+                                      tldns.initial_conditions.S₀ᵘ, 0,
+                                      tldns.model.buoyancy.model.equation_of_state))
+    end
+
 end
 
 # include("kernelfunction_test.jl")

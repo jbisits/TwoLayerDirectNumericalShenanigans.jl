@@ -326,7 +326,7 @@ function save_computed_output!(simulation, model, save_schedule, save_file, file
                                                 schedule = TimeInterval(save_schedule),
                                                 output_attributes = oa
                                                 ) :
-                                JLD2OutputWriter(model, outputs;
+                                JLD2OutputWriter(model, computed_outputs;
                                                 filename = filename*"_computed_output",
                                                 schedule = TimeInterval(save_schedule),
                                                 overwrite_existing = overwrite_saved_output)

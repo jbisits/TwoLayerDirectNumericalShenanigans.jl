@@ -141,7 +141,7 @@ to the simulation output file.
 - `Δt` timestep. A timestep wizard is also setup so the size of the timestep may change over
 the course of a simulation;
 - `stop_time` length of simulation time (in seconds) to run the model for;
-- `savefile` name of the file to save the data to,
+- `output_dir` name of the file to save the data to,
 - `save_schedule` number (representing time in seconds) at which to save model output, e.g.,
 `save_schedule = 1` saves output every second;
 - `save_file` a `Symbol` (either `:netcdf` or `:jld2`) choosing whether to save data in
@@ -157,7 +157,6 @@ there is no `Checkpointer`.
 - `diffusive_cfl` maximum diffusive cfl value used to determine the adaptive timestep size;
 - `max_change` maximum change in the timestep size;
 - `max_Δt` the maximum timestep;
-- `reference_gp_height` for the `seawater_density` calculation;
 - `save_velocities` defaults to `false`, if `true` model velocities will be saved to output;
 - `overwrite_saved_output` whether the output overwrites a file of the same name, default is
 `true`.
@@ -171,7 +170,6 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
                                 diffusive_cfl = 0.75,
                                 max_change = 1.2,
                                 max_Δt = 1e-1,
-                                reference_gp_height = 0,
                                 overwrite_saved_output = true,
                                 save_velocities = false)
 
@@ -185,8 +183,8 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
     # progress reporting
     simulation.callbacks[:progress] = Callback(simulation_progress, IterationInterval(100))
 
-    filename = form_filename(tldns, stop_time, output_path)
-    save_info = (save_schedule, save_file, filename, overwrite_saved_output)
+    output_dir = output_directory(tldns, stop_time, output_path)
+    save_info = (save_schedule, save_file, output_dir, overwrite_saved_output)
 
     # model tracers
     save_tracers!(simulation, model, save_info)
@@ -195,10 +193,10 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
     save_velocities ? save_velocities!(simulation, model, save_info) : nothing
 
     # Custom saved output
-    save_computed_output!(simulation, model, save_info, reference_gp_height)
+    save_computed_output!(simulation, model, save_info)
 
     # Checkpointer setup
-    checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
+    checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
 
     non_dimensional_numbers!(simulation, tldns)
     predicted_maximum_density!(simulation, tldns)
@@ -207,11 +205,11 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
 
 end
 """
-    function form_filename(tldns::TwoLayerDNS, stop_time::Number, output_path)
-Create a filename for saved output based on the `profile_function`,`initial_conditions`,
+    function output_directory(tldns::TwoLayerDNS, stop_time::Number, output_path)
+Create an `output_directory` for saved output based on the `profile_function`,`initial_conditions`,
 `tracer_perturbation` and length of the simulation.
 """
-function form_filename(tldns::TwoLayerDNS, stop_time::Number, output_path)
+function output_directory(tldns::TwoLayerDNS, stop_time::Number, output_path)
 
     pf_string = lowercase(string(typeof(tldns.profile_function))[1:findfirst('{', string(typeof(tldns.profile_function))) - 1])
     ic_type = typeof(tldns.initial_conditions)
@@ -226,22 +224,22 @@ function form_filename(tldns::TwoLayerDNS, stop_time::Number, output_path)
                                                      findfirst('{', tp_string) - 1
     stop_time_min = stop_time / 60 ≥ 1 ? string(round(Int, stop_time / 60)) :
                                          string(round(stop_time / 60; digits = 2))
-    savefile = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min" #* filetype
+    expt_dir = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min"
 
+    output_dir = joinpath(output_path, expt_dir)
     # make a simulation directory if one is not present
-    if !isdir(output_path)
-        mkdir(output_path)
+    if !isdir(output_dir)
+        mkdir(output_dir)
     end
-    filename = joinpath(output_path, savefile)
 
-    return filename
+    return output_dir
 
 end
 """
-    function save_tracers!(simulation, model, save_schedule, save_file, filename, overwrite_saved_output)
+    function save_tracers!(simulation, model, save_schedule, save_file, output_dir, overwrite_saved_output)
 Save `model.tracers` during a `Simulation` using an `OutputWriter`.
 """
-function save_tracers!(simulation, model, save_schedule, save_file, filename,
+function save_tracers!(simulation, model, save_schedule, save_file, output_dir,
                        overwrite_saved_output)
 
     S, T = model.tracers.S, model.tracers.T
@@ -249,12 +247,14 @@ function save_tracers!(simulation, model, save_schedule, save_file, filename,
 
     simulation.output_writers[:tracers] =
         save_file == :netcdf ? NetCDFOutputWriter(model, tracers;
-                                                  filename = filename*"_tracers",
+                                                  filename = "tracers",
+                                                  dir = output_dir,
                                                   overwrite_existing = overwrite_saved_output,
                                                   schedule = TimeInterval(save_schedule)
                                                   ) :
                                 JLD2OutputWriter(model, tracers;
-                                                 filename = filename*"_tracers",
+                                                 filename = "tracers",
+                                                 dir = output_dir,
                                                  schedule = TimeInterval(save_schedule),
                                                  overwrite_existing = overwrite_saved_output)
 
@@ -264,11 +264,11 @@ end
 save_tracers!(simulation, model, save_info::Tuple) =
     save_tracers!(simulation, model, save_info...)
 """
-    function save_velocities!(simulation, model, save_schedule, save_file, filename,
+    function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
                               overwrite_saved_output)
 Save `model.velocities` during a `Simulation` using an `OutputWriter`.
 """
-function save_velocities!(simulation, model, save_schedule, save_file, filename,
+function save_velocities!(simulation, model, save_schedule, save_file, output_dir,
                           overwrite_saved_output)
 
     u, v, w = model.velocities
@@ -276,12 +276,14 @@ function save_velocities!(simulation, model, save_schedule, save_file, filename,
 
     simulation.output_writers[:velocities] =
         save_file == :netcdf ? NetCDFOutputWriter(model, velocities;
-                                                filename = filename*"_velocities",
+                                                filename = "velocities",
+                                                dir = output_dir,
                                                 overwrite_existing = overwrite_saved_output,
                                                 schedule = TimeInterval(save_schedule)
                                                 ) :
                                 JLD2OutputWriter(model, velocities;
-                                                filename = filename*"_velocities",
+                                                filename = "velocities",
+                                                dir = output_dir,
                                                 schedule = TimeInterval(save_schedule),
                                                 overwrite_existing = overwrite_saved_output)
 
@@ -291,11 +293,11 @@ end
 save_velocities!(simulation, model, save_info::Tuple) =
     save_velocities!(simulation, model, save_info...)
 """
-    function save_computed_output!(simulation, model, save_schedule, save_file, filename,
+    function save_computed_output!(simulation, model, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
 Save selection of computed output during a `Simulation` using an `OutputWriter`.
 """
-function save_computed_output!(simulation, model, save_schedule, save_file, filename,
+function save_computed_output!(simulation, model, save_schedule, save_file, output_dir,
                                overwrite_saved_output, reference_gp_height)
 
     σ = seawater_density(model, geopotential_height = reference_gp_height)
@@ -321,43 +323,41 @@ function save_computed_output!(simulation, model, save_schedule, save_file, file
     # ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
     simulation.output_writers[:computed_output] =
         save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
-                                                filename = filename*"_computed_output",
+                                                filename = "computed_output",
+                                                dir = output_dir,
                                                 overwrite_existing = overwrite_saved_output,
                                                 schedule = TimeInterval(save_schedule),
                                                 output_attributes = oa
                                                 ) :
                                 JLD2OutputWriter(model, computed_outputs;
-                                                filename = filename*"_computed_output",
+                                                filename = "computed_output",
+                                                dir = output_dir,
                                                 schedule = TimeInterval(save_schedule),
                                                 overwrite_existing = overwrite_saved_output)
 
     return nothing
 
 end
-save_computed_output!(simulation, model, save_info::Tuple, reference_gp_height) =
+save_computed_output!(simulation, model, save_info::Tuple; reference_gp_height = 0) =
     save_computed_output!(simulation, model, save_info..., reference_gp_height)
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`
 """
-function checkpointer_setup!(simulation, model, output_path,
+function checkpointer_setup!(simulation, model, output_dir,
                              checkpointer_time_interval::Number)
 
-    dir = output_path == SIMULATION_PATH ? CHECKPOINT_PATH :
-                                           joinpath(output_path, "model_checkpoints/")
-    isdir(dir) ? nothing : mkdir(dir)
+    checkpoint_dir = joinpath(output_dir, "model_checkpoints/")
+    isdir(checkpoint_dir) ? nothing : mkdir(checkpoint_dir)
     schedule = TimeInterval(checkpointer_time_interval)
-    sim_name_start = findlast('/', simulation.output_writers[:outputs].filepath) + 1
-    sim_name_end = findlast('.', simulation.output_writers[:outputs].filepath) - 1
-    prefix = simulation.output_writers[:outputs].filepath[sim_name_start:sim_name_end] * "_checkpoint"
     cleanup = true
-    checkpointer = Checkpointer(model; schedule, dir, prefix, cleanup)
+    checkpointer = Checkpointer(model; schedule, dir = checkpoint_dir, cleanup)
     simulation.output_writers[:checkpointer] = checkpointer
 
     return nothing
 
 end
-checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval::Nothing) = nothing
+checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval::Nothing) = nothing
 """
     function simulation_progress(sim)
 Useful progress messaging for simulation runs. This function is from an

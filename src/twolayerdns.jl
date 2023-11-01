@@ -307,23 +307,24 @@ function save_computed_output!(simulation, tldns, save_schedule, save_file, outp
     ϵ = KineticEnergyDissipationRate(model)
     ∫ϵ = Integral(ϵ)
     ϵ_maximum = Reduction(maximum!, ϵ, dims = (1, 2, 3))
-    computed_outputs = Dict("σ" => σ, "∫ϵ" => ∫ϵ, "ϵ_maximum" => ϵ_maximum)
+
+    # Horizontally integrated vertical temperature flux and vertical temperature gradient
+    T = model.tracers.T
+    w′T′ = vertical_tracer_flux(model, T)
+    ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
+    ∂T∂z = ∂z(T)
+    ∫ₐ∂T∂z = Integral(∂T∂z, dims = (1, 2))
+
+    computed_outputs = Dict("σ" => σ, "∫ϵ" => ∫ϵ, "ϵ_maximum" => ϵ_maximum, "∫ₐ∂T∂z" => ∫ₐ∂T∂z,
+                            "∫ₐw′T′" => ∫ₐw′T′)
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",
                     "units" => "kgm⁻³"),
         "ϵ_maximum" => Dict("longname" => "Maximum (in space) TKE dissipation"),
-        "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation")
+        "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation"),
+        "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temeprature flux"),
+        "∫ₐ∂T∂z" => Dict("longname" => "Horizontally integrated vertical temperature gradient")
         )
-
-    #TODO: finish this calculation.
-    # Inferred vertical temperature diffusivity
-    # T_mean = Average(T)
-    # T′ = T - Field(T_mean)
-    # w′ = wᶜᶜᶜ(model)
-    # w′T′ = Field(w′ * T′)
-    # ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
-    # T_gradient = ∂z(T)
-    # ∫ₐT_gradient = Integral(T_gradient, dims = (1, 2))
     simulation.output_writers[:computed_output] =
         save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;
                                                 filename = "computed_output",

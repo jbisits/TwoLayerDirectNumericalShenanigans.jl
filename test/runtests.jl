@@ -180,24 +180,17 @@ include("output_test.jl")
 
 end
 
-# include("kernelfunction_test.jl")
+include("kernelfunction_test.jl")
 
-# atol = 2e-4 # tolerance for accuracy of density compared to GSW
-# @testset "PotentialDensity field computation" begin
+@testset "Vertical temperature flux" begin
 
-#     σ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
-#                          interior(model.tracers.T, rand(1:10), rand(1:10), :),
-#                          reference_pressure)
+    T_anom = Field(TLDNS.tracer_perturbation(tldns.model, tldns.model.tracers.T))
+    compute!(T_anom)
+    computed_mean = sum(interior(model.tracers.T)) / *(size(interior(model.tracers.T))...)
+    computed_T_anom = interior(model.tracers.T) .- computed_mean
+    @test all(computed_T_anom .== interior(T_anom))
+    vtflux = Field(TLDNS.vertical_tracer_flux(tldns.model, tldns.model.tracers.T))
+    compute!(vtflux)
+    @test all(vtflux.data .≈ 0 )
 
-#     @test isequal(trues(length(z)),
-#                   test_potential_density_profile(pd_field, σ_profile, atol))
-# end
-
-# @testset "Density field computation" begin
-
-#     p = gsw_p_from_z.(z, 0)
-#     ρ_profile = gsw_rho.(interior(model.tracers.S, rand(1:10), rand(1:10), :),
-#                          interior(model.tracers.T, rand(1:10), rand(1:10), :), p)
-#     @test isequal(trues(length(ρ_profile)),
-#                    test_density_profile(d_field, ρ_profile, atol))
-# end
+end

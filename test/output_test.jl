@@ -22,7 +22,8 @@ function run_sim(save_file)
     stop_time = 10
     save_schedule = 5 # seconds
     output_path = joinpath(@__DIR__, "outputs/")
-    simulation = TLDNS_simulation_setup(tldns, Δt, stop_time, save_schedule; save_file, output_path)
+    simulation = TLDNS_simulation_setup(tldns, Δt, stop_time, save_schedule,
+                                        TLDNS.save_computed_output!; save_file, output_path)
 
     run!(simulation)
 

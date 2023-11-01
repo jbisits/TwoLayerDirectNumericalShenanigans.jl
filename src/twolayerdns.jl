@@ -145,7 +145,11 @@ the course of a simulation;
 - `save_schedule` number (representing time in seconds) at which to save model output, e.g.,
 `save_schedule = 1` saves output every second;
 - `save_file` a `Symbol` (either `:netcdf` or `:jld2`) choosing whether to save data in
-`NetCDF` format (`.nc`) ot `JLD2` format ('.jld2).
+`NetCDF` format (`.nc`) ot `JLD2` format (`.jld2`);
+- `save_custom_output!` a function to save custom output during a `Simulation`. **Note:**
+the function must be in the form `my_outputs!(simulation, tldns, save_info...; kwargs)`
+though can be named anything. See [`save_computed_output!`](@ref) below for an example of how to
+write a function to save custom output.
 
 ## Keyword arguments:
 
@@ -162,7 +166,8 @@ there is no `Checkpointer`.
 `true`.
 """
 function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
-                                stop_time::Number, save_schedule::Number;
+                                stop_time::Number, save_schedule::Number,
+                                save_custom_output!::Function=no_custom_output!;
                                 save_file = :netcdf,
                                 output_path = SIMULATION_PATH,
                                 checkpointer_time_interval = nothing,
@@ -193,13 +198,10 @@ function TLDNS_simulation_setup(tldns::TwoLayerDNS, Δt::Number,
     save_velocities ? save_velocities!(simulation, model, save_info) : nothing
 
     # Custom saved output
-    save_computed_output!(simulation, model, save_info)
+    save_custom_output!(simulation, tldns, save_info)
 
     # Checkpointer setup
     checkpointer_setup!(simulation, model, output_dir, checkpointer_time_interval)
-
-    non_dimensional_numbers!(simulation, tldns)
-    predicted_maximum_density!(simulation, tldns)
 
     return simulation
 
@@ -293,13 +295,14 @@ end
 save_velocities!(simulation, model, save_info::Tuple) =
     save_velocities!(simulation, model, save_info...)
 """
-    function save_computed_output!(simulation, model, save_schedule, save_file, output_dir,
+    function save_computed_output!(simulation, tldns, save_schedule, save_file, output_dir,
                                    overwrite_saved_output, reference_gp_height)
 Save selection of computed output during a `Simulation` using an `OutputWriter`.
 """
-function save_computed_output!(simulation, model, save_schedule, save_file, output_dir,
+function save_computed_output!(simulation, tldns, save_schedule, save_file, output_dir,
                                overwrite_saved_output, reference_gp_height)
 
+    model = tldns.model
     σ = seawater_density(model, geopotential_height = reference_gp_height)
     ϵ = KineticEnergyDissipationRate(model)
     ∫ϵ = Integral(ϵ)
@@ -335,11 +338,16 @@ function save_computed_output!(simulation, model, save_schedule, save_file, outp
                                                 schedule = TimeInterval(save_schedule),
                                                 overwrite_existing = overwrite_saved_output)
 
+    non_dimensional_numbers!(simulation, tldns)
+    predicted_maximum_density!(simulation, tldns)
+
     return nothing
 
 end
-save_computed_output!(simulation, model, save_info::Tuple; reference_gp_height = 0) =
-    save_computed_output!(simulation, model, save_info..., reference_gp_height)
+save_computed_output!(simulation, tldns, save_info::Tuple; reference_gp_height = 0) =
+    save_computed_output!(simulation, tldns, save_info..., reference_gp_height)
+"Default function for `save_custom_output!` in `TLDNS_simulation_setup`."
+no_custom_output!(simulation, model, save_info...) = nothing
 """
     function checkpointer_setup!(simulation, model, output_path, checkpointer_time_interval)
 Setup a `Checkpointer` at `checkpointer_time_interval` for a `simulation`

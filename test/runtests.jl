@@ -65,8 +65,7 @@ include("initialconditions_test.jl")
 
     for tb ∈ tracer_profile_perturbations
 
-        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                    reference_density = REFERENCE_DENSITY)
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
         set_two_layer_initial_conditions!(dns)
 
@@ -82,8 +81,7 @@ end
 
     for tb ∈ tracer_blob_perturbations
 
-        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                    reference_density = REFERENCE_DENSITY)
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, tracer_perturbation = tb)
         set_two_layer_initial_conditions!(dns)
 
@@ -96,8 +94,7 @@ end
 
     for tn ∈ tracer_noise_perturbations
 
-        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                    reference_density = REFERENCE_DENSITY)
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tn)
         set_two_layer_initial_conditions!(dns)
 
@@ -106,8 +103,7 @@ end
     end
     for tnv ∈ tracer_noise_perturbations_vec
 
-        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                    reference_density = REFERENCE_DENSITY)
+        model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
         dns = TwoLayerDNS(model, profile_function, initial_conditions, initial_noise = tnv)
         set_two_layer_initial_conditions!(dns)
 
@@ -119,8 +115,7 @@ end
 
 @testset "Step change" begin
 
-    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                reference_density = REFERENCE_DENSITY)
+    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
     profile_function = StepChange(z[depth_idx])
     initial_conditions = TwoLayerInitialConditions(34.551, -1.5, 34.7, 0.5)
     dns = TwoLayerDNS(model, profile_function, initial_conditions)
@@ -137,7 +132,7 @@ end
 end
 
 include("output_test.jl")
-@testset "Saving output" begin
+@testset "Saving and computed output" begin
 
     @testset "NetCDF" begin
         simulation, td, tldns = run_sim(:netcdf)

@@ -3,8 +3,7 @@ function run_sim(save_file)
     diffusivities = (ν = 0, κ = (S = 0, T = 0))
     resolution = (Nx = 10, Ny = 10, Nz = 100)
 
-    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                    reference_density = REFERENCE_DENSITY)
+    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
 
     T₀ᵘ = -1.5
     S₀ᵘ = 34.58

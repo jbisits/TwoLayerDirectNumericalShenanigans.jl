@@ -2,11 +2,10 @@ module TwoLayerDirectNumericalShenanigans
 
 using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
 using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶜ
-using Oceananigans: BuoyancyModels.get_temperature_and_salinity, BuoyancyModels.θ_and_sᴬ,  BuoyancyModels.Zᶜᶜᶜ
-using Oceananigans: BuoyancyModels.buoyancy_perturbationᶜᶜᶜ, BuoyancyModels.∂z_b
 using Oceananigans: Models.seawater_density
-using SeawaterPolynomials
-using SeawaterPolynomials: TEOS10EquationOfState
+using SeawaterPolynomials: BoussinesqEquationOfState
+using SeawaterPolynomials.TEOS10
+using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 import SeawaterPolynomials.ρ
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
@@ -14,7 +13,8 @@ using OceanRasterConversions: get_σₚ
 using CUDA: allowscalar, CuArray
 import Base: show, iterate
 
-@reexport using Oceananigans, Reexport
+@reexport using Oceananigans, Reexport, SeawaterPolynomials.TEOS10,
+                SeawaterPolynomials.SecondOrderSeawaterPolynomials
 
 "Abstract type for `TwoLayerDNS`."
 abstract type AbstractTwoLayerDNS end

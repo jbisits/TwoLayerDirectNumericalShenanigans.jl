@@ -39,40 +39,31 @@ Setup a Direct Numerical Simulation [`Model`](https://clima.github.io/Oceananiga
 on `architecture` (`CPU()` or `GPU()`) over the
 `domain_extent` with `resolution` and scalar diffusivities for momentum
 (kinematic viscosity `ν`) and the temperature and salinity tracers (`κₜ` and `κₛ`).
-To evolve the temperature and salinity tracers, the [polynomial approximation to the
-full non-linear TEOS10 equation of state appropriate for Boussinesq models](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.TEOS10)
-is used
+The salinity and temperature tracerse will then be evolved with the equation of state `eos`
+chosen.
 
 ## Function arguments:
 
-- architecture, `CPU()` or `GPU()`;
-- domain_extent::NamedTuple in the format `(Lx = , Ly = , Lz = )`;
-- resolution::NamedTuple in the format `(Nx = , Ny = , Nz = )`;
-- diffusivities::NamedTuple in the format `(ν = , κ = )`.
+- `architecture`, `CPU()` or `GPU()`;
+- `domain_extent` as a `NamedTuple` in the format `(Lx = , Ly = , Lz = )`;
+- `resolution` as a `NamedTuple` in the format `(Nx = , Ny = , Nz = )`;
+- `diffusivities` as a `NamedTuple` in the format `(ν = , κ = )`, **note** to set different
+diffusivities for temperature and salinity `κ` must also be a `NamedTuple` in the format
+`κ = (S = , T = )`;
+- `eos` a `BoussinesqEquationOfState`, default is [`TEOS10EquationOfState`](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.TEOS10.TEOS10EquationOfState)
+but any of the [`RoquetEquationOfState`s](https://clima.github.io/SeawaterPolynomials.jl/dev/API/#SeawaterPolynomials.SecondOrderSeawaterPolynomials.RoquetEquationOfState)
+may be used.
 
-**Note:** to set different diffusivities for temperature and salinity `κ` must also be a
-`NamedTuple` in the format `κ = (S = , T = )`.
 
 ## Keyword arguments:
 
-- `linear_eos`, set a linear equation of state for the DNS, default is `false`.
-- `α`, set thermal expansion coefficient for use with `linear_eos`, default value is the
-same as set in [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.BuoyancyModels.LinearEquationOfState).
-- `β`, set haline contraction coefficient for use with `linear_eos`, default value is the
-same as set in [Oceananigans.jl](https://clima.github.io/OceananigansDocumentation/dev/appendix/library/#Oceananigans.BuoyancyModels.LinearEquationOfState).
-- `reference_density = nothing` for use in the full non-linear equation of state,
-defaults to 1020kgm⁻³ but any value can be passed in;
-- `zgrid_stretching = true` stretch the grid in the `z` dimension at the bottom of domain at
-the rate `stretching`, if `false` uniform grid spacing is used;
+- `zgrid_stretching` stretch the grid in the `z` dimension at the bottom of domain at
+the rate `stretching`, `false` by default;
 - `refinement = 1.2` spacing near the surface in the `z` dimension;
 - `stretching = 100` rate of stretching at the bottom of grid in the `z` dimension.
 """
 function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTuple,
-                  diffusivities::NamedTuple;
-                  linear_eos = false,
-                  α = 1.67e-4,
-                  β = 7.80e-4,
-                  reference_density = nothing,
+                  diffusivities::NamedTuple, eos::BoussinesqEquationOfState=TEOS10EquationOfState();
                   zgrid_stretching = false,
                   refinement = 1.05,
                   stretching = 40)
@@ -88,12 +79,6 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
                            y = (-Ly/2, Ly/2),
                            z = zgrid)
 
-    eos = linear_eos == true ? LinearEquationOfState(thermal_expansion = α,
-                                                     haline_contraction = β) :
-                                                     isnothing(reference_density) ?
-                                                            TEOS10EquationOfState() :
-                                                            TEOS10EquationOfState(;
-                                                                reference_density)
     buoyancy = SeawaterBuoyancy(equation_of_state = eos)
     tracers = (:S, :T)
 

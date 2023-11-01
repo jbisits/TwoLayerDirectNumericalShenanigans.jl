@@ -1,8 +1,7 @@
 diffusivities = (ν = 1e-4, κ = (S = 1e-5, T = 1e-5))
 resolution = (Nx = 10, Ny = 10, Nz = 100)
 
-model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities;
-                reference_density = REFERENCE_DENSITY)
+model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
 
 T₀ᵘ = -1.5
 S₀ᵘ = 34.568

@@ -226,7 +226,7 @@ function output_directory(tldns::TwoLayerDNS, stop_time::Number, output_path)
                                          string(round(stop_time / 60; digits = 2))
     expt_dir = ic_string *"_"* pf_string *"_"* tp_string[1:tp_find] *"_"* stop_time_min * "min"
 
-    output_dir = joinpath(output_path, expt_dir)
+    output_dir = mkpath(joinpath(output_path, expt_dir))
     # make a simulation directory if one is not present
     if !isdir(output_dir)
         mkdir(output_dir)

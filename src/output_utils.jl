@@ -234,7 +234,7 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
             Sc = ds.attrib["Sc"]
             find_num = findfirst(' ', ds.attrib["ν"]) - 1
             ν = parse(Float64, ds.attrib["ν"][1:find_num])
-            η_min = (ν^3 / maximum(ds["ϵ_maximum"][:]))
+            η_min = (ν^3 / maximum(ds["ϵ_maximum"][:]))^(1/4)
             ds.attrib["η (min)"] = η_min # minimum space and time Kolmogorov scale
             ds.attrib["λ_B"] = η_min / sqrt(Sc) # minimum space and time Batchelor scale
         end
@@ -244,7 +244,7 @@ function kolmogorov_and_batchelor_scale!(file::AbstractString)
         ϵ_ts = FieldTimeSeries(file, "ϵ_maximum", backend = OnDisk())
         Sc = load(file, "Non_dimensional_numbers")["Sc"]
         ν = load(file, "closure/ν")
-        η_min = (ν^3 / maximum(ϵ_ts))
+        η_min = (ν^3 / maximum(ϵ_ts))^(1/4)
 
         jldopen(file, "a+") do f
             f["minimum_kolmogorov_scale"] = η_min

@@ -162,6 +162,7 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Colorbar(fig[1, 3], hm, label = "S gkg⁻¹")
 
         linkyaxes!(ax[1], ax[2])
+        hidexdecorations!(ax[2], ticks = false)
 
         # Temperature
         lines!(ax[3], Θ_profile, z)
@@ -184,6 +185,7 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Colorbar(fig[2, 3], hm, label = "Θ°C")
 
         linkyaxes!(ax[3], ax[4])
+        hidexdecorations!(ax[4], ticks = false)
 
         frames = eachindex(t)
         record(fig, joinpath(pwd(), "tracers.mp4"),

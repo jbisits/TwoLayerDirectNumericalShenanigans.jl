@@ -77,7 +77,7 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
     time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
     fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+    ax = [Axis(fig[1, i], title = i == 1 && j == 1 ? time_title : "") for i ∈ 1:2]
 
     hm = heatmap!(ax[1], x, z, field_tₙ; colorrange, colormap, lowclip, highclip)
 
@@ -115,6 +115,87 @@ function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colorm
 
     return nothing
 
+end
+"""
+    function TLDNS.animate_tracers(tracers::AbstractString)
+Animate the salinity and temperature `tracers` from saved `.nc` output.
+"""
+function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52)
+
+    NCDataset(tracers) do ds
+
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
+
+        n = Observable(1)
+        S = @lift ds["S"][:, yslice, :, $n]
+        S_profile = @lift ds["S"][xslice, yslice, :, $n]
+        Θ = @lift ds["T"][:, yslice, :, $n]
+        Θ_profile = @lift ds["T"][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 1000))
+        ax = [Axis(fig[j, i], title = i == 1 ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
+
+        # Salinity
+        lines!(ax[1], S_profile, z)
+        ax[1].xlabel = "S gkg⁻¹"
+        ax[1].ylabel = "z"
+        ax[1].xaxisposition = :top
+        vlines!(ax[1], pred_Sₗ, linestyle = :dash, color = :red,
+                label = "Predicted Sₗ")
+        axislegend(ax[1], position = :lb)
+
+        Scmap = cgrad(:haline)[2:end-1]
+        Srange = extrema(ds[:S][:, :, :, 1])
+        Slow = cgrad(:haline)[1]
+        Shigh = cgrad(:haline)[end]
+        hm = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
+                        lowclip = Slow, highclip = Shigh)
+
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hm, label = "S gkg⁻¹")
+
+        linkyaxes!(ax[1], ax[2])
+
+        # Temperature
+        lines!(ax[3], Θ_profile, z)
+        ax[3].xlabel = "Θ°C"
+        ax[3].ylabel = "z"
+        ax[3].xaxisposition = :top
+        vlines!(ax[3], pred_Θₗ, linestyle = :dash, color = :red,
+                label = "Predicted Θₗ")
+        axislegend(ax[3], position = :lb)
+
+        Θcmap = cgrad(:thermal)[2:end-1]
+        Θrange = extrema(ds[:T][:, :, :, 1])
+        Θlow = cgrad(:thermal)[1]
+        Θhigh = cgrad(:thermal)[end]
+        hm = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
+                        lowclip = Θlow, highclip = Θhigh)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[2, 3], hm, label = "Θ°C")
+
+        linkyaxes!(ax[3], ax[4])
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "tracers.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
 end
 """
     function plot_scalar_diagnostics(saved_output::AbstractString)

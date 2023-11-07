@@ -10,3 +10,4 @@ function volume_distribution_snaphsots end
 function plot_scalar_diagnostics end
 function hovmoller end
 function animate_tracers end
+function animate_density end

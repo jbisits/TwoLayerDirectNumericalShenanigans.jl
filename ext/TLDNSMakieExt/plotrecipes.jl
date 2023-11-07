@@ -139,12 +139,12 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (1000, 1000))
-        ax = [Axis(fig[j, i], title = i == 1 ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
+        ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
         # Salinity
         lines!(ax[1], S_profile, z)
         ax[1].xlabel = "S gkg⁻¹"
-        ax[1].ylabel = "z"
+        ax[1].ylabel = "z (m)"
         ax[1].xaxisposition = :top
         vlines!(ax[1], pred_Sₗ, linestyle = :dash, color = :red,
                 label = "Predicted Sₗ")
@@ -162,12 +162,12 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Colorbar(fig[1, 3], hm, label = "S gkg⁻¹")
 
         linkyaxes!(ax[1], ax[2])
-        hidexdecorations!(ax[2], ticks = false)
+        hideydecorations!(ax[2], ticks = false)
 
         # Temperature
         lines!(ax[3], Θ_profile, z)
         ax[3].xlabel = "Θ°C"
-        ax[3].ylabel = "z"
+        ax[3].ylabel = "z (m)"
         ax[3].xaxisposition = :top
         vlines!(ax[3], pred_Θₗ, linestyle = :dash, color = :red,
                 label = "Predicted Θₗ")
@@ -185,10 +185,67 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Colorbar(fig[2, 3], hm, label = "Θ°C")
 
         linkyaxes!(ax[3], ax[4])
-        hidexdecorations!(ax[4], ticks = false)
+        hideydecorations!(ax[4], ticks = false)
 
         frames = eachindex(t)
         record(fig, joinpath(pwd(), "tracers.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
+    function animate_density(computed_output::AbstractString, variable::AbstractString;
+                                     xslice = 52, yslice = 52)
+Animate the density `variable` in `computed_output`.
+"""
+function TLDNS.animate_density(computed_output::AbstractString, variable::AbstractString;
+                               xslice = 52, yslice = 52)
+
+    NCDataset(computed_output) do ds
+
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        pred_max_density = ds.attrib["Predicted maximum density"]
+
+        n = Observable(1)
+        σ = @lift ds[variable][:, yslice, :, $n]
+        σ_profile = @lift ds[variable][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 500))
+        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+        lines!(ax[1], σ_profile, z)
+        ax[1].xlabel = "S gkg⁻¹"
+        ax[1].ylabel = "z"
+        ax[1].xaxisposition = :top
+        vlines!(ax[1], pred_max_density, linestyle = :dash, color = :red,
+                label = "Predicted Sₗ")
+        axislegend(ax[1], position = :lb)
+
+        colormap = cgrad(:dense)[2:end-1]
+        colorrange = (minimum(ds[variable][:, :, :, 1]), pred_max_density)
+        lowclip = cgrad(:dense)[1]
+        highclip = cgrad(:dense)[end]
+        hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)
+
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hm, label = "σ₀ kgm⁻³")
+
+        linkyaxes!(ax[1], ax[2])
+        hideydecorations!(ax[2], ticks = false)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")

@@ -63,59 +63,6 @@ function TLDNS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::A
     return nothing
 
 end
-function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colormap = :thermal,
-                                colorrange = nothing, highclip = nothing, lowclip = nothing,
-                                aspect_ratio = 1, vline = nothing)
-
-    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-    field_name = string(rs.name)
-
-    n = Observable(1)
-    field_tₙ = @lift rs.data[:, yslice, :, $n]
-    profile_tₙ = @lift rs.data[xslice, yslice, :, $n]
-    colorrange = isnothing(colorrange) ? extrema(rs) : colorrange
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
-
-    fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i], title = i == 1 && j == 1 ? time_title : "") for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange, colormap, lowclip, highclip)
-
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    ax[1].aspect = aspect_ratio
-    ax[1].xticklabelrotation = π / 4
-    ax[1].xlabel = "x"
-    ax[1].ylabel = "y"
-    Colorbar(fig[2, 1], hm, label = field_name, vertical = false, flipaxis = false)
-
-    lines!(ax[2], profile_tₙ, z)
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z"
-    ax[2].aspect = aspect_ratio
-    ax[2].xaxisposition = :top
-    ax[2].xticklabelrotation = π / 4
-    if !isnothing(vline)
-        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
-                                           "Predicted equilibrium " * field_name
-        vlines!(ax[2], vline, linestyle = :dash, color = :red;
-                label)
-        axislegend(ax[2])
-    end
-
-    linkyaxes!(ax[1], ax[2])
-
-    frames = eachindex(t)
-    record(fig, joinpath(pwd(), field_name * ".mp4"),
-        frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
-    end
-
-    return nothing
-
-end
 """
     function TLDNS.animate_tracers(tracers::AbstractString)
 Animate the salinity and temperature `tracers` from saved `.nc` output.
@@ -257,13 +204,13 @@ function TLDNS.animate_density(computed_output::AbstractString, variable::Abstra
     return nothing
 end
 """
-    function plot_scalar_diagnostics(saved_output::AbstractString)
-Animate the density and diagnostics (at this stage ∫ϵ and ∫κᵥ) from `saved_output`. **Note:**
-this function assumes that `saved_output` is a `.nc` file.
+    function plot_scalar_diagnostics(computed_output::AbstractString)
+Animate the density and diagnostics (at this stage ∫ϵ and ∫κᵥ) from `computed_output`. **Note:**
+this function assumes that `computed_output` is a `.nc` file.
 """
-function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
+function TLDNS.plot_scalar_diagnostics(computed_output::AbstractString)
 
-    NCDataset(saved_output) do ds
+    NCDataset(computed_output) do ds
         t = ds["time"][:] / (60)
         ∫ϵ = ds["∫ϵ"][:]
         ∫κᵥ = ds["∫κᵥ"][:]
@@ -290,13 +237,13 @@ function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
 
 end
 """
-    function hovmoller(saved_output::AbstractString, variable::AbstractString)
-Produce a Hovmoller plot of a `variable` in `saved_ouput`.
+    function hovmoller(computed_output::AbstractString, variable::AbstractString)
+Produce a Hovmoller plot of a `variable` in `computed_output`.
 """
-function TLDNS.hovmoller(saved_output::AbstractString, variable::AbstractString;
+function TLDNS.hovmoller(computed_output::AbstractString, variable::AbstractString;
                          colormap = :viridis, unit = nothing)
 
-    NCDataset(saved_output) do ds
+    NCDataset(computed_output) do ds
 
         t = ds["time"][:] ./ 60
         zC = ds["zC"][:]
@@ -324,113 +271,19 @@ function TLDNS.hovmoller(saved_output::AbstractString, variable::AbstractString;
 
 end
 """
-    function animate_volume_distributions(rs::Raster)
-Animate the volume distribution from each saved snapshot of data for the variable saved as
-a `Raster`. Optional arguments:
-- `edges` for the bins, in `nothing` the edges for the first fitted `Histogram` are used for
-the subsequent histograms;
-- `unit` for the variable that is being plotted - must be a `String`.
+    function animate_volume_distributions(output::AbstractString, variable::AbstractString,
+                                          edges = nothing)
+Animate volume distribution of `variable` in `output`. **Note:** this assumens `output` is
+a `.nc` file. If `edges` is not provided they are set by the histogram fitting.
 """
-function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing, vline = nothing)
+function TLDNS.animate_volume_distributions(output::AbstractString, variable::AbstractString,
+                                            edges = nothing, weights = nothing)
 
-    t = lookup(rs, Ti)
-    field_name = rs.name
-    rs_series_hist = Vector{RasterLayerHistogram}(undef, length(t))
-    for i ∈ eachindex(t)
-        if i == 1
-            rs_series_hist[i] = isnothing(edges) ? RasterLayerHistogram(rs[:, :, :, i]) :
-                                                   RasterLayerHistogram(rs[:, :, :, i], edges)
-        else
-            rs_series_hist[i] = RasterLayerHistogram(rs[:, :, :, i],
-                                                     rs_series_hist[1].histogram.edges[1])
-        end
-    end
-    n = Observable(1)
-    dₜ = @lift rs_series_hist[$n]
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+    NCDataset(output) do ds
 
-    fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit) ? string(field_name) : string(field_name) * unit
-    xlimits = isnothing(edges) ? rs_series_hist[1].histogram.edges[1] : edges
-    ylabel = "Volume (m³)"
-    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-    if !isnothing(vline)
-        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
-                                           "Predicted equilibrium " * field_name
-        vlines!(ax, vline, linestyle = :dash, color = :red; label)
+        var = ds[variable]
 
     end
-    xlims!(ax, xlimits[1], xlimits[end])
-    plot!(ax, dₜ, color = :steelblue)
-
-    frames = eachindex(t)
-    record(fig, joinpath(pwd(), string(rs.name) * "_vd.mp4"), frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
-    end
-
-    return nothing
-
-end
-"""
-    function animate_volume_distributions(rs::RasterStack)
-**Note:** This method assumes that the `RasterStack` has two variables for a 2D distribution.
-"""
-function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
-
-    t = lookup(rs, Ti)
-    rs_series_hist = Vector{RasterStackHistogram}(undef, length(t))
-    for i ∈ eachindex(t)
-        rs_series_hist[i] = RasterStackHistogram(rs[:, :, :, i], edges)
-    end
-    n = Observable(1)
-    dₜ = @lift rs_series_hist[$n]
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
-
-    fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
-    xlimits, ylimits = edges
-    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-    xlims!(ax, xlimits[1], xlimits[end])
-    ylims!(ax, ylimits[1], ylimits[end])
-    hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
-    Colorbar(fig[1, 2], hm)
-
-    frames = eachindex(t)
-    savename = string(names(rs)[1]) * string(names(rs)[2]) * "_vd.mp4"
-    record(fig, joinpath(pwd(), savename), frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
-    end
-
-    return nothing
-end
-function TLDNS.volume_distribution_snaphsots(rs::RasterStack, edges, snapshots;
-                                             unit = (" (gkg⁻¹)", " (°C)"))
-
-    t = lookup(rs, Ti)
-
-    fig = Figure(size = (1500, 1500))
-    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
-    ax = [Axis(fig[j, i]; xlabel, ylabel) for i ∈ 1:2, j ∈ 1:3]
-
-    for (i, s) ∈ enumerate(snapshots)
-        xlims!(ax[i], 34.57, 34.75)
-        ylims!(ax[i], -1.6, 0.6)
-        ax[i].title = "t=$(round(t[s] / 60, digits = 2)) minutes"
-
-        stack_hist = RasterStackHistogram(rs[:, :, :, s], edges)
-        hm = heatmap!(ax[i], stack_hist, color = :viridis, colorscale = log10; colorrange)
-        if i == 1
-            Colorbar(fig[:, 3], hm)
-        end
-    end
-
-    save("ST_vd.png", fig)
 
     return nothing
 
@@ -604,55 +457,6 @@ function TLDNS.visualise_snapshot(field_timeseries::FieldTimeSeries, field_name:
     Colorbar(fig[2, 1], hm, vertical = false, label = field_name, flipaxis = false)
     lines!(ax[2], interior(field_timeseries, xslice, yslice, :, snapshot), z)
     ax[2].title = field_name * " profile at time t = $(t)"
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z (m)"
-
-    linkyaxes!(ax[1], ax[2])
-
-    return fig
-
-end
-"""
-    function visualise_snapshot(::Raster)
-Plot snapshot of saved output at time = `snapshot`. Passing only `yslice` plots a 2D
-colourmap. Passing `xslice` as well will plot a profile next to the heatmap.
-"""
-function TLDNS.visualise_snapshot(rs::Raster, yslice::Int64, snapshot::Int64;
-                                  colormap = :thermal, unit = nothing, aspect_ratio = 1)
-
-        x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-        field_name = string(rs.name)
-        fig = Figure(size = (500, 500))
-        ax = Axis(fig[1, 1])
-
-        hm = heatmap!(ax, x, z, rs.data[:, yslice, :, snapshot]; colormap)
-        ax.title = field_name * " at time t = $(t[snapshot]) (x-z)"
-        ax.xlabel = "x (m)"
-        ax.ylabel = "z (m)"
-        ax.aspect = aspect_ratio
-        cbar_label = isnothing(unit) ? field_name : field_name * unit
-        Colorbar(fig[1, 2], hm, label = cbar_label)
-
-    return fig
-
-end
-function TLDNS.visualise_snapshot(rs::Raster, xslice::Int64, yslice::Int64, snapshot::Int64;
-                                  colormap = :thermal, unit = nothing, aspect_ratio = 1)
-
-    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-    field_name = string(rs.name)
-    fig = Figure(size = (1000, 500))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, rs.data[:, yslice, :, snapshot]; colormap)
-    ax[1].title = field_name * " at time t = $(t[snapshot]) (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    ax[1].aspect = aspect_ratio
-    cbar_label = isnothing(unit) ? field_name : field_name * unit
-    Colorbar(fig[2, 1], hm, vertical = false, label = cbar_label, flipaxis = false)
-    lines!(ax[2], rs.data[xslice, yslice, :, snapshot], z)
-    ax[2].title = field_name * " profile at time t = $(t[snapshot])"
     ax[2].xlabel = field_name
     ax[2].ylabel = "z (m)"
 

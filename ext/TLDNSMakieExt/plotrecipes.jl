@@ -63,67 +63,155 @@ function TLDNS.animate_2D_field(field_timeseries::FieldTimeSeries, field_name::A
     return nothing
 
 end
-function TLDNS.animate_2D_field(rs::Raster, xslice::Int64, yslice::Int64; colormap = :thermal,
-                                colorrange = nothing, highclip = nothing, lowclip = nothing,
-                                aspect_ratio = 1, vline = nothing)
+"""
+    function TLDNS.animate_tracers(tracers::AbstractString)
+Animate the salinity and temperature `tracers` from saved `.nc` output.
+"""
+function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52)
 
-    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-    field_name = string(rs.name)
+    NCDataset(tracers) do ds
 
-    n = Observable(1)
-    field_tₙ = @lift rs.data[:, yslice, :, $n]
-    profile_tₙ = @lift rs.data[xslice, yslice, :, $n]
-    colorrange = isnothing(colorrange) ? extrema(rs) : colorrange
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
 
-    fig = Figure(size = (1000, 600))
-    ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
 
-    hm = heatmap!(ax[1], x, z, field_tₙ; colorrange, colormap, lowclip, highclip)
+        n = Observable(1)
+        S = @lift ds["S"][:, yslice, :, $n]
+        S_profile = @lift ds["S"][xslice, yslice, :, $n]
+        Θ = @lift ds["T"][:, yslice, :, $n]
+        Θ_profile = @lift ds["T"][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    ax[1].aspect = aspect_ratio
-    ax[1].xticklabelrotation = π / 4
-    ax[1].xlabel = "x"
-    ax[1].ylabel = "y"
-    Colorbar(fig[2, 1], hm, label = field_name, vertical = false, flipaxis = false)
+        fig = Figure(size = (1000, 1000))
+        ax = [Axis(fig[j, i], title = (i == 1 && j == 1) ? time_title : "") for i ∈ 1:2, j ∈ 1:2]
 
-    lines!(ax[2], profile_tₙ, z)
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z"
-    ax[2].aspect = aspect_ratio
-    ax[2].xaxisposition = :top
-    ax[2].xticklabelrotation = π / 4
-    if !isnothing(vline)
-        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
-                                           "Predicted equilibrium " * field_name
-        vlines!(ax[2], vline, linestyle = :dash, color = :red;
-                label)
-        axislegend(ax[2])
-    end
+        # Salinity
+        lines!(ax[1], S_profile, z)
+        ax[1].xlabel = "S gkg⁻¹"
+        ax[1].ylabel = "z (m)"
+        ax[1].xaxisposition = :top
+        vlines!(ax[1], pred_Sₗ, linestyle = :dash, color = :red,
+                label = "Predicted Sₗ")
+        axislegend(ax[1], position = :lb)
 
-    linkyaxes!(ax[1], ax[2])
+        Scmap = cgrad(:haline)[2:end-1]
+        Srange = extrema(ds[:S][:, :, :, 1])
+        Slow = cgrad(:haline)[1]
+        Shigh = cgrad(:haline)[end]
+        hmS = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
+                        lowclip = Slow, highclip = Shigh)
 
-    frames = eachindex(t)
-    record(fig, joinpath(pwd(), field_name * ".mp4"),
-        frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hmS, label = "S gkg⁻¹")
+
+        linkyaxes!(ax[1], ax[2])
+        hideydecorations!(ax[2], ticks = false)
+
+        # Temperature
+        lines!(ax[3], Θ_profile, z)
+        ax[3].xlabel = "Θ°C"
+        ax[3].ylabel = "z (m)"
+        ax[3].xaxisposition = :top
+        vlines!(ax[3], pred_Θₗ, linestyle = :dash, color = :red,
+                label = "Predicted Θₗ")
+        axislegend(ax[3], position = :lb)
+
+        Θcmap = cgrad(:thermal)[2:end-1]
+        Θrange = extrema(ds[:T][:, :, :, 1])
+        Θlow = cgrad(:thermal)[1]
+        Θhigh = cgrad(:thermal)[end]
+        hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
+                        lowclip = Θlow, highclip = Θhigh)
+
+        ax[4].xlabel = "x (m)"
+        ax[4].ylabel = "z (m)"
+        Colorbar(fig[2, 3], hmΘ, label = "Θ°C")
+
+        linkyaxes!(ax[3], ax[4])
+        hideydecorations!(ax[4], ticks = false)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "tracers.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
     end
 
     return nothing
-
 end
 """
-    function plot_scalar_diagnostics(saved_output::AbstractString)
-Animate the density and diagnostics (at this stage ∫ϵ and ∫κᵥ) from `saved_output`. **Note:**
-this function assumes that `saved_output` is a `.nc` file.
+    function animate_density(computed_output::AbstractString, variable::AbstractString;
+                                     xslice = 52, yslice = 52)
+Animate the density `variable` in `computed_output`.
 """
-function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
+function TLDNS.animate_density(computed_output::AbstractString, variable::AbstractString;
+                               xslice = 52, yslice = 52)
 
-    NCDataset(saved_output) do ds
+    NCDataset(computed_output) do ds
+
+        x = ds["xC"][:]
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        pred_max_density = ds.attrib["Predicted maximum density"]
+
+        n = Observable(1)
+        σ = @lift ds[variable][:, yslice, :, $n]
+        σ_profile = @lift ds[variable][xslice, yslice, :, $n]
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 500))
+        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+        lines!(ax[1], σ_profile, z)
+        ax[1].xlabel = "S gkg⁻¹"
+        ax[1].ylabel = "z"
+        ax[1].xaxisposition = :top
+        ax[1].xticklabelrotation = π / 4
+        vlines!(ax[1], pred_max_density, linestyle = :dash, color = :red,
+                label = "Predicted Sₗ")
+        axislegend(ax[1], position = :lb)
+
+        colormap = cgrad(:dense)[2:end-1]
+        colorrange = (minimum(ds[variable][:, :, :, 1]), pred_max_density)
+        lowclip = cgrad(:dense)[1]
+        highclip = cgrad(:dense)[end]
+        hm = heatmap!(ax[2], x, z, σ; colorrange, colormap, lowclip, highclip)
+
+        ax[2].xlabel = "x (m)"
+        ax[2].ylabel = "z (m)"
+        Colorbar(fig[1, 3], hm, label = "σ₀ kgm⁻³")
+
+        linkyaxes!(ax[1], ax[2])
+        hideydecorations!(ax[2], ticks = false)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
+    function plot_scalar_diagnostics(computed_output::AbstractString)
+Animate the density and diagnostics (at this stage ∫ϵ and ∫κᵥ) from `computed_output`. **Note:**
+this function assumes that `computed_output` is a `.nc` file.
+"""
+function TLDNS.plot_scalar_diagnostics(computed_output::AbstractString)
+
+    NCDataset(computed_output) do ds
         t = ds["time"][:] / (60)
         ∫ϵ = ds["∫ϵ"][:]
         ∫κᵥ = ds["∫κᵥ"][:]
@@ -150,13 +238,13 @@ function TLDNS.plot_scalar_diagnostics(saved_output::AbstractString)
 
 end
 """
-    function hovmoller(saved_output::AbstractString, variable::AbstractString)
-Produce a Hovmoller plot of a `variable` in `saved_ouput`.
+    function hovmoller(computed_output::AbstractString, variable::AbstractString)
+Produce a Hovmoller plot of a `variable` in `computed_output`.
 """
-function TLDNS.hovmoller(saved_output::AbstractString, variable::AbstractString;
+function TLDNS.hovmoller(computed_output::AbstractString, variable::AbstractString;
                          colormap = :viridis, unit = nothing)
 
-    NCDataset(saved_output) do ds
+    NCDataset(computed_output) do ds
 
         t = ds["time"][:] ./ 60
         zC = ds["zC"][:]
@@ -184,113 +272,143 @@ function TLDNS.hovmoller(saved_output::AbstractString, variable::AbstractString;
 
 end
 """
-    function animate_volume_distributions(rs::Raster)
-Animate the volume distribution from each saved snapshot of data for the variable saved as
-a `Raster`. Optional arguments:
-- `edges` for the bins, in `nothing` the edges for the first fitted `Histogram` are used for
-the subsequent histograms;
-- `unit` for the variable that is being plotted - must be a `String`.
+    function animate_tracer_distributions(tracers::AbstractString;
+                                          S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate volume distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
 """
-function TLDNS.animate_volume_distributions(rs::Raster; edges = nothing, unit = nothing, vline = nothing)
+function TLDNS.animate_tracer_distributions(tracers::AbstractString;
+                                            S_binwidth = 0.001, Θ_binwidth = 0.01)
 
-    t = lookup(rs, Ti)
-    field_name = rs.name
-    rs_series_hist = Vector{RasterLayerHistogram}(undef, length(t))
-    for i ∈ eachindex(t)
-        if i == 1
-            rs_series_hist[i] = isnothing(edges) ? RasterLayerHistogram(rs[:, :, :, i]) :
-                                                   RasterLayerHistogram(rs[:, :, :, i], edges)
-        else
-            rs_series_hist[i] = RasterLayerHistogram(rs[:, :, :, i],
-                                                     rs_series_hist[1].histogram.edges[1])
+    NCDataset(tracers) do ds
+
+        t = ds["time"][:]
+
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
+
+        n = Observable(1)
+        S_extrema = extrema(ds["S"][:, :, :, 1])
+        S_edges = S_extrema[1]-S_binwidth:S_binwidth:S_extrema[2]+S_binwidth
+        S_hist = @lift fit(Histogram, reshape(ds["S"][:, :, :, $n], :), S_edges)
+        Θ_extrema = extrema(ds["T"][:, :, :, 1])
+        Θ_edges = Θ_extrema[1]-Θ_binwidth:Θ_binwidth:Θ_extrema[2]+Θ_binwidth
+        Θ_hist = @lift fit(Histogram, reshape(ds["T"][:, :, :, $n], :), Θ_edges)
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 500))
+        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+        plot!(ax[1], S_hist, color = :steelblue)
+        ax[1].xlabel = "S (gkg⁻¹)"
+        ax[1].ylabel = "Frequency"
+        vlines!(ax[1], pred_Sₗ, color = :red, linestyle = :dash)
+        plot!(ax[2], Θ_hist, color = :steelblue)
+        ax[2].xlabel = "Θ (°C)"
+        ax[2].ylabel = "Frequency"
+        vlines!(ax[2], pred_Θₗ, color = :red, linestyle = :dash)
+
+        hideydecorations!(ax[2], ticks = false)
+        linkyaxes!(ax[1], ax[2])
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "S_and_T_distributions.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
         end
-    end
-    n = Observable(1)
-    dₜ = @lift rs_series_hist[$n]
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
-    fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit) ? string(field_name) : string(field_name) * unit
-    xlimits = isnothing(edges) ? rs_series_hist[1].histogram.edges[1] : edges
-    ylabel = "Volume (m³)"
-    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-    if !isnothing(vline)
-        label = isequal(field_name, "σ") ? "Predicted maximum " * field_name :
-                                           "Predicted equilibrium " * field_name
-        vlines!(ax, vline, linestyle = :dash, color = :red; label)
-
-    end
-    xlims!(ax, xlimits[1], xlimits[end])
-    plot!(ax, dₜ, color = :steelblue)
-
-    frames = eachindex(t)
-    record(fig, joinpath(pwd(), string(rs.name) * "_vd.mp4"), frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
     end
 
     return nothing
 
 end
 """
-    function animate_volume_distributions(rs::RasterStack)
-**Note:** This method assumes that the `RasterStack` has two variables for a 2D distribution.
+    function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.001)
+Animate volume distribution density in `computed_output`.
+**Note:** this assumes `computed_output` is a `.nc` file.
 """
-function TLDNS.animate_volume_distributions(rs::RasterStack, edges; unit = (" (gkg⁻¹)", " (°C)"))
+function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
 
-    t = lookup(rs, Ti)
-    rs_series_hist = Vector{RasterStackHistogram}(undef, length(t))
-    for i ∈ eachindex(t)
-        rs_series_hist[i] = RasterStackHistogram(rs[:, :, :, i], edges)
-    end
-    n = Observable(1)
-    dₜ = @lift rs_series_hist[$n]
-    time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+    NCDataset(computed_output) do ds
 
-    fig = Figure(size = (500, 500))
-    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
-    xlimits, ylimits = edges
-    ax = Axis(fig[1, 1], title = time_title; xlabel, ylabel)
-    xlims!(ax, xlimits[1], xlimits[end])
-    ylims!(ax, ylimits[1], ylimits[end])
-    hm = heatmap!(ax, dₜ, color = :viridis, colorscale = log10)
-    Colorbar(fig[1, 2], hm)
+        t = ds["time"][:]
 
-    frames = eachindex(t)
-    savename = string(names(rs)[1]) * string(names(rs)[2]) * "_vd.mp4"
-    record(fig, joinpath(pwd(), savename), frames, framerate=8) do i
-        msg = string("Plotting frame ", i, " of ", frames[end])
-        print(msg * " \r")
-        n[] = i
+        pred_σₗ = ds.attrib["Predicted maximum density"]
+
+        n = Observable(1)
+        σ_extrema = [minimum(ds["σ"][:, :, :, 1]), pred_σₗ]
+        σ_edges = σ_extrema[1]-σ_binwidth:σ_binwidth:σ_extrema[2]+σ_binwidth
+        σ_hist = @lift fit(Histogram, reshape(ds["σ"][:, :, :, $n], :), σ_edges)
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title = time_title)
+
+        plot!(ax, σ_hist, color = :steelblue)
+        ax.xlabel = "σ₀ (kgm⁻³)"
+        ax.ylabel = "Frequency"
+        vlines!(ax, pred_σₗ, color = :red, linestyle = :dash)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density_distribution.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
     end
 
     return nothing
+
 end
-function TLDNS.volume_distribution_snaphsots(rs::RasterStack, edges, snapshots;
-                                             unit = (" (gkg⁻¹)", " (°C)"))
+"""
+    function animate_joint_tracer_distribution(tracers::AbstractString;
+                                               S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate the joint distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
+"""
+function TLDNS.animate_joint_tracer_distribution(tracers::AbstractString;
+                                                 S_binwidth = 0.001, Θ_binwidth = 0.01)
 
-    t = lookup(rs, Ti)
+    NCDataset(tracers) do ds
 
-    fig = Figure(size = (1500, 1500))
-    xlabel = isnothing(unit[1]) ? string(names(rs)[1]) : string(names(rs)[1]) * unit[1]
-    ylabel = isnothing(unit[2]) ? string(names(rs)[2]) : string(names(rs)[2]) * unit[2]
-    ax = [Axis(fig[j, i]; xlabel, ylabel) for i ∈ 1:2, j ∈ 1:3]
+        t = ds["time"][:]
 
-    for (i, s) ∈ enumerate(snapshots)
-        xlims!(ax[i], 34.57, 34.75)
-        ylims!(ax[i], -1.6, 0.6)
-        ax[i].title = "t=$(round(t[s] / 60, digits = 2)) minutes"
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
 
-        stack_hist = RasterStackHistogram(rs[:, :, :, s], edges)
-        hm = heatmap!(ax[i], stack_hist, color = :viridis, colorscale = log10; colorrange)
-        if i == 1
-            Colorbar(fig[:, 3], hm)
+        n = Observable(1)
+        S_extrema = extrema(ds["S"][:, :, :, 1])
+        S_edges = S_extrema[1]-S_binwidth:S_binwidth:S_extrema[2]+S_binwidth
+        Θ_extrema = extrema(ds["T"][:, :, :, 1])
+        Θ_edges = Θ_extrema[1]-Θ_binwidth:Θ_binwidth:Θ_extrema[2]+Θ_binwidth
+        joint_hist = @lift replace(fit(Histogram, (reshape(ds["S"][:, :, :, $n], :),
+                                           reshape(ds["T"][:, :, :, $n], :)),
+                                          (S_edges, Θ_edges)).weights, 0 => NaN)
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title =  time_title)
+
+        hm = heatmap!(ax, S_edges, Θ_edges, joint_hist)
+        scatter!(ax, [pred_Sₗ], [pred_Θₗ], color = :red, label = "Predcited (Sₗ, Θₗ)")
+        ax.xlabel = "S (gkg⁻¹)"
+        ax.ylabel = "Θ (°C)"
+        Colorbar(fig[1, 2], hm)
+        axislegend(ax, position = :lt)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "S_T_joint_distribution.mp4"),
+        frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
         end
-    end
 
-    save("ST_vd.png", fig)
+    end
 
     return nothing
 
@@ -464,55 +582,6 @@ function TLDNS.visualise_snapshot(field_timeseries::FieldTimeSeries, field_name:
     Colorbar(fig[2, 1], hm, vertical = false, label = field_name, flipaxis = false)
     lines!(ax[2], interior(field_timeseries, xslice, yslice, :, snapshot), z)
     ax[2].title = field_name * " profile at time t = $(t)"
-    ax[2].xlabel = field_name
-    ax[2].ylabel = "z (m)"
-
-    linkyaxes!(ax[1], ax[2])
-
-    return fig
-
-end
-"""
-    function visualise_snapshot(::Raster)
-Plot snapshot of saved output at time = `snapshot`. Passing only `yslice` plots a 2D
-colourmap. Passing `xslice` as well will plot a profile next to the heatmap.
-"""
-function TLDNS.visualise_snapshot(rs::Raster, yslice::Int64, snapshot::Int64;
-                                  colormap = :thermal, unit = nothing, aspect_ratio = 1)
-
-        x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-        field_name = string(rs.name)
-        fig = Figure(size = (500, 500))
-        ax = Axis(fig[1, 1])
-
-        hm = heatmap!(ax, x, z, rs.data[:, yslice, :, snapshot]; colormap)
-        ax.title = field_name * " at time t = $(t[snapshot]) (x-z)"
-        ax.xlabel = "x (m)"
-        ax.ylabel = "z (m)"
-        ax.aspect = aspect_ratio
-        cbar_label = isnothing(unit) ? field_name : field_name * unit
-        Colorbar(fig[1, 2], hm, label = cbar_label)
-
-    return fig
-
-end
-function TLDNS.visualise_snapshot(rs::Raster, xslice::Int64, yslice::Int64, snapshot::Int64;
-                                  colormap = :thermal, unit = nothing, aspect_ratio = 1)
-
-    x, z, t = lookup(rs, :xC), lookup(rs, :zC), lookup(rs, :Ti)
-    field_name = string(rs.name)
-    fig = Figure(size = (1000, 500))
-    ax = [Axis(fig[1, i]) for i ∈ 1:2]
-
-    hm = heatmap!(ax[1], x, z, rs.data[:, yslice, :, snapshot]; colormap)
-    ax[1].title = field_name * " at time t = $(t[snapshot]) (x-z)"
-    ax[1].xlabel = "x (m)"
-    ax[1].ylabel = "z (m)"
-    ax[1].aspect = aspect_ratio
-    cbar_label = isnothing(unit) ? field_name : field_name * unit
-    Colorbar(fig[2, 1], hm, vertical = false, label = cbar_label, flipaxis = false)
-    lines!(ax[2], rs.data[xslice, yslice, :, snapshot], z)
-    ax[2].title = field_name * " profile at time t = $(t[snapshot])"
     ax[2].xlabel = field_name
     ax[2].ylabel = "z (m)"
 

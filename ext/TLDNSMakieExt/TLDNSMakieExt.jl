@@ -1,7 +1,7 @@
 module TLDNSMakieExt
 
 using CairoMakie, TwoLayerDirectNumericalShenanigans, Printf, NCDatasets,
-      GibbsSeaWater, Rasters, RasterHistograms
+      GibbsSeaWater, StatsBase
 using Oceananigans.Fields
 
 include("plotrecipes.jl")

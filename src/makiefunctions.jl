@@ -85,3 +85,9 @@ Animate the density `variable` in `computed_output`. The `xslice` and `yslice` k
 arguments can be passed to specify where in the domain the slices are taken from.
 """
 function animate_density end
+"""
+    function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.01)
+Animate volume distribution density in `computed_output`.
+**Note:** this assumes `computed_output` is a `.nc` file.
+"""
+function animate_density_distribution end

@@ -324,6 +324,46 @@ function TLDNS.animate_tracer_distributions(tracers::AbstractString;
 
 end
 """
+    function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.001)
+Animate volume distribution density in `computed_output`.
+**Note:** this assumes `computed_output` is a `.nc` file.
+"""
+function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
+
+    NCDataset(computed_output) do ds
+
+        t = ds["time"][:]
+
+        pred_σₗ = ds.attrib["Predicted maximum density"]
+
+        n = Observable(1)
+        σ_extrema = [minimum(ds["σ"][:, :, :, 1]), pred_σₗ]
+        σ_edges = σ_extrema[1]-σ_binwidth:σ_binwidth:σ_extrema[2]+σ_binwidth
+        σ_hist = @lift fit(Histogram, reshape(ds["σ"][:, :, :, $n], :), σ_edges)
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title = time_title)
+
+        plot!(ax, σ_hist, color = :steelblue)
+        ax.xlabel = "σ₀ (kgm⁻³)"
+        ax.ylabel = "Frequency"
+        vlines!(ax, pred_σₗ, color = :red, linestyle = :dash)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density_distribution.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+
+end
+"""
     function animate_joint_tracer_distribution(tracers::AbstractString;
                                                S_binwidth = 0.001, Θ_binwidth = 0.01)
 Animate the joint distribution of the salinity and temperature in `tracers`.

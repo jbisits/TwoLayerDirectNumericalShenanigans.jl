@@ -329,7 +329,7 @@ end
 Animate volume distribution density in `computed_output`.
 **Note:** this assumes `computed_output` is a `.nc` file.
 """
-function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
+function TLDNS.animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
 
     NCDataset(computed_output) do ds
 

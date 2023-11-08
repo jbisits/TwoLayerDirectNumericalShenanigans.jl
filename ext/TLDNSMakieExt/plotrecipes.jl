@@ -101,12 +101,12 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Srange = extrema(ds[:S][:, :, :, 1])
         Slow = cgrad(:haline)[1]
         Shigh = cgrad(:haline)[end]
-        hm = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
+        hmS = heatmap!(ax[2], x, z, S, colorrange = Srange, colormap = Scmap,
                         lowclip = Slow, highclip = Shigh)
 
         ax[2].xlabel = "x (m)"
         ax[2].ylabel = "z (m)"
-        Colorbar(fig[1, 3], hm, label = "S gkg⁻¹")
+        Colorbar(fig[1, 3], hmS, label = "S gkg⁻¹")
 
         linkyaxes!(ax[1], ax[2])
         hideydecorations!(ax[2], ticks = false)
@@ -124,12 +124,12 @@ function TLDNS.animate_tracers(tracers::AbstractString; xslice = 52, yslice = 52
         Θrange = extrema(ds[:T][:, :, :, 1])
         Θlow = cgrad(:thermal)[1]
         Θhigh = cgrad(:thermal)[end]
-        hm = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
+        hmΘ = heatmap!(ax[4], x, z, Θ, colorrange = Θrange, colormap = Θcmap,
                         lowclip = Θlow, highclip = Θhigh)
 
         ax[4].xlabel = "x (m)"
         ax[4].ylabel = "z (m)"
-        Colorbar(fig[2, 3], hm, label = "Θ°C")
+        Colorbar(fig[2, 3], hmΘ, label = "Θ°C")
 
         linkyaxes!(ax[3], ax[4])
         hideydecorations!(ax[4], ticks = false)
@@ -174,6 +174,7 @@ function TLDNS.animate_density(computed_output::AbstractString, variable::Abstra
         ax[1].xlabel = "S gkg⁻¹"
         ax[1].ylabel = "z"
         ax[1].xaxisposition = :top
+        ax[1].xticklabelrotation = π / 4
         vlines!(ax[1], pred_max_density, linestyle = :dash, color = :red,
                 label = "Predicted Sₗ")
         axislegend(ax[1], position = :lb)

@@ -301,11 +301,11 @@ function TLDNS.animate_tracer_distributions(tracers::AbstractString;
         plot!(ax[1], S_hist, color = :steelblue)
         ax[1].xlabel = "S (gkg⁻¹)"
         ax[1].ylabel = "Frequency"
-        vlines!(ax[1], pred_Sₗ)
+        vlines!(ax[1], pred_Sₗ, color = :red, linestyle = :dash)
         plot!(ax[2], Θ_hist, color = :steelblue)
         ax[2].xlabel = "Θ (°C)"
         ax[2].ylabel = "Frequency"
-        vlines!(ax[2], pred_Θₗ)
+        vlines!(ax[2], pred_Θₗ, color = :red, linestyle = :dash)
 
         hideydecorations!(ax[2], ticks = false)
         linkyaxes!(ax[1], ax[2])

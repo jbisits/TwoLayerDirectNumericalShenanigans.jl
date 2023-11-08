@@ -48,12 +48,19 @@ Plot a `snapshot` of the `field_timeseries`  with `field_name` at `xslice`, `ysl
 """
 function visualise_snapshot end
 """
-    function animate_volume_distributions(output::AbstractString, variable::AbstractString,
-                                          edges = nothing)
-Animate volume distribution of `variable` in `output`. **Note:** this assumens `output` is
-a `.nc` file. If `edges` is not provided they are set by the histogram fitting.
+    function animate_tracer_distributions(tracers::AbstractString;
+                                          S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate volume distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
 """
-function animate_volume_distributions end
+function animate_tracer_distributions end
+"""
+    function animate_joint_tracer_distribution(tracers::AbstractString;
+                                               S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate the joint distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
+"""
+function animate_joint_tracer_distribution end
 """
     function plot_scalar_diagnostics(computed_output::AbstractString)
 Plot scalar diagnostics from `computed_output`. **Note:**

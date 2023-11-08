@@ -271,17 +271,101 @@ function TLDNS.hovmoller(computed_output::AbstractString, variable::AbstractStri
 
 end
 """
-    function animate_volume_distributions(output::AbstractString, variable::AbstractString,
-                                          edges = nothing)
-Animate volume distribution of `variable` in `output`. **Note:** this assumens `output` is
-a `.nc` file. If `edges` is not provided they are set by the histogram fitting.
+    function animate_tracer_distributions(tracers::AbstractString;
+                                          S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate volume distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
 """
-function TLDNS.animate_volume_distributions(output::AbstractString, variable::AbstractString,
-                                            edges = nothing, weights = nothing)
+function TLDNS.animate_tracer_distributions(tracers::AbstractString;
+                                            S_binwidth = 0.001, Θ_binwidth = 0.01)
 
-    NCDataset(output) do ds
+    NCDataset(tracers) do ds
 
-        var = ds[variable]
+        t = ds["time"][:]
+
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
+
+        n = Observable(1)
+        S_extrema = extrema(ds["S"][:, :, :, 1])
+        S_edges = S_extrema[1]-S_binwidth:S_binwidth:S_extrema[2]+S_binwidth
+        S_hist = @lift fit(Histogram, reshape(ds["S"][:, :, :, $n], :), S_edges)
+        Θ_extrema = extrema(ds["T"][:, :, :, 1])
+        Θ_edges = Θ_extrema[1]-Θ_binwidth:Θ_binwidth:Θ_extrema[2]+Θ_binwidth
+        Θ_hist = @lift fit(Histogram, reshape(ds["T"][:, :, :, $n], :), Θ_edges)
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (1000, 500))
+        ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
+
+        hist!(ax[1], S_hist)
+        ax[1].xlabel = "S (gkg⁻¹)"
+        ax[1].ylabel = "Frequency"
+        vlines!(ax[1], pred_Sₗ)
+        hist!(ax[2], Θ_hist)
+        ax[2].xlabel = "Θ (°C)"
+        ax[2].ylabel = "Frequency"
+        vlines!(ax[2], pred_Θₗ)
+
+        hideydecorations!(ax[2], ticks = false)
+        linkyaxes!(ax[1], ax[2])
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "S_and_T_distributions.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+
+end
+"""
+    function animate_joint_tracer_distribution(tracers::AbstractString;
+                                               S_binwidth = 0.001, Θ_binwidth = 0.01)
+Animate the joint distribution of the salinity and temperature in `tracers`.
+**Note:** this assumens `tracers` is a `.nc` file.
+"""
+function TLDNS.animate_joint_tracer_distribution(tracers::AbstractString;
+                                                 S_binwidth = 0.001, Θ_binwidth = 0.01)
+
+    NCDataset(tracers) do ds
+
+        t = ds["time"][:]
+
+        pred_Θₗ, pred_Sₗ = ds.attrib["Predicted equilibrium Tₗ"],
+                            ds.attrib["Predicted equilibrium Sₗ"]
+
+        n = Observable(1)
+        S_extrema = extrema(ds["S"][:, :, :, 1])
+        S_edges = S_extrema[1]-S_binwidth:S_binwidth:S_extrema[2]+S_binwidth
+        Θ_extrema = extrema(ds["T"][:, :, :, 1])
+        Θ_edges = Θ_extrema[1]-Θ_binwidth:Θ_binwidth:Θ_extrema[2]+Θ_binwidth
+        joint_hist = @lift fit(Histogram, (reshape(ds["S"][:, :, :, $n], :),
+                                           reshape(ds["T"][:, :, :, $n], :)),
+                                          (S_edges, Θ_edges))
+        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1], title =  time_title)
+
+        hm = heatmap!(ax, S_edges, Θ_edges, replace(joint_hist.weights, 0 => NaN))
+        scatter!(ax, [pred_Sₗ], [pred_Θₗ], color = :red, label = "Predcited (Sₗ, Θₗ)")
+        ax.xlabel = "S (gkg⁻¹)"
+        ax.ylabel = "Θ (°C)"
+        Colorbar(fig[1, 2], hm)
+        axislegend(ax, position = :lt)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "S_T_joint_distribution.mp4"),
+        frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
 
     end
 

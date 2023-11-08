@@ -276,7 +276,7 @@ end
 Animate volume distribution of the salinity and temperature in `tracers`.
 **Note:** this assumens `tracers` is a `.nc` file.
 """
-function animate_tracer_distributions(tracers::AbstractString;
+function TLDNS.animate_tracer_distributions(tracers::AbstractString;
                                             S_binwidth = 0.001, Θ_binwidth = 0.01)
 
     NCDataset(tracers) do ds

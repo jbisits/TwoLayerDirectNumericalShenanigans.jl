@@ -276,7 +276,7 @@ end
 Animate volume distribution of the salinity and temperature in `tracers`.
 **Note:** this assumens `tracers` is a `.nc` file.
 """
-function TLDNS.animate_tracer_distributions(tracers::AbstractString;
+function animate_tracer_distributions(tracers::AbstractString;
                                             S_binwidth = 0.001, Θ_binwidth = 0.01)
 
     NCDataset(tracers) do ds
@@ -298,11 +298,11 @@ function TLDNS.animate_tracer_distributions(tracers::AbstractString;
         fig = Figure(size = (1000, 500))
         ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
 
-        hist!(ax[1], S_hist)
+        plot!(ax[1], S_hist, color = :steelblue)
         ax[1].xlabel = "S (gkg⁻¹)"
         ax[1].ylabel = "Frequency"
         vlines!(ax[1], pred_Sₗ)
-        hist!(ax[2], Θ_hist)
+        plot!(ax[2], Θ_hist, color = :steelblue)
         ax[2].xlabel = "Θ (°C)"
         ax[2].ylabel = "Frequency"
         vlines!(ax[2], pred_Θₗ)
@@ -344,15 +344,15 @@ function TLDNS.animate_joint_tracer_distribution(tracers::AbstractString;
         S_edges = S_extrema[1]-S_binwidth:S_binwidth:S_extrema[2]+S_binwidth
         Θ_extrema = extrema(ds["T"][:, :, :, 1])
         Θ_edges = Θ_extrema[1]-Θ_binwidth:Θ_binwidth:Θ_extrema[2]+Θ_binwidth
-        joint_hist = @lift fit(Histogram, (reshape(ds["S"][:, :, :, $n], :),
+        joint_hist = @lift replace(fit(Histogram, (reshape(ds["S"][:, :, :, $n], :),
                                            reshape(ds["T"][:, :, :, $n], :)),
-                                          (S_edges, Θ_edges))
+                                          (S_edges, Θ_edges)).weights, 0 => NaN)
         time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (500, 500))
         ax = Axis(fig[1, 1], title =  time_title)
 
-        hm = heatmap!(ax, S_edges, Θ_edges, replace(joint_hist.weights, 0 => NaN))
+        hm = heatmap!(ax, S_edges, Θ_edges, joint_hist)
         scatter!(ax, [pred_Sₗ], [pred_Θₗ], color = :red, label = "Predcited (Sₗ, Θₗ)")
         ax.xlabel = "S (gkg⁻¹)"
         ax.ylabel = "Θ (°C)"

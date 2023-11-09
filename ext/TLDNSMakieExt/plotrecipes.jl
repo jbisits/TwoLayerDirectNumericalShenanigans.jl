@@ -176,7 +176,7 @@ function TLDNS.animate_density(computed_output::AbstractString, variable::Abstra
         ax[1].xaxisposition = :top
         ax[1].xticklabelrotation = π / 4
         vlines!(ax[1], pred_max_density, linestyle = :dash, color = :red,
-                label = "Predicted Sₗ")
+                label = "Predicted σₗ")
         axislegend(ax[1], position = :lb)
 
         colormap = cgrad(:dense)[2:end-1]
@@ -329,7 +329,7 @@ end
 Animate volume distribution density in `computed_output`.
 **Note:** this assumes `computed_output` is a `.nc` file.
 """
-function animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
+function TLDNS.animate_density_distribution(computed_output::AbstractString; σ_binwidth = 0.0001)
 
     NCDataset(computed_output) do ds
 

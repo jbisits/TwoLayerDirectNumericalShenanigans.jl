@@ -171,7 +171,7 @@ function TLDNS.animate_density(computed_output::AbstractString, variable::Abstra
         ax = [Axis(fig[1, i], title = i == 1 ? time_title : "") for i ∈ 1:2]
 
         lines!(ax[1], σ_profile, z)
-        ax[1].xlabel = "S gkg⁻¹"
+        ax[1].xlabel = "σ₀ kgm⁻³"
         ax[1].ylabel = "z"
         ax[1].xaxisposition = :top
         ax[1].xticklabelrotation = π / 4

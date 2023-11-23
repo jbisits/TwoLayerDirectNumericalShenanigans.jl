@@ -1,6 +1,6 @@
 module TwoLayerDirectNumericalShenanigans
 
-using Oceananigans, Printf, Reexport, JLD2, Rasters, NCDatasets, GibbsSeaWater
+using Oceananigans, Printf, Reexport, JLD2, NCDatasets, GibbsSeaWater
 using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶜ
 using Oceananigans: Models.seawater_density
 using SeawaterPolynomials: BoussinesqEquationOfState
@@ -9,7 +9,6 @@ using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 import SeawaterPolynomials.ρ
 using SpecialFunctions: erf
 using Oceanostics: KineticEnergyDissipationRate
-using OceanRasterConversions: get_σₚ
 using CUDA: allowscalar, CuArray
 import Base: show, iterate
 
@@ -59,8 +58,10 @@ export DOMAIN_EXTENT, HIGH_RESOLUTION, SO_DIFFUSIVITIES, REFERENCE_DENSITY,
 
 export compute_density, compute_density!
 
-export animate_2D_field, visualise_initial_conditions, visualise_initial_density,
-       visualise_snapshot, plot_scalar_diagnostics, hovmoller
+export animate_2D_field, visualise_initial_conditions, visualise_initial_stepchange,
+       initial_tracer_heaviside, visualise_initial_density, visualise_snapshot,
+       animate_tracer_distributions, animate_joint_tracer_distribution, plot_scalar_diagnostics,
+       hovmoller, animate_density, animate_density_distribution
 
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")

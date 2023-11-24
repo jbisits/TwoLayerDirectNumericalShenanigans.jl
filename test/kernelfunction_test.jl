@@ -13,3 +13,12 @@ profile_function = StepChange(transition_depth)
 tldns = TwoLayerDNS(model, profile_function, initial_conditions)
 
 set_two_layer_initial_conditions!(tldns)
+
+Eₚ_model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
+set!(Eₚ_model, T = -1.5, S = 34.568)
+ρ_model = Field(seawater_density(Eₚ_model))
+compute!(ρ_model)
+z_grid = Field(Oceananigans.Models.model_geopotential_height(Eₚ_model))
+compute!(z_grid)
+dV = xspacings(model.grid, Center()) * yspacings(model.grid, Center()) * zspacings(model.grid, Center())
+computed_Eₚ = model.buoyancy.model.gravitational_acceleration * ρ_model.data .* z_grid.data

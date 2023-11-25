@@ -1,6 +1,7 @@
 using TwoLayerDirectNumericalShenanigans, Test
 using TwoLayerDirectNumericalShenanigans: perturb_tracer
 using Oceananigans.Fields
+using Oceananigans: Models.seawater_density
 using SeawaterPolynomials
 using NCDatasets, JLD2
 import SeawaterPolynomials.ρ
@@ -187,5 +188,13 @@ include("kernelfunction_test.jl")
     vtflux = Field(TLDNS.vertical_tracer_flux(tldns.model, tldns.model.tracers.T))
     compute!(vtflux)
     @test all(vtflux.data .≈ 0 )
+
+end
+
+@testset "Potential energy" begin
+
+    Eₚ = Field(TLDNS.potential_energy(Eₚ_model))
+    compute!(Eₚ)
+    @test all(Eₚ.data == computed_Eₚ)
 
 end

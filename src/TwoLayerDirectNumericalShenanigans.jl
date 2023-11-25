@@ -3,12 +3,11 @@ module TwoLayerDirectNumericalShenanigans
 using Oceananigans, Printf, Reexport, JLD2, NCDatasets, GibbsSeaWater
 using Oceananigans: AbstractModel, Operators.ℑzᵃᵃᶜ
 using Oceananigans: Models.seawater_density
-using SeawaterPolynomials: BoussinesqEquationOfState
+using SeawaterPolynomials: BoussinesqEquationOfState, ρ
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
-import SeawaterPolynomials.ρ
 using SpecialFunctions: erf
-using Oceanostics: KineticEnergyDissipationRate
+using Oceanostics: KineticEnergyDissipationRate, KineticEnergy
 using CUDA: allowscalar, CuArray
 import Base: show, iterate
 

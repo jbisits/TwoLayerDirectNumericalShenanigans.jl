@@ -60,7 +60,8 @@ export compute_density, compute_density!
 export animate_2D_field, visualise_initial_conditions, visualise_initial_stepchange,
        initial_tracer_heaviside, visualise_initial_density, visualise_snapshot,
        animate_tracer_distributions, animate_joint_tracer_distribution, plot_scalar_diagnostics,
-       hovmoller, animate_density, animate_density_distribution
+       hovmoller, animate_density, animate_density_distribution, animate_ha_profile,
+       animate_ha_density
 
 include("initialconditions.jl")
 include("continuousprofilefunctions.jl")

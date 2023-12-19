@@ -91,3 +91,13 @@ Animate volume distribution density in `computed_output`.
 **Note:** this assumes `computed_output` is a `.nc` file.
 """
 function animate_density_distribution end
+"""
+    function animate_ha_profile(tracers::AbstractString)
+Animate the horizontally averaged `S` and `T` profiles with depth and in `S`, `T` space.
+"""
+function animate_ha_profile end
+"""
+    function animate_ha_density(computed_output::AbstractString)
+Animate the horizontally averaged density profile saved in `computed_output`.
+"""
+function animate_ha_density end

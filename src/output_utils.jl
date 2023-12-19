@@ -223,6 +223,33 @@ function horizontal_average_profile!(tracers::AbstractString)
     return nothing
 end
 """
+    function horizontal_average_density!(computed_output::AbstractString)
+Compute and save the horizontally averaged density profile that is saved in `computed_output`.
+"""
+function horizontal_average_profile!(computed_output::AbstractString)
+
+    NCDataset(computed_output, "a") do ds
+
+        z = ds[:zC]
+        time = ds[:time]
+        σ = ds[:σ]
+        σ_profile = Array{Float64}(undef, length(z), length(time))
+
+        for t ∈ eachindex(time)
+
+            σ_profile[:, t] = reshape(mean(σ[:, :, :, t], dims = (1, 2)), :)
+
+        end
+
+        defVar(ds, "σ_ha_profile", σ_profile, ("zC", "time"),
+               attrib = Dict("longname" => "Horizontally averaged density profile",
+                             "units" => "kgm⁻³"))
+
+    end
+
+    return nothing
+end
+"""
     funciton find_file_type(file::AbstractString)
 Return the file type (either `.nc` or `.jld2`) of a `file`.
 """

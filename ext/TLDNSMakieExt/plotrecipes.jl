@@ -606,13 +606,15 @@ function animate_ha_profile(tracers::AbstractString)
         n = Observable(1)
         S_profile = @lift ds["S_ha_profile"][:, $n]
         Θ_profile = @lift ds["T_ha_profile"][:, $n]
-        time_title = @lift @sprintf("t=%1.2f minutes", t[$n] / 60)
+        time_title = @lift @sprintf("Time = %1.2f minutes", t[$n] / 60)
 
         fig = Figure(size = (1000, 500))
-        ax = [Axis(fig[1, i], title = time_title) for i ∈ 1:3]
+        ax = [Axis(fig[1, i]) for i ∈ 1:3]
+        Label(fig[0, 2], time_title, fontsize=24, tellwidth=false);
 
         # Salinity
         lines!(ax[1], S_profile, z)
+        ax[1].title = "Salinity profile"
         ax[1].xlabel = "S gkg⁻¹"
         ax[1].ylabel = "z (m)"
         ax[1].xaxisposition = :top
@@ -620,6 +622,7 @@ function animate_ha_profile(tracers::AbstractString)
 
         # Temperature
         lines!(ax[2], Θ_profile, z)
+        ax[2].title = "Temperature profile"
         ax[2].xlabel = "Θ°C"
         ax[2].ylabel = "z (m)"
         ax[2].xaxisposition = :top
@@ -629,22 +632,64 @@ function animate_ha_profile(tracers::AbstractString)
         hideydecorations!(ax[2], ticks = false)
 
         scatter!(ax[3], S_profile, T_profile)
+        ax[3].title = "Profiles in S-T space"
         ax[3].xlabel = "S gkg⁻¹"
         ax[3].xlabel = "Θ°C"
-        Sᵤ, Sₗ = S_profile[1, 1], S_profile[end, 1]
-        ΔS = Sᵤ - Sₗ
-        Tᵤ, Tₗ = T_profile[1, 1], T_profile[end, 1]
-        ΔT = Tᵤ - Tₗ
-        S_theory = erf_tracer_solution.(z, Sₗ, ΔS, 1e-9, t[$n], -0.5)
-        T_theory = erf_tracer_solution.(z, Tₗ, ΔT, 1e-7, t[$n], -0.5)
-        lines!(ax[3], S_theory, T_theory, color = :orange, linestyle = :dash,
-               label = "Predicted dd mixing curve")
-        lines!(ax[3], [Sᵤ, Sₗ], [Tᵤ, Tₗ], color = :red, linestyle = :dot,
-               label = "Turbulent mixing curve")
-        axislegend(ax[3], position = :lt)
+        xlims!(ax[3], extrema(ds["S_ha_profile"][:, 1]))
+        ylims!(ax[3], extrema(ds["T_ha_profile"][:, 1]))
+        # Sᵤ, Sₗ = S_profile[1, 1], S_profile[end, 1]
+        # ΔS = Sᵤ - Sₗ
+        # Tᵤ, Tₗ = T_profile[1, 1], T_profile[end, 1]
+        # ΔT = Tᵤ - Tₗ
+        # S_theory = erf_tracer_solution.(z, Sₗ, ΔS, 1e-9, t[$n], -0.5)
+        # T_theory = erf_tracer_solution.(z, Tₗ, ΔT, 1e-7, t[$n], -0.5)
+        # lines!(ax[3], S_theory, T_theory, color = :orange, linestyle = :dash,
+        #        label = "Predicted dd mixing curve")
+        # lines!(ax[3], [Sᵤ, Sₗ], [Tᵤ, Tₗ], color = :red, linestyle = :dot,
+        #        label = "Turbulent mixing curve")
+        # axislegend(ax[3], position = :lt)
 
         frames = eachindex(t)
-        record(fig, joinpath(pwd(), "tracers.mp4"),
+        record(fig, joinpath(pwd(), "tracer_ha_profiles.mp4"),
+            frames, framerate=8) do i
+            msg = string("Plotting frame ", i, " of ", frames[end])
+            print(msg * " \r")
+            n[] = i
+        end
+
+    end
+
+    return nothing
+end
+"""
+    function animate_ha_density(computed_output::AbstractString)
+Animate the horizontally averaged density profile saved in `computed_output`.
+"""
+function animate_ha_density(computed_output::AbstractString)
+
+    NCDataset(computed_output) do ds
+
+        z = ds["zC"][:]
+        t = ds["time"][:]
+
+        n = Observable(1)
+        σ_profile = @lift ds["σ_ha_profile"][:, $n]
+        time_title = @lift @sprintf("Time = %1.2f minutes", t[$n] / 60)
+
+        fig = Figure(size = (500, 500))
+        ax = Axis(fig[1, 1])
+        Label(fig[0, 2], time_title, fontsize=24, tellwidth=false);
+
+        # Salinity
+        lines!(ax[1], σ_profile, z)
+        ax[1].title = "Density profile"
+        ax[1].xlabel = "σ kgm⁻³"
+        ax[1].ylabel = "z (m)"
+        ax[1].xaxisposition = :top
+        axislegend(ax[1], position = :lb)
+
+        frames = eachindex(t)
+        record(fig, joinpath(pwd(), "density_ha_profiles.mp4"),
             frames, framerate=8) do i
             msg = string("Plotting frame ", i, " of ", frames[end])
             print(msg * " \r")

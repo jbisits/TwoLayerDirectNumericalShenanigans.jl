@@ -190,6 +190,39 @@ function inferred_vertical_diffusivity!(saved_output::AbstractString, flux::Symb
 
 end
 """
+    function horizontal_average_profile!(tracers::AbstractString)
+Compute and save the horizontally averaged salinity and temperature profiles that are
+saved in `tracers`.
+"""
+function horizontal_average_profile!(tracers::AbstractString)
+
+    NCDataset(tracers, "a") do ds
+
+        z = ds[:zC]
+        time = ds[:time]
+        S, T = ds[:S], ds[:T]
+        S_profile = Array{Float64}(undef, length(z), length(time))
+        T_profile = Array{Float64}(undef, length(z), length(time))
+
+        for t ∈ eachindex(time)
+
+            S_profile[:, t] = reshape(mean(S[:, :, :, t], dims = (1, 2)), :)
+            T_profile[:, t] = reshape(mean(T[:, :, :, t], dims = (1, 2)), :)
+
+        end
+
+        defVar(ds, "S_ha_profile", S_profile, ("zC", "time"),
+               attrib = Dict("longname" => "Horizontally averaged salinity profile",
+                             "units" => "gkg⁻¹"))
+        defVar(ds, "T_ha_profile", T_profile, ("zC", "time"),
+               attrib = Dict("longname" => "Horizontally averaged temperature profile",
+                             "units" => "°C"))
+
+    end
+
+    return nothing
+end
+"""
     funciton find_file_type(file::AbstractString)
 Return the file type (either `.nc` or `.jld2`) of a `file`.
 """

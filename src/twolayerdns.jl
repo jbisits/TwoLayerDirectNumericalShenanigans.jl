@@ -294,8 +294,6 @@ function save_computed_output!(simulation, tldns, save_schedule, save_file, outp
     ϵ_maximum = Reduction(maximum!, ϵ, dims = (1, 2, 3))
     Eₖ = KineticEnergy(model)
     ∫Eₖ = Integral(Eₖ)
-    Eₚ = potential_energy(model)
-    ∫Eₚ = Integral(Eₚ)
 
     # Horizontally integrated vertical temperature flux and vertical temperature gradient
     T = model.tracers.T
@@ -305,7 +303,7 @@ function save_computed_output!(simulation, tldns, save_schedule, save_file, outp
     ∫ₐ∂T∂z = Integral(∂T∂z, dims = (1, 2))
 
     computed_outputs = Dict("σ" => σ, "∫ϵ" => ∫ϵ, "ϵ_maximum" => ϵ_maximum, "∫Eₖ" => ∫Eₖ,
-                            "∫Eₚ" => ∫Eₚ, "∫ₐ∂T∂z" => ∫ₐ∂T∂z, "∫ₐw′T′" => ∫ₐw′T′)
+                            "∫ₐ∂T∂z" => ∫ₐ∂T∂z, "∫ₐw′T′" => ∫ₐw′T′)
 
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",

@@ -70,7 +70,7 @@ function DNSModel(architecture, domain_extent::NamedTuple, resolution::NamedTupl
 
     Lx, Ly, Lz = domain_extent.Lx, domain_extent.Ly, domain_extent.Lz
     Nx, Ny, Nz = resolution.Nx, resolution.Ny, resolution.Nz
-    zgrid = zgrid_stretching ? grid_stretching(Lz, Nz, refinement, stretching) : (-Lz, 0)
+    zgrid = zgrid_stretching ? grid_stretching(-Lz, Nz, refinement, stretching) : (Lz, 0)
 
     grid = RectilinearGrid(architecture,
                            topology = (Periodic, Periodic, Bounded),

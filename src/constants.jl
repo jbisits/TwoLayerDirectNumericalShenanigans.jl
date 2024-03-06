@@ -20,7 +20,7 @@ const SO_DIFFUSIVITIES = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 Reference density for use in the two layer DNS. Calculated using the salinity `S₀ˡ` and
 temperature `T₀ˡ` of the lower layer .
 """
-const REFERENCE_DENSITY = gsw_rho(34.7, -1.5, 0)
+const REFERENCE_DENSITY = gsw_rho(34.7, 0.5, 0)
 """
     const INTERFACE_LOCATION
 Location of the interface (in the vertical) between the upper and lower layers.

@@ -1,8 +1,8 @@
 """
     const DOMAIN_EXTENT
-Domain extent on which the two layer simulations are run.
+Domain extent on which my two layer simulations are run.
 """
-const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = 1)
+const DOMAIN_EXTENT = (Lx = 0.1, Ly = 0.1, Lz = -1)
 """
     const HIGH_RESOLUTION
 Resolution at which to run the DNS sufficient to resolve turbulence on all scales, i.e.
@@ -16,6 +16,13 @@ Diffusivity estimates for the Southern Ocean.
 """
 const SO_DIFFUSIVITIES = (ν = 1e-6, κ = (S = 1e-9, T = 1e-7))
 """
+    const EQUAL_ST_DIFFUSIVITIES
+Equal salinity and temperature diffusivities. The salinity diffusivity is increased to match
+temperature diffusivity. The viscosity and temperature diffusivities are still close to
+physical values.
+"""
+const EQUAL_ST_DIFFUSIVITIES = (ν = 1e-6, κ = (S = 1e-7, T = 1e-7))
+"""
     const REFERENCE_DENSITY
 Reference density for use in the two layer DNS. Calculated using the salinity `S₀ˡ` and
 temperature `T₀ˡ` of the lower layer .
@@ -23,9 +30,10 @@ temperature `T₀ˡ` of the lower layer .
 const REFERENCE_DENSITY = gsw_rho(34.7, 0.5, 0)
 """
     const INTERFACE_LOCATION
-Location of the interface (in the vertical) between the upper and lower layers.
+Location of the interface (in the vertical) between the upper and lower layers. This
+default setting is in the middle of the [`DOMAIN_EXTENT`](@ref).
 """
-const INTERFACE_LOCATION = -0.375
+const INTERFACE_LOCATION = -0.5
 """
     const SIMULATION_PATH
 Path to where the simulations are saved by default. If the folder does not exist it will be

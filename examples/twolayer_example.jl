@@ -14,9 +14,10 @@ S₀ᵘ = (stable = 34.551, cabbeling = 34.58, unstable = 34.59)
 cabbeling = CabbelingUpperLayerInitialConditions(S₀ᵘ.cabbeling, T₀ᵘ)
 initial_conditions = TwoLayerInitialConditions(cabbeling)
 transition_depth = find_depth(model, INTERFACE_LOCATION)
-profile_function = StepChange(transition_depth)
+# profile_function = StepChange(transition_depth)
+profile_function = StepChangeLinearGradient(transition_depth, 1e-2, 0.0, model)
 noise_depth = find_depth(model, INTERFACE_LOCATION)
-initial_noise = SalinityNoise(noise_depth, 1e-2)
+initial_noise = SalinityNoise(noise_depth, 0.0)
 
 tldns = TwoLayerDNS(model, profile_function, initial_conditions; initial_noise)
 

@@ -125,6 +125,39 @@ end
     @test isequal((true, true, true, true), tracer_stepchange(dns))
 end
 
+@testset "Step change linear gradient" begin
+
+    # without gradient, sanity check
+    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
+    dSdz, dTdz = 0.0, 0.0
+    profile_function = StepChangeLinearGradient(z[depth_idx], dSdz, dTdz, model)
+    initial_conditions = TwoLayerInitialConditions(34.551, -1.5, 34.7, 0.5)
+    dns = TwoLayerDNS(model, profile_function, initial_conditions)
+    set_two_layer_initial_conditions!(dns)
+    x_idx, y_idx = rand(1:model.grid.Nx), rand(1:model.grid.Ny)
+    S = interior(dns.model.tracers.S, x_idx, y_idx, :)
+    T = interior(dns.model.tracers.T, x_idx, y_idx, :)
+    S_test, T_test = tracer_stepchangelineargradient(dns, z)
+
+    @test all((S .== S_test))
+    @test all((T .== T_test))
+
+    # with gradient
+    model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
+    dSdz, dTdz = 0.01, 0.05
+    profile_function = StepChangeLinearGradient(z[depth_idx], dSdz, dTdz, model)
+    initial_conditions = TwoLayerInitialConditions(34.551, -1.5, 34.7, 0.5)
+    dns = TwoLayerDNS(model, profile_function, initial_conditions)
+    set_two_layer_initial_conditions!(dns)
+    x_idx, y_idx = rand(1:model.grid.Nx), rand(1:model.grid.Ny)
+    S = interior(dns.model.tracers.S, x_idx, y_idx, :)
+    T = interior(dns.model.tracers.T, x_idx, y_idx, :)
+    S_test, T_test = tracer_stepchangelineargradient(dns, z)
+
+    @test all((S .== S_test))
+    @test all((T .== T_test))
+end
+
 @testset "Find depth" begin
     test_depth = rand(z)
     @test isequal(test_depth, find_depth(model, test_depth))

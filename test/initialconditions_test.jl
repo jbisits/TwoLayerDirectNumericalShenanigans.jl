@@ -91,3 +91,26 @@ function tracer_stepchange(dns::TwoLayerDNS)
     return S_upper, S_lower, T_upper, T_lower
 
 end
+function tracer_stepchangelineargradient(dns::TwoLayerDNS, z)
+
+    il = dns.profile_function.interface_location
+    il_idx = findfirst(z .> il)
+    depth = z[il_idx ]
+    depth2 = z[il_idx  - 1]
+    dSdz, dTdz = -dns.profile_function.dSdz, dns.profile_function.dTdz
+
+    S₀ˡ, S₀ᵘ = dns.initial_conditions.S₀ˡ, dns.initial_conditions.S₀ᵘ
+    S₀ˡ_offset, S₀ᵘ_offset = S₀ˡ - dSdz * depth2, S₀ᵘ - dSdz * depth
+    S_upper = S₀ᵘ_offset .+ dSdz .* z[z .> il]
+    S_lower = S₀ˡ_offset .+ dSdz .* z[z .≤ il]
+    S = vcat(S_lower, S_upper)
+
+    T₀ˡ, T₀ᵘ = dns.initial_conditions.T₀ˡ, dns.initial_conditions.T₀ᵘ
+    T₀ˡ_offset, T₀ᵘ_offset = T₀ˡ - dTdz * depth2, T₀ᵘ - dTdz * depth
+    T_upper = T₀ᵘ_offset .+ dTdz .* z[z .> il]
+    T_lower = T₀ˡ_offset .+ dTdz .* z[z .≤ il]
+    T = vcat(T_lower, T_upper)
+
+    return S, T
+
+end

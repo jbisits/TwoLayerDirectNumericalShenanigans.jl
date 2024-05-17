@@ -1097,6 +1097,24 @@ function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
                                             initial_conditions::TwoLayerInitialConditions,
                                             profile_function::StepChangeLinearGradient,
                                             tracer_perturbation::Nothing,
+                                            initial_noise::Nothing)
+
+    S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ
+    T₀ᵘ, T₀ˡ = initial_conditions.T₀ᵘ, initial_conditions.T₀ˡ
+
+    initial_S_profile(x, y, z) = Heaviside_with_linear_gradient(z, S₀ˡ, S₀ᵘ, profile_function)
+    initial_T_profile(x, y, z) = Heaviside_with_linear_gradient(z, T₀ˡ, T₀ᵘ, profile_function, tracer = :T)
+
+    set!(model, S = initial_S_profile, T = initial_T_profile)
+
+return nothing
+
+end
+#### Step Change with linear gradient + salinity noise
+function set_two_layer_initial_conditions!(model::Oceananigans.AbstractModel,
+                                            initial_conditions::TwoLayerInitialConditions,
+                                            profile_function::StepChangeLinearGradient,
+                                            tracer_perturbation::Nothing,
                                             initial_noise::SalinityNoise)
 
 S₀ᵘ, S₀ˡ = initial_conditions.S₀ᵘ, initial_conditions.S₀ˡ

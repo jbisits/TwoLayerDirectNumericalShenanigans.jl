@@ -8,7 +8,7 @@ function Base.show(io::IO, stpf::AbstractStepChangeProfileFunction)
         println(io, "$(typeof(stpf))")
         println(io, "┣━ interface_location: z = $(stpf.interface_location)m ")
         println(io, "┣━━━━━━━━━━━━━━━ dSdz: $(stpf.dSdz) ")
-          print(io, "┗━━━━━━━━━━━━━━━ dTdZ: $(stpf.dTdZ)")
+          print(io, "┗━━━━━━━━━━━━━━━ dTdZ: $(stpf.dTdz)")
     end
 end
 "`iterate` for `AbstractStepChangeProfileFunction`"
@@ -34,6 +34,9 @@ Containter with the depth of the `interface_location` between the upper and lowe
 and values to construct a linear gradient for salinity (`dSdz`) and temperature (`dTdz`).
 The resulting profile is a step change between the upper and lower layer salinity and
 temperature that has a linear (with depth) gradient in each layer.
+**Note:** The `Cˡ` and `Cᵘ` values passed to [Heaviside_with_linear_gradient](@ref) are
+set at the *interface*, hence an offset to the salinity and temperature values is computed
+to ensure this is the behaviour.
 """
 struct StepChangeLinearGradient{T} <: AbstractStepChangeProfileFunction
     "Location of the interface between the two layers"
@@ -43,7 +46,7 @@ struct StepChangeLinearGradient{T} <: AbstractStepChangeProfileFunction
     "Salinity offset to ensure salinity values at interface are S₀ᵘ and S₀ˡ"
        salinity_offset :: Tuple{T, T}
     "Linear gradient value for temperature"
-                  dTdZ :: T
+                  dTdz :: T
     "Temperature offset to ensure salinity values at interface are T₀ᵘ and T₀ˡ"
     temperature_offset :: Tuple{T, T}
 end
@@ -61,7 +64,7 @@ function StepChangeLinearGradient(interface_location, dSdz, dTdz, model)
                                             end
 
     S_offset = (dSdz * offset_depth[1], dSdz * offset_depth[2])
-    T_offset = (dTdz * offset_depth[1], dTdz * offset_depth[2])
+    T_offset = (-dTdz * offset_depth[1], -dTdz * offset_depth[2])
 
     return StepChangeLinearGradient(interface_location, dSdz, S_offset, dTdz, T_offset)
 
@@ -70,11 +73,11 @@ function Heaviside_with_linear_gradient(z, Cˡ::Number, Cᵘ::Number,
                                         profile_function::StepChangeLinearGradient;
                                         tracer = :S)
     interface_location = profile_function.interface_location
-    dCdz = tracer == :S ? -profile_function.dSdz : profile_function.dTdZ
+    dCdz = tracer == :S ? -profile_function.dSdz : profile_function.dTdz
     upper_offset, lower_offset = tracer == :S ? profile_function.salinity_offset :
                                                 profile_function.temperature_offset
-    Cᵘ_offset = Cᵘ + upper_offset
-    Cˡ_offset = Cˡ + lower_offset
+    Cᵘ_offset = upper_offset == 0 ? Cᵘ : Cᵘ + upper_offset
+    Cˡ_offset = lower_offset == 0 ? Cˡ : Cˡ + lower_offset
     if z > interface_location
         Cᵘ_offset + dCdz * z
     else

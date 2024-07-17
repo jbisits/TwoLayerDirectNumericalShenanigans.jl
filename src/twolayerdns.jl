@@ -294,18 +294,11 @@ function save_computed_output!(simulation, tldns, save_schedule, save_file, outp
     ϵ_maximum = Reduction(maximum!, ϵ, dims = (1, 2, 3))
     Eₖ = KineticEnergy(model)
     ∫Eₖ = Integral(Eₖ)
-    Eₚ = potential_energy(model)
+    Eₚ = PotentialEnergy(model)
     ∫Eₚ = Integral(Eₚ)
 
-    # Horizontally integrated vertical temperature flux and vertical temperature gradient
-    T = model.tracers.T
-    w′T′ = vertical_tracer_flux(model, T)
-    ∫ₐw′T′ = Integral(w′T′, dims = (1, 2))
-    ∂T∂z = ∂z(T)
-    ∫ₐ∂T∂z = Integral(∂T∂z, dims = (1, 2))
-
     computed_outputs = Dict("σ" => σ, "∫ϵ" => ∫ϵ, "ϵ_maximum" => ϵ_maximum, "∫Eₖ" => ∫Eₖ,
-                            "∫Eₚ" => ∫Eₚ, "∫ₐ∂T∂z" => ∫ₐ∂T∂z, "∫ₐw′T′" => ∫ₐw′T′)
+                            "∫Eₚ" => ∫Eₚ)
 
     oa = Dict(
         "σ" => Dict("longname" => "Seawater potential density calculated using TEOS-10 at $(reference_gp_height)dbar",
@@ -313,9 +306,7 @@ function save_computed_output!(simulation, tldns, save_schedule, save_file, outp
         "ϵ_maximum" => Dict("longname" => "Maximum (in space) TKE dissipation"),
         "∫ϵ" => Dict("longname" => "Volume integrated turbulent kintetic energy dissipation"),
         "∫Eₖ" => Dict("longname" => "Volume integrated turbulent kinetic energy"),
-        "∫Eₚ" => Dict("longname" => "Volume integrated potential energy (g∫ᵥρzdV)"),
-        "∫ₐw′T′" => Dict("longname" => "Horizontally integrated vertical temeprature flux"),
-        "∫ₐ∂T∂z" => Dict("longname" => "Horizontally integrated vertical temperature gradient")
+        "∫Eₚ" => Dict("longname" => "Volume integrated potential energy (g∫ᵥρzdV)")
         )
     simulation.output_writers[:computed_output] =
         save_file == :netcdf ? NetCDFOutputWriter(model, computed_outputs;

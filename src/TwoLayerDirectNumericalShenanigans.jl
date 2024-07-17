@@ -7,7 +7,7 @@ using SeawaterPolynomials: BoussinesqEquationOfState, ρ
 using SeawaterPolynomials.TEOS10
 using SeawaterPolynomials.SecondOrderSeawaterPolynomials
 using SpecialFunctions: erf
-using Oceanostics: KineticEnergyDissipationRate, KineticEnergy
+using Oceanostics: KineticEnergyDissipationRate, KineticEnergy, PotentialEnergy
 using CUDA: allowscalar, CuArray
 import Base: show, iterate
 

@@ -7,7 +7,7 @@ model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
 initial_conditions = StableTwoLayerInitialConditions(0, 0, 0, 0, 0, 0)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 z = znodes(model.grid, Center(), Center(), Center())
-depth_idx = findall(rand(z) .== z)[1]
+depth_idx = findall(rand(z[2:end]) .== z)[1]
 
 tracer_profile_perturbations = (SalinityGaussianProfile(z[depth_idx], 0.0, 1.5),
                                 TemperatureGaussianProfile(z[depth_idx], 0.0, 1.5))

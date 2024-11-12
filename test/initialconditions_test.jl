@@ -60,17 +60,17 @@ function tracer_noise(dns::TwoLayerDNS)
     S, T = interior(dns.model.tracers.S, :, :, :), interior(dns.model.tracers.T, :, :, :)
 
     find_T, find_S = false, false
-    if dns.initial_noise isa SalinityNoise{<:Number}
+    if dns.initial_noise isa SalinityNoise{<:Number, <:Number}
         find_T = isempty(findall(T .!= 0))
         find_S = findall(S .!= 0)[1][3] == depth_idx
-    elseif dns.initial_noise isa TemperatureNoise{<:Number}
+    elseif dns.initial_noise isa TemperatureNoise{<:Number, <:Number}
         find_T = findall(T .!= 0)[1][3] == depth_idx
         find_S = isempty(findall(S .!= 0))
-    elseif dns.initial_noise isa SalinityNoise{<:Vector}
+    elseif dns.initial_noise isa SalinityNoise{<:AbstractVector, <:AbstractVector}
         find_T = isempty(findall(T .!= 0))
         find_vec = findall(S .!= 0)
         find_S = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
-    elseif dns.initial_noise isa TemperatureNoise{<:Vector}
+    elseif dns.initial_noise isa TemperatureNoise{<:AbstractVector, <:AbstractVector}
         find_vec = findall(T .!= 0)
         find_T = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
         find_S = isempty(findall(S .!= 0))

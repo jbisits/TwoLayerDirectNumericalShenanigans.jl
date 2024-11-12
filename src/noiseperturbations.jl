@@ -9,14 +9,14 @@ Base.iterate(noise::AbstractNoise, state = 1) =
     state > length(fieldnames(typeof(noise))) ? nothing :
                                             (getfield(noise, state), state + 1)
 "Tracer Noise type"
-abstract type TracerNoise{T} <: AbstractNoise end
+abstract type TracerNoise{D, T} <: AbstractNoise end
 """
     struct SalinityNoise
 Container for adding `scale`d random noise to the salinity field at `depth`.
 """
-struct SalinityNoise{T} <: TracerNoise{T}
+struct SalinityNoise{D, T} <: TracerNoise{D, T}
     "Depth at which to set random salinity perturbations."
-    depth :: T
+    depth :: D
     "Scale for the random noise."
     scale :: T
 end
@@ -24,9 +24,9 @@ end
     struct TemperatuerNoise
 Container for adding `scale`d random noise to the salinity field at `depth`.
 """
-struct TemperatureNoise{T} <: TracerNoise{T}
+struct TemperatureNoise{D, T} <: TracerNoise{D, T}
     "Depth at which to set random salinity perturbations."
-    depth :: T
+    depth :: D
     "Scale for the random noise."
     scale :: T
 end
@@ -37,7 +37,7 @@ Perturb tracer by adding `scale`d random noise to the to the `tracer` field at `
 direction.
 Either a single `depth` and `scale` or a `Vector` of `depths` and `scales` can be passed in.
 """
-function perturb_tracer(z, tracer_perturbation::TracerNoise{<:Number})
+function perturb_tracer(z, tracer_perturbation::TracerNoise{<:Number, <:Number})
 
     depth, scale = tracer_perturbation
     if z == depth
@@ -47,7 +47,7 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:Number})
     end
 
 end
-function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
+function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector, <:AbstractVector})
 
     depths, scales = tracer_perturbation
     match_depth = z .== depths
@@ -58,7 +58,7 @@ function perturb_tracer(z, tracer_perturbation::TracerNoise{<:AbstractVector})
     end
 
 end
-function perturb_tracer(z, tracer_perturbation::TracerNoise{<:CuArray})
+function perturb_tracer(z, tracer_perturbation::TracerNoise{<:CuArray, <:CuArray})
 
     depths, scales = tracer_perturbation
     depths = Array(depths) # move to CPU

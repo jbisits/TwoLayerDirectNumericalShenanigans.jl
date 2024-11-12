@@ -194,16 +194,17 @@ include("output_test.jl")
         simulation, td, tldns = run_sim(:jld2)
         S = FieldTimeSeries(simulation.output_writers[:tracers].filepath, "S")
         T = FieldTimeSeries(simulation.output_writers[:tracers].filepath, "T")
+        Nz = tldns.model.grid.Nz
         @test all(S.data[:, :, 1:td, :]     .≈ tldns.initial_conditions.S₀ˡ)
-        @test all(S.data[:, :, (td+1):end, :] .≈ tldns.initial_conditions.S₀ᵘ)
+        @test all(S.data[:, :, (td+1):Nz, :] .≈ tldns.initial_conditions.S₀ᵘ)
         @test all(T.data[:, :, 1:td, :]     .≈ tldns.initial_conditions.T₀ˡ)
-        @test all(T.data[:, :, (td+1):end, :] .≈ tldns.initial_conditions.T₀ᵘ)
+        @test all(T.data[:, :, (td+1):Nz, :] .≈ tldns.initial_conditions.T₀ᵘ)
         σ = FieldTimeSeries(simulation.output_writers[:computed_output].filepath, "σ")
         @test all(σ.data[:, :, 1:td, :] .≈
                 SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ˡ,
                                       tldns.initial_conditions.S₀ˡ, 0,
                                       tldns.model.buoyancy.model.equation_of_state))
-        @test all(σ.data[:, :, (td+1):end, :] .≈
+        @test all(σ.data[:, :, (td+1):Nz, :] .≈
                 SeawaterPolynomials.ρ(tldns.initial_conditions.T₀ᵘ,
                                       tldns.initial_conditions.S₀ᵘ, 0,
                                       tldns.model.buoyancy.model.equation_of_state))

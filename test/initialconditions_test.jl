@@ -7,7 +7,7 @@ model = DNSModel(architecture, DOMAIN_EXTENT, resolution, diffusivities)
 initial_conditions = StableTwoLayerInitialConditions(0, 0, 0, 0, 0, 0)
 profile_function = HyperbolicTangent(INTERFACE_LOCATION, 50.0)
 z = znodes(model.grid, Center(), Center(), Center())
-depth_idx = findall(rand(z) .== z)[1]
+depth_idx = findall(rand(z[2:end]) .== z)[1]
 
 tracer_profile_perturbations = (SalinityGaussianProfile(z[depth_idx], 0.0, 1.5),
                                 TemperatureGaussianProfile(z[depth_idx], 0.0, 1.5))
@@ -60,17 +60,17 @@ function tracer_noise(dns::TwoLayerDNS)
     S, T = interior(dns.model.tracers.S, :, :, :), interior(dns.model.tracers.T, :, :, :)
 
     find_T, find_S = false, false
-    if dns.initial_noise isa SalinityNoise{<:Number}
+    if dns.initial_noise isa SalinityNoise{<:Number, <:Number}
         find_T = isempty(findall(T .!= 0))
         find_S = findall(S .!= 0)[1][3] == depth_idx
-    elseif dns.initial_noise isa TemperatureNoise{<:Number}
+    elseif dns.initial_noise isa TemperatureNoise{<:Number, <:Number}
         find_T = findall(T .!= 0)[1][3] == depth_idx
         find_S = isempty(findall(S .!= 0))
-    elseif dns.initial_noise isa SalinityNoise{<:Vector}
+    elseif dns.initial_noise isa SalinityNoise{<:AbstractVector, <:AbstractVector}
         find_T = isempty(findall(T .!= 0))
         find_vec = findall(S .!= 0)
         find_S = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
-    elseif dns.initial_noise isa TemperatureNoise{<:Vector}
+    elseif dns.initial_noise isa TemperatureNoise{<:AbstractVector, <:AbstractVector}
         find_vec = findall(T .!= 0)
         find_T = [fv[3] for fv ∈ find_vec[1:100:end]] == depth_idx-1:depth_idx+1
         find_S = isempty(findall(S .!= 0))

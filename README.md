@@ -17,5 +17,4 @@ To then use the package
 julia> using TwoLayerDirectNumericalShenanigans
 ```
 
-The package then allows the setup of Direct Numerical Simulations with two layers ideal for exploring double diffusion or other small scale processes.
-Documentation will come soon!
+This package has been used to explore the [cabbeling process](https://github.com/jbisits/CabbelingExperiments) in a two layer model.
